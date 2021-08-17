@@ -24,6 +24,6 @@ import org.chocosolver.solver.variables.IViewFactory;
  * @since 4.0.0
  */
 public interface IModel extends IVariableFactory, IViewFactory, IConstraintFactory, ISatFactory,
-        IReificationFactory, IDecompositionFactory{
+        IReificationFactory, IDecompositionFactory, ISchedulingFactory {
 
 }
