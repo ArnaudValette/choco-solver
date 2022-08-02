@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -59,7 +59,7 @@ public class PropSat extends Propagator<Variable> {
         // this propagator initially has no variable
         // adds solver.ONE to fit to the super constructor
         super(new Variable[]{model.getNbVars() > 0 ? model.getVar(0) : model.boolVar(false)},
-                PropagatorPriority.VERY_SLOW, true);
+                PropagatorPriority.VERY_SLOW, true, false);
         // erase model.ONE from the variable scope
         this.vars = new Variable[0];
         sat_ = new SatDecorator(model);

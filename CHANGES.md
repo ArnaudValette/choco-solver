@@ -3,8 +3,48 @@ Choco Solver ChangeLog
 
 This file is dedicated to sum up the new features added and bugs fixed in Choco-solver since the version, 4.0.0.
 **Note**: double-space is replaced by "\t" character on release process. Make sure the format is ok.
-
+    
 NEXT MILESTONE
+-------------------
+
+### Major features:
+- It is now possible to declare hints to help the search finding a first solution. See `solver.addHint(var, val)`.
+- Add `Solver.tableSampling` resolution policy which returns a stream of `Solution` randomly sampled.
+- Extend some black-box strategies to `SetVar`
+- Add `union(SetVar unionSet, SetVar indices, SetVar[] sets)` constraint
+- Add `increasing` and `decreasing` constraints
+- Add `costFlow` constraint, which is composed of scalar products and a MinCostMaxFlow propagator
+- Revamp `pow` constraint
+- Increase interval for MiniZinc unbounded intvar
+- Add threshold for Element with array of variables signature
+- Add a propagator for 0/1-knapsack (thanks to @PoltyPoltou)
+- Remove `CPProfiler` since the project is not active anymore.
+- Make possible to deal with large domains for some constraints (#894)
+
+### JAR Files
+Since 4.10.9, a new jar file is available for download. 
+This is a lighter version of the one with dependencies, 
+namely `choco-parsers-light-VERSION.jar`.
+The following dependency have been excluded from this archive:
+- `org.apache.pdfbox:pdfbox`
+- `org.apache.fontbox:fontbox`
+- `com.ibm.icu:icu4j`
+
+This results in 82% smaller archive.
+Note that the non-alleged versions are still available for download.
+
+### Deprecated API (to be removed in next release):
+- `IOutputFactory.outputSearchTreeToCPProfiler(boolean domain)`
+
+### Other closed issues and pull requests:
+See [milestone 4.10.9](https://github.com/chocoteam/choco-solver/milestone/xx)
+
+#### Contributors to this release:
+- [Mathieu Vavrille](https://github.com/MathieuVavrille) (@MathieuVavrille)
+- [Nicolas Pierre](https://github.com/PoltyPoltou) (@PoltyPoltou)
+- [Charles Prud'homme](https://github.com/cprudhom) (@cprudhom) 
+    
+4.10.8 - 07 Jan 2022
 -------------------
 
 ### Major features:
@@ -13,14 +53,20 @@ Consequently, it is now possible to profil the propagation by calling `solver.pr
 See Javadoc for details and usages (#832).
 - Release 4.10.7 introduces a bug related to delta monitors, which is now fixed (#837).
 - Add new black-box strategy: failure based variable ordering heuristics (@lihb905)
+- Add `model.streamVars()` and `model.streamCstrs()`
+- Bounded domains checking for table constraints
+- Change complementary search in FlatZincParser
+- Bump XCSP3
 ### Deprecated API (to be removed in next release):
 
 ### Other closed issues and pull requests:
 See [milestone 4.10.8](https://github.com/chocoteam/choco-solver/milestone/xx)
 
 #### Contributors to this release:
-- [Charles Prud'homme](https://github.com/cprudhom) (@cprudhom)
+- [Jean-Guillaume Fages](https://github.com/jgFages) (@jgFages)
+- [Fabien Hermenier](https://github.com/fhermeni) (@fhermeni)
 - [Hongbo Li](https://github.com/lihb905) (@lihb905)
+- [Charles Prud'homme](https://github.com/cprudhom) (@cprudhom)
 
 4.10.7 - 11 Oct 2021
 -------------------

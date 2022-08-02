@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-parsers, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -11,9 +11,6 @@ package org.chocosolver.parser.mps;
 
 import org.chocosolver.parser.ParserException;
 import org.chocosolver.solver.Model;
-import org.chocosolver.solver.constraints.Constraint;
-import org.chocosolver.solver.constraints.Operator;
-import org.chocosolver.solver.constraints.real.PropScalarMixed;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.RealVar;
 import org.chocosolver.solver.variables.Variable;
@@ -36,17 +33,17 @@ import java.util.zip.GZIPInputStream;
  */
 public class MPSParser {
 
-    private static Pattern twopart = Pattern.compile("");
+    private static final Pattern twopart = Pattern.compile("");
 
-    private static String TAG_NAME = "NAME";
-    private static String TAG_ROWS = "ROWS";
-    private static String TAG_COLUMNS = "COLUMNS";
-    private static String TAG_RHS = "RHS";
-    private static String TAG_BOUNDS = "BOUNDS"; // optional
-    private static String TAG_RANGES = "RANGES"; // optional
-    private static String TAG_ENDATA = "ENDATA";
-    private static String TAG_MARKER = "'MARKER'";
-    private static String TAG_INTORG = "'INTORG'";
+    private static final String TAG_NAME = "NAME";
+    private static final String TAG_ROWS = "ROWS";
+    private static final String TAG_COLUMNS = "COLUMNS";
+    private static final String TAG_RHS = "RHS";
+    private static final String TAG_BOUNDS = "BOUNDS"; // optional
+    private static final String TAG_RANGES = "RANGES"; // optional
+    private static final String TAG_ENDATA = "ENDATA";
+    private static final String TAG_MARKER = "'MARKER'";
+    private static final String TAG_INTORG = "'INTORG'";
 
     private static final int CACHING = 12 * 5;
 
@@ -294,11 +291,7 @@ public class MPSParser {
                 && !line.startsWith(TAG_ENDATA)) {
             values = Arrays.stream(line.split(" ")).filter(v -> v.length() > 0).toArray(String[]::new);
             String var = values[2];
-            Number[] bounds = varsDom.get(var);
-            if (bounds == null) {
-                bounds = new Number[]{0, POS_INF};
-                varsDom.put(var, bounds);
-            }
+            Number[] bounds = varsDom.computeIfAbsent(var, k -> new Number[]{0, POS_INF});
             String val = values.length > 3 ? values[3] : "--";
             switch (values[0]) {
                 case "LO":
@@ -546,11 +539,6 @@ public class MPSParser {
         return true;
     }
 
-    private static Constraint mixedScalar(Variable[] vars, double[] coefs, String op, double b) {
-        return new Constraint("MIXEDSCALAR",
-                new PropScalarMixed(vars, coefs, Operator.get(op), b));
-    }
-
 
     private void postEquation(Model model, List<String> vars, List<Number> coefs, String op,
                               Number rhs, Number rng) {
@@ -558,23 +546,23 @@ public class MPSParser {
             case "=":
                 if (rng == null) {
                     // only made of int var, and all coeffs are int
-                    mixedScalar(vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new),
+                    model.scalar(vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new),
                             coefs.stream().mapToDouble(Number::doubleValue).toArray(), op, rhs.doubleValue()
                     ).post();
                 } else {
                     if (rng.intValue() > 0) {
-                        mixedScalar(vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new),
+                        model.scalar(vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new),
                                 coefs.stream().mapToDouble(Number::doubleValue).toArray(), ">=", rhs.doubleValue()
                         ).post();
-                        mixedScalar(vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new),
+                       model.scalar(vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new),
                                 coefs.stream().mapToDouble(Number::doubleValue).toArray(), "<=",
                                 rhs.doubleValue() + rng.doubleValue()
                         ).post();
                     } else {
-                        mixedScalar(vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new),
+                       model.scalar(vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new),
                                 coefs.stream().mapToDouble(Number::doubleValue).toArray(), "<=", rhs.doubleValue()
                         ).post();
-                        mixedScalar(vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new),
+                       model.scalar(vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new),
                                 coefs.stream().mapToDouble(Number::doubleValue).toArray(), ">=",
                                 rhs.doubleValue() + rng.doubleValue()
                         ).post();
@@ -583,7 +571,7 @@ public class MPSParser {
                 break;
             default:
                 // only made of int var, and all coeffs are int
-                mixedScalar(
+               model.scalar(
                         vars.stream()
                                 .map(s -> decVars.get(s))
                                 .toArray(Variable[]::new),
@@ -602,7 +590,7 @@ public class MPSParser {
                     } else {
                         b -= Math.abs(rng.doubleValue());
                     }
-                    mixedScalar(
+                   model.scalar(
                             vars.stream()
                                     .map(s -> decVars.get(s))
                                     .toArray(Variable[]::new),
@@ -629,7 +617,7 @@ public class MPSParser {
             model.setObjective(maximize, objective);
             Variable[] svars = vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new);
             coefs.add(-1d);
-            mixedScalar(
+           model.scalar(
                     ArrayUtils.append(svars, new RealVar[]{objective}),
                     coefs.stream().mapToDouble(Number::doubleValue)
                             .toArray(),
@@ -656,15 +644,15 @@ public class MPSParser {
                             .toArray(Variable[]::new)).post();
                 } else {
                     if (rng.intValue() > 0) {
-                        model.realIbexGenericConstraint(fct.toString() + ">=" + rhs.doubleValue(),
+                        model.realIbexGenericConstraint(fct + ">=" + rhs.doubleValue(),
                                 vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new)).post();
-                        model.realIbexGenericConstraint(fct.toString() + "<=" +
+                        model.realIbexGenericConstraint(fct + "<=" +
                                         rhs.doubleValue() + rng.doubleValue(),
                                 vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new)).post();
                     } else {
-                        model.realIbexGenericConstraint(fct.toString() + "<=" + rhs.doubleValue(),
+                        model.realIbexGenericConstraint(fct + "<=" + rhs.doubleValue(),
                                 vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new)).post();
-                        model.realIbexGenericConstraint(fct.toString() + ">=" +
+                        model.realIbexGenericConstraint(fct + ">=" +
                                         rhs.doubleValue() + rng.doubleValue(),
                                 vars.stream().map(s -> decVars.get(s)).toArray(Variable[]::new)).post();
                     }
@@ -729,7 +717,7 @@ public class MPSParser {
             } else {
                 st.append(var.asIntVar().getLB());
             }
-            st.append('\n');
+            if (i < allvars.size() - 1) st.append('\n');
         }
         return st.toString();
     }

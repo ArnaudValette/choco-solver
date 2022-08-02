@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -9,9 +9,9 @@
  */
 package org.chocosolver.solver;
 
-import org.chocosolver.memory.ICondition;
 import org.chocosolver.memory.IEnvironment;
 import org.chocosolver.solver.constraints.ISatFactory;
+import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.constraints.real.Ibex;
 import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.strategy.AbstractStrategy;
@@ -50,6 +50,8 @@ public class Settings {
 
     private boolean sortPropagatorActivationWRTPriority = true;
 
+    private int maxPropagatorPriority = PropagatorPriority.VERY_SLOW.getValue();
+
     private Function<Model, AbstractStrategy<?>> defaultSearch = Search::defaultSearch;
 
     private boolean warnUser = false;
@@ -60,7 +62,7 @@ public class Settings {
 
     private boolean enableSAT = false;
 
-    private boolean swapOnPassivate = false;
+    private boolean swapOnPassivate = true;
 
     private boolean checkDeclaredConstraints = true;
 
@@ -80,7 +82,7 @@ public class Settings {
 
     private int dominancePerimeter = 4;
 
-    private boolean explainGlobalFailureInSum = true;
+    private boolean explainGlobalFailureInSum = false;
 
     private double ibexContractionRatio = Ibex.RATIO;
 
@@ -306,6 +308,27 @@ public class Settings {
         return this;
     }
 
+
+    /**
+     * @return the maximum priority any propagators can have (default is 7)
+     */
+    public int getMaxPropagatorPriority(){
+        return maxPropagatorPriority;
+    }
+
+    /**
+     * Increase the number of priority for propagators (default is {@link PropagatorPriority#VERY_SLOW}).
+     * This directly impacts the number of queues to schedule propagators in the propagation engine.
+     *
+     * @param maxPropagatorPriority the new maximum prioirity any propagator can declare
+     * @return the current instance
+     */
+    public Settings setMaxPropagatorPriority(int maxPropagatorPriority){
+        this.maxPropagatorPriority = maxPropagatorPriority;
+        return this;
+    }
+
+
     /**
      * Creates a default search strategy for the input model
      *
@@ -326,16 +349,6 @@ public class Settings {
     public Settings setDefaultSearch(Function<Model, AbstractStrategy<?>> defaultSearch) {
         this.defaultSearch = defaultSearch;
         return this;
-    }
-
-    @Deprecated
-    public ICondition getEnvironmentHistorySimulationCondition() {
-        return null;
-    }
-
-    @Deprecated
-    public Settings setEnvironmentHistorySimulationCondition(ICondition environmentHistorySimulationCondition) {
-        return null;
     }
 
     /**

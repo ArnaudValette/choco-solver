@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -16,6 +16,7 @@ import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.selectors.variables.ImpactBased;
 import org.chocosolver.solver.search.strategy.strategy.AbstractStrategy;
 import org.chocosolver.solver.variables.IntVar;
+import org.chocosolver.solver.variables.SetVar;
 import org.chocosolver.util.ProblemMaker;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -30,55 +31,94 @@ import java.util.function.Function;
  */
 public class BlackBoxTest {
 
-	@DataProvider
-	public Object[][] strategies(){
-		return new Object[][]{
-				{(Function<IntVar[], AbstractStrategy<IntVar>>) vars -> new ImpactBased(vars, 2,3,10,0,true)},
-				{(Function<IntVar[], AbstractStrategy<IntVar>>) Search::activityBasedSearch},
-				{(Function<IntVar[], AbstractStrategy<IntVar>>) Search::domOverWDegSearch},
-				{(Function<IntVar[], AbstractStrategy<IntVar>>) Search::conflictHistorySearch},
-				{(Function<IntVar[], AbstractStrategy<IntVar>>) Search::domOverWDegRefSearch},
-				{(Function<IntVar[], AbstractStrategy<IntVar>>) Search::failureRateBasedSearch},
-				{(Function<IntVar[], AbstractStrategy<IntVar>>) Search::failureLengthBasedSearch},
-		};
-	}
+    @DataProvider
+    public Object[][] strategies() {
+        return new Object[][]{
+                {(Function<IntVar[], AbstractStrategy<IntVar>>) vars -> new ImpactBased(vars, 2, 3, 10, 0, true)},
+                {(Function<IntVar[], AbstractStrategy<IntVar>>) Search::activityBasedSearch},
+                {(Function<IntVar[], AbstractStrategy<IntVar>>) Search::domOverWDegSearch},
+                {(Function<IntVar[], AbstractStrategy<IntVar>>) Search::conflictHistorySearch},
+                {(Function<IntVar[], AbstractStrategy<IntVar>>) Search::domOverWDegRefSearch},
+                {(Function<IntVar[], AbstractStrategy<IntVar>>) Search::failureRateBasedSearch},
+                {(Function<IntVar[], AbstractStrategy<IntVar>>) Search::failureLengthBasedSearch},
+        };
+    }
 
-	@Test(groups="10s", timeOut=60000, dataProvider = "strategies")
-	public void testCostas(Function<IntVar[], AbstractStrategy<IntVar>> strat) {
-		Model model = ProblemMaker.makeCostasArrays(7);
-		IntVar[] vars = model.retrieveIntVars(true);
-		Solver solver = model.getSolver();
-		solver.setSearch(strat.apply(vars));
-		solver.setGeometricalRestart(vars.length * 3L, 1.1d, new FailCounter(model, 0), 1000);
-		solver.setNoGoodRecordingFromSolutions(vars);
-		solver.findAllSolutions();
-		solver.printShortStatistics();
-		Assert.assertEquals(solver.getSolutionCount(), 100);
-	}
+    @Test(groups = "10s", timeOut = 60000, dataProvider = "strategies")
+    public void testCostas(Function<IntVar[], AbstractStrategy<IntVar>> strat) {
+        Model model = ProblemMaker.makeCostasArrays(6);
+        IntVar[] vars = model.retrieveIntVars(true);
+        Solver solver = model.getSolver();
+        solver.setSearch(strat.apply(vars));
+        solver.setGeometricalRestart(vars.length * 3L, 1.1d, new FailCounter(model, 0), 1000);
+        solver.setNoGoodRecordingFromSolutions(vars);
+        solver.findAllSolutions();
+        solver.printShortStatistics();
+        Assert.assertEquals(solver.getSolutionCount(), 58);
+    }
 
-	@Test(groups="10s", timeOut=60000, dataProvider = "strategies")
-		public void testGolombRuler(Function<IntVar[], AbstractStrategy<IntVar>> strat) {
-		Model model = ProblemMaker.makeGolombRuler(8);
-		IntVar[] vars = model.retrieveIntVars(true);
-		Solver solver = model.getSolver();
-		solver.setSearch(strat.apply(vars));
-		solver.setGeometricalRestart(vars.length * 3L, 1.1d, new FailCounter(model, 0), 1000);
-		solver.setNoGoodRecordingFromSolutions(vars);
-		solver.findOptimalSolution((IntVar) model.getHook("objective"), false);
-		solver.printShortStatistics();
-		Assert.assertEquals(solver.getObjectiveManager().getBestSolutionValue(), 34);
-	}
+    @Test(groups = "10s", timeOut = 60000, dataProvider = "strategies")
+    public void testGolombRuler(Function<IntVar[], AbstractStrategy<IntVar>> strat) {
+        Model model = ProblemMaker.makeGolombRuler(8);
+        IntVar[] vars = model.retrieveIntVars(true);
+        Solver solver = model.getSolver();
+        solver.setSearch(strat.apply(vars));
+        solver.setGeometricalRestart(vars.length * 3L, 1.1d, new FailCounter(model, 0), 1000);
+        solver.setNoGoodRecordingFromSolutions(vars);
+        solver.findOptimalSolution((IntVar) model.getHook("objective"), false);
+        solver.printShortStatistics();
+        Assert.assertEquals(solver.getObjectiveManager().getBestSolutionValue(), 34);
+    }
 
-	@Test(groups="10s", timeOut=60000, dataProvider = "strategies")
-	public void testNQueen(Function<IntVar[], AbstractStrategy<IntVar>> strat) {
-		Model model = ProblemMaker.makeNQueenWithBinaryConstraints(10);
-		IntVar[] vars = model.retrieveIntVars(true);
-		Solver solver = model.getSolver();
-		solver.setSearch(strat.apply(vars));
-		solver.setGeometricalRestart(vars.length * 3L, 1.1d, new FailCounter(model, 0), 1000);
-		solver.setNoGoodRecordingFromSolutions(vars);
-		solver.findAllSolutions();
-		solver.printShortStatistics();
-		Assert.assertEquals(solver.getSolutionCount(), 724);
-	}
+    @Test(groups = "10s", timeOut = 60000, dataProvider = "strategies")
+    public void testNQueen(Function<IntVar[], AbstractStrategy<IntVar>> strat) {
+        Model model = ProblemMaker.makeNQueenWithBinaryConstraints(10);
+        IntVar[] vars = model.retrieveIntVars(true);
+        Solver solver = model.getSolver();
+        solver.setSearch(strat.apply(vars));
+        solver.setGeometricalRestart(vars.length * 3L, 1.1d, new FailCounter(model, 0), 1000);
+        solver.setNoGoodRecordingFromSolutions(vars);
+        solver.findAllSolutions();
+        solver.printShortStatistics();
+        Assert.assertEquals(solver.getSolutionCount(), 724);
+    }
+
+    @Test(groups = "1s", dataProvider = "strategies")
+    public void testBios(Function<IntVar[], AbstractStrategy<IntVar>> strat) {
+        int n = 2;
+        Model model = new Model("all different");
+        IntVar[] xs = model.intVarArray("Xs", n, 1, n);
+        model.allDifferent(xs).post();
+        Solver solver = model.getSolver();
+        solver.setSearch(strat.apply(xs));
+        solver.findAllSolutions();
+        solver.printShortStatistics();
+        Assert.assertTrue(solver.getSolutionCount() >= 2);
+        Assert.assertTrue(solver.getSolutionCount() <= 14); // for ABS only
+    }
+
+    @DataProvider
+    public Object[][] setstrategies() {
+        return new Object[][]{
+                {(Function<SetVar[], AbstractStrategy<SetVar>>) Search::domOverWDegSearch},
+                {(Function<SetVar[], AbstractStrategy<SetVar>>) Search::conflictHistorySearch},
+                {(Function<SetVar[], AbstractStrategy<SetVar>>) Search::domOverWDegRefSearch},
+                {(Function<SetVar[], AbstractStrategy<SetVar>>) Search::failureRateBasedSearch},
+                {(Function<SetVar[], AbstractStrategy<SetVar>>) Search::failureLengthBasedSearch},
+        };
+    }
+
+
+    @Test(groups = "1s", dataProvider = "setstrategies")
+    public void testSet(Function<SetVar[], AbstractStrategy<SetVar>> strat) {
+        Model model = ProblemMaker.makeSteiner(7);
+        SetVar[] vars = model.retrieveSetVars();
+        Solver solver = model.getSolver();
+        solver.setSearch(strat.apply(vars));
+        solver.setGeometricalRestart(vars.length * 3L, 1.1d, new FailCounter(model, 0), 1000);
+        solver.findSolution();
+        solver.printShortStatistics();
+        Assert.assertEquals(solver.getSolutionCount(), 1);
+
+    }
 }

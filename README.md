@@ -1,6 +1,6 @@
 ![logo](https://github.com/chocoteam/choco-solver/blob/master/solver/src/resources/png/ChocoLogo-160x135.png)
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/chocoteam/choco-solver?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Discord](https://img.shields.io/discord/976015799619842078?color=7289DA&logo=discord&style=plastic)](https://discord.gg/aH6zxa7e64)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.choco-solver/choco-solver/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.choco-solver/choco-solver)
 [![javadoc.io](https://javadoc.io/badge2/org.choco-solver/choco-solver/javadoc.io.svg)](https://javadoc.io/doc/org.choco-solver/choco-solver)
 
@@ -16,7 +16,7 @@
 
 Choco-solver is an open-source Java library for Constraint Programming.
 
-Current stable version is 4.10.7 (11 Oct 2021).
+Current stable version is 4.10.8 (07 Jan 2022).
 
 Choco-solver comes with:
 - various type of variables (integer, boolean, set, graph and real),
@@ -26,7 +26,7 @@ Choco-solver comes with:
 
 But also, facilities to interact with the search loop, factories to help modelling, many samples, etc.
 
-Choco-solver is distributed under BSD 4-Clause License (Copyright (c) 1999-2021, IMT Atlantique).
+Choco-solver is distributed under BSD 4-Clause License (Copyright (c) 1999-2022, IMT Atlantique).
 
 Contact: [Choco-solver on Gitter](https://gitter.im/chocoteam/choco-solver#)
 
@@ -119,7 +119,7 @@ So you only have to edit your `pom.xml` to declare the following library depende
 <dependency>
    <groupId>org.choco-solver</groupId>
    <artifactId>choco-solver</artifactId>
-   <version>4.10.7</version>
+   <version>4.10.8</version>
 </dependency>
 ```
 

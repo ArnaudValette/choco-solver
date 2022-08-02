@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -118,17 +118,6 @@ public class BoolSetView<S extends SetVar> extends AbstractView<S> implements Bo
             notifyPropagators(event, this);
         }
     }
-
-    @Override
-    public boolean setToTrue(ICause cause) throws ContradictionException {
-        return instantiateTo(1, cause);
-    }
-
-    @Override
-    public boolean setToFalse(ICause cause) throws ContradictionException {
-        return instantiateTo(0, cause);
-    }
-
 
     @Override
     public boolean instantiateTo(int value, ICause cause) throws ContradictionException {
@@ -386,7 +375,8 @@ public class BoolSetView<S extends SetVar> extends AbstractView<S> implements Bo
         } else {
             if (lb == kTRUE) {
                 hasChanged = instantiateTo(kTRUE, cause);
-            } else if (ub == kFALSE) {
+            }
+            if (ub == kFALSE) {
                 hasChanged = instantiateTo(kFALSE, cause);
             }
         }

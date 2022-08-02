@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -41,9 +41,8 @@ public class PropLexInt extends Propagator<IntVar> implements UpdatablePropagato
     private final int[] y;
     private final boolean strict;
 
-
-    public PropLexInt(IntVar[] X, int[] Y, boolean strict) {
-        super(ArrayUtils.append(X), PropagatorPriority.LINEAR, true);
+    public PropLexInt(IntVar[] X, int[] Y, boolean strict, boolean isObjectiveFunction) {
+        super(ArrayUtils.append(X), PropagatorPriority.LINEAR, true, !isObjectiveFunction);
         this.x = Arrays.copyOfRange(vars, 0, X.length);
         this.y = Y.clone();
         this.strict = strict;

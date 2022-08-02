@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -191,7 +191,7 @@ public class EnvironmentTest {
         Solver solver = model.getSolver();
         // 2.a define a search strategy
         solver.setSearch(Search.minDomLBSearch(S));
-        solver.showDecisions();
+        //solver.showDecisions();
         solver.solve();
         model.getEnvironment().worldCommit();
         while (model.getEnvironment().getWorldIndex() > 0) {

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -11,9 +11,8 @@ package org.chocosolver.solver.constraints;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.reification.Opposite;
-import org.chocosolver.solver.constraints.reification.PropImplied;
-import org.chocosolver.solver.constraints.reification.PropImplies;
 import org.chocosolver.solver.exception.SolverException;
+import org.chocosolver.solver.search.SearchState;
 import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.util.ESat;
 
@@ -59,7 +58,7 @@ public class Constraint {
     /**
      * Propagators of the constraint (they will filter domains and eventually check solutions)
      */
-    final protected Propagator[] propagators;
+    final protected Propagator<?>[] propagators;
 
     /**
      * BoolVar that reifies this constraint, unique.
@@ -101,7 +100,7 @@ public class Constraint {
      * @param name        name of the constraint
      * @param propagators set of propagators defining the constraint
      */
-    public Constraint(String name, Propagator... propagators) {
+    public Constraint(String name, Propagator<?>... propagators) {
         if (propagators == null || propagators.length == 0) {
             throw new UnsupportedOperationException("cannot create a constraint without propagators ");
         }
@@ -133,11 +132,12 @@ public class Constraint {
      *
      * @return an array of {@link Propagator}.
      */
+    @SuppressWarnings("rawtypes")
     public Propagator[] getPropagators() {
         return propagators;
     }
 
-    public Propagator getPropagator(int i) {
+    public Propagator<?> getPropagator(int i) {
         return propagators[i];
     }
 
@@ -189,21 +189,30 @@ public class Constraint {
      * @param bool the variable to reify with
      */
     public void reifyWith(BoolVar bool) {
-        Model s = propagators[0].getModel();
-        getOpposite();
-        if (boolReif == null) {
-            boolReif = bool;
-            assert opposite.boolReif == null;
-            opposite.boolReif = this.boolReif.not();
-            if (boolReif.isInstantiatedTo(1)) {
-                this.post();
-            } else if (boolReif.isInstantiatedTo(0)) {
-                this.opposite.post();
-            } else {
+        if (boolReif != null) {
+            if (opposite == null) {
+                throw new SolverException("try to reify an implied constraint");
+            }
+            if (bool != boolReif) {
+                bool.eq(boolReif).post();
+            }
+        } else {
+            getOpposite();
+            if (boolReif == null) {
+                boolReif = bool;
+                assert opposite.boolReif == null;
+                opposite.boolReif = this.boolReif.not();
+                if (boolReif.isInstantiated()
+                        && bool.getModel().getSolver().getSearchState() == SearchState.NEW) {
+                    if (boolReif.getValue() == 1) {
+                        this.post();
+                    } else{
+                        this.opposite.post();
+                    }
+                    return;
+                }
                 new ReificationConstraint(boolReif, this, opposite).post();
             }
-        } else if (bool != boolReif) {
-            s.arithm(bool, "=", boolReif).post();
         }
     }
 
@@ -217,6 +226,8 @@ public class Constraint {
         if (boolReif == null) {
             Model model = propagators[0].getModel();
             reifyWith(model.boolVar(model.generateName("REIF_")));
+        } else if (opposite == null) {
+            throw new SolverException("try to reify an implied constraint");
         }
         return boolReif;
     }
@@ -236,7 +247,7 @@ public class Constraint {
      * @param r a boolean variable
      */
     public final void implies(BoolVar r) {
-        new Constraint(ConstraintsName.IMPLYCONSTRAINT, new PropImplies(this, r)).post();
+        this.reify().imp(r).post();
     }
 
     /**
@@ -255,10 +266,16 @@ public class Constraint {
      * @param r a boolean variable
      */
     public final void impliedBy(BoolVar r) {
-        if (r.isInstantiatedTo(1)) {
-            this.post();
-        } else {
-            new Constraint(ConstraintsName.IMPLIEDCONSTRAINT, new PropImplied(r, this)).post();
+        if (boolReif == null) {
+            boolReif = r;
+            if (boolReif.isInstantiatedTo(1)
+                    && r.getModel().getSolver().getSearchState() == SearchState.NEW) {
+                this.post();
+            } else {
+                new ImpliedConstraint(boolReif, this).post();
+            }
+        } else if (r != boolReif && opposite != null) {
+            throw new SolverException("try to imply a reified constraint");
         }
     }
 
@@ -423,7 +440,7 @@ public class Constraint {
     public PropagatorPriority computeMaxPriority() {
         int priority = 1;
         for (Propagator<?> p : propagators) {
-            priority = Math.max(priority, p.getPriority().priority);
+            priority = Math.max(priority, p.getPriority().getValue());
         }
         return PropagatorPriority.get(priority);
     }

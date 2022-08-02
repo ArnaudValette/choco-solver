@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -42,8 +42,8 @@ public class PropNotMember extends Propagator<IntVar> implements UpdatablePropag
      * @param var   a variable
      * @param range list of possible values
      */
-    public PropNotMember(IntVar var, IntIterableRangeSet range) {
-        super(new IntVar[]{var}, PropagatorPriority.UNARY, false);
+    public PropNotMember(IntVar var, IntIterableRangeSet range, boolean isObjectiveFunction) {
+        super(new IntVar[]{var}, PropagatorPriority.UNARY, false, !isObjectiveFunction);
         this.range = range.duplicate();
     }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -14,6 +14,7 @@ import org.chocosolver.memory.structure.IOperation;
 import org.chocosolver.solver.ICause;
 import org.chocosolver.solver.Identity;
 import org.chocosolver.solver.Model;
+import org.chocosolver.solver.Priority;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.exception.SolverException;
 import org.chocosolver.solver.learn.ExplanationForSignedClause;
@@ -86,7 +87,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
     private static final short NEW = 0;
 
     /**
-     * Status of this propagagator when reified.
+     * Status of this propagator when reified.
      */
     private static final short REIFIED = 1;
 
@@ -140,16 +141,10 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
     private final boolean swapOnPassivate;
 
     /**
-     * When a propagator is removed while being passivate with swap operation,
-     * this variable ensures that no side-effects occurs on backtrack
-     */
-    private boolean alive = true;
-
-    /**
      * Priority of this propagator.
      * Mix between arity and compexity.
      */
-    protected final PropagatorPriority priority;
+    protected final Priority priority;
 
     /**
      * Set to <tt>true</tt> to indidates that this propagator reacts to fine event.
@@ -232,7 +227,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
      * @param swapOnPassivate indicates if, on propagator passivation, the propagator should be
      *                        ignored in its variables' propagators list.
      */
-    protected Propagator(V[] vars, PropagatorPriority priority, boolean reactToFineEvt, boolean swapOnPassivate) {
+    protected Propagator(V[] vars, Priority priority, boolean reactToFineEvt, boolean swapOnPassivate) {
         assert vars != null && vars.length > 0 && vars[0] != null : "wrong variable set in propagator constructor";
         this.model = vars[0].getModel();
         this.reactToFineEvt = reactToFineEvt;
@@ -248,19 +243,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
         Arrays.fill(vindices, -1);
         ID = model.nextId();
         this.swapOnPassivate = model.getSettings().swapOnPassivate() & swapOnPassivate;
-        if (this.swapOnPassivate) {
-            operations = new IOperation[3 + vars.length];
-            for (int i = 0; i < vars.length; i++) {
-                int i0 = i;
-                operations[3 + i] = () -> {
-                    if (alive) {
-                        doSwap(i0);
-                    }
-                };
-            }
-        } else {
-            operations = new IOperation[3];
-        }
+        operations = new IOperation[3];
 
         operations[0] = () -> state = NEW;
         operations[1] = () -> state = REIFIED;
@@ -293,8 +276,8 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
      * @param reactToFineEvt indicates whether or not this propagator must be informed of every
      *                       variable modification, i.e. if it should be incremental or not
      */
-    protected Propagator(V[] vars, PropagatorPriority priority, boolean reactToFineEvt) {
-        this(vars, priority, reactToFineEvt, false);
+    protected Propagator(V[] vars, Priority priority, boolean reactToFineEvt) {
+        this(vars, priority, reactToFineEvt, true);
     }
 
     /**
@@ -329,7 +312,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
         vindices = new int[vars.length];
         arraycopy(itmp, 0, vindices, 0, itmp.length);
         for (int v = tmp.length; v < vars.length; v++) {
-            vindices[v] = vars[v].link(this, v);
+            vars[v].link(this, v);
         }
         if(reactToFineEvt) {
             itmp = this.eventmasks;
@@ -348,7 +331,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
     public final void linkVariables() {
         for (int v = 0; v < vars.length; v++) {
             if (!vars[v].isAConstant()) {
-                vindices[v] = vars[v].link(this, v);
+                vars[v].link(this, v);
             }
         }
     }
@@ -361,7 +344,6 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
             if (!vars[v].isAConstant()) {
                 vars[v].unlink(this, v);
                 vindices[v] = -1;
-                alive = false;
             }
         }
     }
@@ -538,9 +520,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
             if (swapOnPassivate) {
                 for (int i = 0; i < vars.length; i++) {
                     if (!vars[i].isInstantiated()) {
-                        vindices[i] = vars[i].swapOnPassivate(this, i);
-                        assert vars[i].getPropagator(vindices[i]) == this;
-                        model.getEnvironment().save(operations[3 + i]);
+                        vars[i].swapOnPassivate(this, i);
                     }
                 }
             }
@@ -548,10 +528,6 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
             throw new SolverException("Try to passivate a propagator already passive or reified.\n" +
                     this + " of " + this.getConstraint());
         }
-    }
-
-    private void doSwap(int i0){
-        vindices[i0] = vars[i0].swapOnActivate(this, i0);
     }
 
     /**
@@ -564,7 +540,12 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
      */
     protected void forcePropagationOnBacktrack() {
         if (isPassive()) { // force activation on backtrack, because something can have changed on our back
-            state = ACTIVE;
+            if (this instanceof UpdatablePropagator<?>) {
+                state = ACTIVE;
+            } else {
+                throw new SolverException("Try to force propagation on an inactive propagator.\n" +
+                        this + " of " + this.getConstraint());
+            }
         }
         model.getSolver().getEngine().propagateOnBacktrack(this);
     }
@@ -613,7 +594,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
             arity += vars[i].isInstantiated() ? 0 : 1;
         }
         if (arity > 3) {
-            return priority.priority;
+            return priority.getValue();
         } else return arity;
     }
 
@@ -627,7 +608,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
     }
 
     @Override
-    public int compareTo(Propagator o) {
+    public int compareTo(Propagator<V> o) {
         return this.ID - o.ID;
     }
 
@@ -736,7 +717,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
     /**
      * @return the priority of this propagator (may influence the order in which propagators are called)
      */
-    public final PropagatorPriority getPriority() {
+    public final Priority getPriority() {
         return priority;
     }
 
@@ -903,7 +884,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
      * @return propagator priority
      */
     public int doSchedule(CircularQueue<Propagator<?>>[] queues){
-        int prio = priority.priority;
+        int prio = priority.getValue();
         if(!scheduled) {
             queues[prio].addLast(this);
             schedule();
@@ -923,7 +904,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
     public void doFinePropagation() throws ContradictionException {
         while (eventsets.size() > 0) {
             int v = eventsets.pollFirst();
-            assert isActive() : "propagator is not active:" + this;
+            assert isActive() : "propagator is not active:" + this.getClass();
             // clear event
             int mask = eventmasks[v];
             eventmasks[v] = 0;

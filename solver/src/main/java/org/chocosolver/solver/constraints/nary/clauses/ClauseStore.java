@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -50,15 +50,15 @@ public class ClauseStore extends Propagator<IntVar> {
     /**
      * Solver that handles the clauses
      */
-    private Solver mSolver;
+    private final Solver mSolver;
     /**
      * List of current sclauses
      */
-    private List<SignedClause> clauses;
+    private final List<SignedClause> clauses;
     /**
      * List of current sclauses
      */
-    private List<SignedClause> learnts;
+    private final List<SignedClause> learnts;
     /**
      * Number of learnts signed clauses to not exceed
      */
@@ -74,7 +74,7 @@ public class ClauseStore extends Propagator<IntVar> {
      */
     private SignedClause last;
 
-    private HashMap<IntVar, IntervalTree<Container>> watches;
+    private final HashMap<IntVar, IntervalTree<Container>> watches;
     /**
      * Amount to bump clause with.
      */
@@ -532,7 +532,7 @@ public class ClauseStore extends Propagator<IntVar> {
 
         private int rawActivity = 0;
 
-        private int id;
+        private final int id;
 
         IntIterableRangeSet uua;
 
@@ -916,12 +916,12 @@ public class ClauseStore extends Propagator<IntVar> {
             StringBuilder st = new StringBuilder();
             st.append("#").append(id).append(" : ");
             st.append("?").append(isEntailed()).append(" : ");
-            st.append('(').append(mvars[pos[0]]).append(" \u2208 [")
+            st.append('(').append(mvars[pos[0]].getName()).append(" \u2208 [")
                     .append(bounds[pos[0] << 1]).append(',').append(bounds[(pos[0] << 1) + 1]).append(']');
             st.append(':').append(check(pos[0]));
             for (int i = 1; i < pos.length; i++) {
                 st.append(") \u2228 (");
-                st.append(mvars[pos[i]]).append(" \u2208 [").append(bounds[pos[i] << 1])
+                st.append(mvars[pos[i]].getName()).append(" \u2208 [").append(bounds[pos[i] << 1])
                         .append(',').append(bounds[(pos[i] << 1) + 1]).append(']');
                 st.append(':').append(check(pos[i]));
             }

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -300,24 +300,6 @@ public class ExplanationForSignedClause extends IExplanation {
             //*/
         }
         return assertLevel != Integer.MAX_VALUE;
-    }
-
-    /**
-     * @see IntVar#unionLit(int, ExplanationForSignedClause)
-     * @see IntVar#unionLit(int, int, ExplanationForSignedClause)
-     * @see IntVar#unionLit(IntIterableRangeSet, ExplanationForSignedClause)
-     * @see IntVar#intersectLit(int, ExplanationForSignedClause)
-     * @see IntVar#intersectLit(int, int, ExplanationForSignedClause)
-     * @see IntVar#intersectLit(IntIterableRangeSet, ExplanationForSignedClause)
-     * @deprecated
-     */
-    @Deprecated
-    public void addLiteral(IntVar var, IntIterableRangeSet dom, boolean pivot) {
-        if (pivot) {
-            var.intersectLit(dom, this);
-        } else {
-            var.unionLit(dom, this);
-        }
     }
 
     /**

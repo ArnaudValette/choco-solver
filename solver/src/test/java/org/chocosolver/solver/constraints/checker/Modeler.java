@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -476,7 +476,6 @@ public interface Modeler {
                 switch (st) {
                     case "at_least_AC":
                         new Constraint("atLeastNVAC", new PropAtLeastNValues_AC(decvars,
-                                s.getDomainUnion(decvars),
                                 vars[n - 1])).post();
                         break;
                     case "at_most_BC":

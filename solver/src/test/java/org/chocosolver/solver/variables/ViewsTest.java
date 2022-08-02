@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -41,10 +41,8 @@ public class ViewsTest {
     public static void check(Model ref, Model model, long seed, boolean strict, boolean solveAll) {
         if (solveAll) {
             while (ref.getSolver().solve()) {
-                ;
             }
             while (model.getSolver().solve()) {
-                ;
             }
         } else {
             ref.getSolver().solve();
@@ -61,6 +59,13 @@ public class ViewsTest {
         }
     }
 
+    @Test(groups="1s", timeOut=60000, expectedExceptions = ContradictionException.class)
+    public void testBoolIntViewUpdateInfeasBounds() throws Exception {
+        Model ref = new Model();
+        IntVar iv = ref.intVar(0,5);
+        BoolVar b = iv.eq(3).boolVar();
+        b.updateBounds(1,0, Cause.Null);
+    }
 
     @Test(groups = "10s", timeOut = 60000)
     public void test1() {
@@ -515,11 +520,10 @@ public class ViewsTest {
     @Test(groups = "1s", timeOut = 60000)
     public void testJL2() {
         Model model = new Model();
-        SetVar v1 = model.setVar("{0,1}", new int[]{0, 1});
+        SetVar v1 = model.setVar("{0,1}", 0, 1);
         SetVar v2 = model.setVar("v2", new int[]{}, new int[]{0, 1, 2, 3});
-        model.subsetEq(new SetVar[]{v1, v2}).post();
+        model.subsetEq(v1, v2).post();
         while (model.getSolver().solve()) {
-            ;
         }
         assertEquals(model.getSolver().getSolutionCount(), 4);
     }
@@ -532,7 +536,6 @@ public class ViewsTest {
             "=",
             model.intMinusView(model.boolVar("bool"))).post();
         while (model.getSolver().solve()) {
-            ;
         }
         assertEquals(model.getSolver().getSolutionCount(), 2);
     }
@@ -549,7 +552,6 @@ public class ViewsTest {
         Solver r = s.getSolver();
         r.setSearch(minDomUBSearch(bool));
         while (s.getSolver().solve()) {
-            ;
         }
         assertEquals(s.getSolver().getSolutionCount(), 1);
     }

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -18,7 +18,6 @@ import org.chocosolver.solver.exception.SolverException;
 import org.chocosolver.solver.variables.Variable;
 import org.chocosolver.solver.variables.events.IEventType;
 import org.chocosolver.solver.variables.events.PropagatorEventType;
-import org.chocosolver.util.iterators.EvtScheduler;
 import org.chocosolver.util.objects.queues.CircularQueue;
 
 import java.util.ArrayList;
@@ -106,9 +105,10 @@ public class PropagationEngine {
      */
     public PropagationEngine(Model model) {
         this.model = model;
+        int nbQueues = model.getSettings().getMaxPropagatorPriority() + 1;
         //noinspection unchecked
-        this.pro_queue = new CircularQueue[8];
-        for (int i = 0; i < 8; i++) {
+        this.pro_queue = new CircularQueue[nbQueues];
+        for (int i = 0; i < nbQueues; i++) {
             pro_queue[i] = new CircularQueue<>(16);
         }
         this.var_queue = new CircularQueue<>(16);
@@ -130,22 +130,38 @@ public class PropagationEngine {
             notEmpty = 0;
             init = true;
             Constraint[] constraints = model.getCstrs();
-            for (int c = 0; c < constraints.length; c++) {
-                Propagator<?>[] cprops = constraints[c].getPropagators();
+            for (Constraint constraint : constraints) {
+                Propagator<?>[] cprops = constraint.getPropagators();
                 Collections.addAll(propagators, cprops);
             }
             if (model.getSettings().sortPropagatorActivationWRTPriority()) {
                 propagators.sort(
-                        (p1, p2) -> {
-                            int p = p1.getPriority().priority - p2.getPriority().priority;
-                            if (p == 0) {
-                                return p1.getNbVars() - p2.getNbVars();
-                            } else return p;
-                        });
+                    (p1, p2) -> {
+                        int p = p1.getPriority().getValue() - p2.getPriority().getValue();
+                        if (p == 0) {
+                            return p1.getNbVars() - p2.getNbVars();
+                        } else {
+                            return p;
+                        }
+                    });
             }
             for (int i = 0; i < propagators.size(); i++) {
-                propagators.get(i).setPosition(i);
-                awake_queue.addLast(propagators.get(i));
+                Propagator<?> propagator = propagators.get(i);
+                if (propagator.getPriority().getValue() >= pro_queue.length) {
+                    throw new SolverException(
+                            propagator+
+                            "\nThis propagator declares a priority (" +
+                            propagator.getPriority() + ") whose value (" + propagator.getPriority().getValue() +
+                            ") is greater than the maximum allowed priority (" +
+                            model.getSettings().getMaxPropagatorPriority() +
+                            ").\n" +
+                            "Either increase the maximum allowed priority (`Model model = new Model(Settings.init().setMaxPropagatorPriority(" +
+                            (propagator.getPriority().getValue() + 1) +
+                            "));`)  " +
+                            "or decrease the propagator priority.");
+                }
+                propagator.setPosition(i);
+                awake_queue.addLast(propagator);
             }
         }
     }
@@ -224,7 +240,7 @@ public class PropagationEngine {
         if (propagator.isActive()) {
             propagator.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
             while (!var_queue.isEmpty()) {
-                schedule(var_queue.pollFirst());
+                var_queue.pollFirst().schedulePropagators(this);
             }
         }
     }
@@ -232,7 +248,7 @@ public class PropagationEngine {
     private void manageModifications() {
         if (!var_queue.isEmpty()) {
             do {
-                schedule(var_queue.pollFirst());
+                var_queue.pollFirst().schedulePropagators(this);
             } while (hybrid < 2 && !var_queue.isEmpty());
         }
     }
@@ -284,29 +300,6 @@ public class PropagationEngine {
             variable.schedule();
         }
         variable.storeEvents(type.getMask(), cause);
-    }
-
-    private void schedule(Variable variable) {
-        int mask = variable.getMask();
-        if (mask > 0) {
-            ICause cause = variable.getCause();
-            Propagator<?>[] vpropagators = variable.getPropagators();
-            int[] vindices = variable.getPIndices();
-            Propagator<?> prop;
-            EvtScheduler<?> si = variable.getEvtScheduler();
-            si.init(mask);
-            while (si.hasNext()) {
-                int p = variable.getDindex(si.next());
-                int t = variable.getDindex(si.next());
-                for (; p < t; p++) {
-                    prop = vpropagators[p];
-                    if (prop.isActive() && cause != prop) {
-                        schedule(prop, vindices[p], mask);
-                    }
-                }
-            }
-        }
-        variable.clearEvents();
     }
 
     public void schedule(Propagator<?> prop, int pindice, int mask) {

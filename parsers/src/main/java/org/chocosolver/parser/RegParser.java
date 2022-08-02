@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-parsers, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -14,15 +14,20 @@ import org.chocosolver.solver.*;
 import org.chocosolver.solver.learn.XParameters;
 import org.chocosolver.solver.search.loop.move.MoveBinaryDFS;
 import org.chocosolver.solver.search.strategy.Search;
+import org.chocosolver.solver.search.strategy.selectors.values.SetDomainMax;
+import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDegRef;
 import org.chocosolver.solver.search.strategy.strategy.AbstractStrategy;
 import org.chocosolver.solver.variables.IntVar;
+import org.chocosolver.solver.variables.SetVar;
 import org.chocosolver.solver.variables.Variable;
+import org.chocosolver.util.tools.VariableUtils;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * A regular parser with default and common services
@@ -158,7 +163,7 @@ public abstract class RegParser implements IParser {
         this.parser_cmd = parser_cmd;
     }
 
-    public void createSettings(){
+    public void createSettings() {
         defaultSettings = Settings.prod();
     }
 
@@ -203,23 +208,23 @@ public abstract class RegParser implements IParser {
      *
      * @param m a Model
      */
-    private void makeComplementarySearch(Model m) {
+    protected void makeComplementarySearch(Model m, int i) {
         Solver solver = m.getSolver();
         if (solver.getSearch() != null) {
-            IntVar[] ovars = new IntVar[m.getNbVars()];
             THashSet<Variable> dvars = new THashSet<>();
             dvars.addAll(Arrays.asList(solver.getSearch().getVariables()));
             int k = 0;
-            for (IntVar iv : m.retrieveIntVars(true)) {
-                if (!dvars.contains(iv)) {
-                    ovars[k++] = iv;
-                }
-            }
+            IntVar[] ivars = m.streamVars()
+                    .filter(VariableUtils::isInt)
+                    .filter(v -> !VariableUtils.isConstant(v))
+                    .filter(v -> !dvars.contains(v))
+                    .map(Variable::asIntVar)
+                    .sorted(Comparator.comparingInt(IntVar::getDomainSize))
+                    .toArray(IntVar[]::new);
             // do not enumerate on the complementary search (greedy assignment)
-            if (k > 0) {
+            if (ivars.length > 0) {
                 solver.setSearch(solver.getSearch(),
-                        //Search.lastConflict(Search.domOverWDegSearch(Arrays.copyOf(ovars, k))));
-                        Search.inputOrderLBSearch(Arrays.copyOf(ovars, k)));
+                        Search.lastConflict(Search.inputOrderLBSearch(ivars)));
             }
         }
     }
@@ -227,7 +232,7 @@ public abstract class RegParser implements IParser {
     @Override
     public final void configureSearch() {
         Solver solver = portfolio.getModels().get(0).getSolver();
-        if(level.is(Level.VERBOSE)) {
+        if (level.is(Level.VERBOSE)) {
             solver.verboseSolving(1000);
         }
         if (nb_cores == 1) {
@@ -265,32 +270,46 @@ public abstract class RegParser implements IParser {
                 }
                 IntVar obj = (IntVar) solver.getObjectiveManager().getObjective();
                 IntVar[] dvars;
-                if(solver.getMove().getStrategy()!=null) {
+                SetVar[] svars;
+                if (solver.getMove().getStrategy() != null) {
                     dvars = Arrays.stream(solver.getMove().getStrategy().getVariables())
-                                .map(Variable::asIntVar)
-                                .filter(v -> v != obj)
-                                .toArray(IntVar[]::new);
-                }else{
+                            .filter(VariableUtils::isInt)
+                            .map(Variable::asIntVar)
+                            .filter(v -> v != obj)
+                            .toArray(IntVar[]::new);
+                    svars = Arrays.stream(solver.getMove().getStrategy().getVariables())
+                            .filter(VariableUtils::isSet)
+                            .map(Variable::asSetVar)
+                            .toArray(SetVar[]::new);
+                } else {
                     dvars = Arrays.stream(solver.getModel().retrieveIntVars(true))
                             .map(Variable::asIntVar)
                             .filter(v -> v != obj)
                             .toArray(IntVar[]::new);
+                    svars = Arrays.stream(solver.getModel().retrieveSetVars())
+                            .map(Variable::asSetVar)
+                            .toArray(SetVar[]::new);
                 }
-                if(dvars.length == 0){
+                if (dvars.length == 0) {
                     dvars = new IntVar[]{solver.getModel().intVar(0)};
+                }
+                if (svars.length == 0) {
+                    svars = new SetVar[]{solver.getModel().setVar()};
                 }
                 solver.getMove().removeStrategy();
                 solver.setMove(new MoveBinaryDFS());
-                AbstractStrategy<IntVar> strategy = varH.make(solver, dvars, valH, flush, last);
+                AbstractStrategy<IntVar> istrat = varH.make(solver, dvars, valH, flush, last);
+                AbstractStrategy<SetVar> sstrat = Search.setVarSearch(new DomOverWDegRef<>(svars, solver.getModel().getSeed()), new SetDomainMax(), true, svars);
 
                 if (obj != null) {
                     boolean max = solver.getObjectiveManager().getPolicy() == ResolutionPolicy.MAXIMIZE;
                     solver.setSearch(
-                            strategy,
+                            istrat,
+                            sstrat,
                             max ? Search.minDomUBSearch(obj) : Search.minDomLBSearch((obj))
                     );
                 } else {
-                    solver.setSearch(strategy);
+                    solver.setSearch(istrat, sstrat);
                 }
                 if (cos) {
                     solver.setSearch(Search.conflictOrderingSearch(solver.getSearch()));
@@ -312,7 +331,7 @@ public abstract class RegParser implements IParser {
             if (limits.runs > -1) {
                 portfolio.getModels().get(i).getSolver().limitRestart(limits.runs);
             }
-            makeComplementarySearch(portfolio.getModels().get(i));
+            makeComplementarySearch(portfolio.getModels().get(i), i);
         }
     }
 

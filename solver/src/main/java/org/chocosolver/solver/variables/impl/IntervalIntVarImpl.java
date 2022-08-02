@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -334,6 +334,7 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
                 }
                 d += olb - lb;
                 LB.set(lb);
+                olb = lb;
             }
             if (olb > ub) {
                 model.getSolver().getEventObserver().updateUpperBound(this, ub, oub, cause);

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -42,7 +42,7 @@ public interface IOutputFactory extends ISelf<Solver> {
      * Default welcome message
      */
     String WELCOME_MESSAGE =
-        "** Choco 4.10.7 (2021-10) : Constraint Programming Solver, Copyright (c) 2010-2021";
+        "** Choco 4.10.8 (2022-01) : Constraint Programming Solver, Copyright (c) 2010-2022";
     
     /**
      * Print the version message.
@@ -344,13 +344,11 @@ public interface IOutputFactory extends ISelf<Solver> {
     }
 
     /**
-     * Plug <a href="https://github.com/cp-profiler/cp-profiler">cp-profiler</a> instance to this.
-     *
-     * @param domain set to <i>true</i> to send variables' domain on each node, <i>false</i> otherwise.
-     * @return a {@link Closeable} object to be closed at the end of resolution
+     * @deprecated
      */
+    @Deprecated
     default Closeable outputSearchTreeToCPProfiler(boolean domain) {
-        return new CPProfiler(this.ref(), domain);
+        return null;
     }
 
     /**

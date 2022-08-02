@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -34,9 +34,9 @@ public class PropAtLeastNValues extends Propagator<IntVar> {
     // VARIABLES
     //***********************************************************************************
 
-    private int[] concernedValues;
-    private int n;
-    private int[] mate;
+    private final int[] concernedValues;
+    private final int n;
+    private final int[] mate;
 
     //***********************************************************************************
     // CONSTRUCTORS
@@ -48,13 +48,12 @@ public class PropAtLeastNValues extends Propagator<IntVar> {
      * No level of consistency for the filtering
      *
      * @param variables       array of integer variables
-     * @param concernedValues will be sorted!
      * @param nValues         integer variable
      */
-    public PropAtLeastNValues(IntVar[] variables, int[] concernedValues, IntVar nValues) {
+    public PropAtLeastNValues(IntVar[] variables, IntVar nValues) {
         super(concat(variables, nValues), QUADRATIC, false);
         n = variables.length;
-        this.concernedValues = concernedValues;
+        this.concernedValues = model.getDomainUnion(variables);
         mate = new int[concernedValues.length];
     }
 

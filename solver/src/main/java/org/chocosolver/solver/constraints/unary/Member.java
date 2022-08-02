@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -39,11 +39,11 @@ public class Member extends Constraint {
     }
 
     public Member(IntVar var, IntIterableRangeSet values) {
-        this(var, 0, 0, values, new PropMember(var, values));
+        this(var, 0, 0, values, new PropMember(var, values, false));
     }
 
     public Member(IntVar var, int lowerbound, int upperbound) {
-        this(var, lowerbound, upperbound, null, new PropMember(var, new IntIterableRangeSet(lowerbound, upperbound)));
+        this(var, lowerbound, upperbound, null, new PropMember(var, new IntIterableRangeSet(lowerbound, upperbound), false));
     }
 
     @Override

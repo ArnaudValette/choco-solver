@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -56,7 +56,7 @@ public class RealPropagator extends Propagator<Variable> {
      * @param vars      array of variables
      */
     public RealPropagator(String functions, Variable[] vars) {
-        super(vars, PropagatorPriority.LINEAR, false);
+        super(vars, PropagatorPriority.LINEAR, false, false);
         this.ibex = model.getIbexHandler();
         this.functions = functions;
         ibex.declare(this);

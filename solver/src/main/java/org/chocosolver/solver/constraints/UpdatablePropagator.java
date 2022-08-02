@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -13,6 +13,8 @@ package org.chocosolver.solver.constraints;
  * A specific interface propagator to enable, under certain conditions,
  * to update some of their internal structure.
  * <br/>
+ * @implSpec Such propagator should not be swapped on entailment when declared as an objective function
+ * otherwise it becomes inconsistent.
  *
  * @author Charles Prud'homme
  * @since 04/12/2020

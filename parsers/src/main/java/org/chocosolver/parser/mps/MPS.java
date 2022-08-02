@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-parsers, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -34,21 +34,27 @@ public class MPS extends RegParser {
     // Contains mapping with variables and output prints
     public MPSParser[] parsers;
 
+    @SuppressWarnings("FieldMayBeFinal")
     @Option(name = "-max", usage = "define to maximize (default: to minimize).")
     private boolean maximize = false;
 
+    @SuppressWarnings("FieldMayBeFinal")
     @Option(name = "-prec", usage = "set to the precision (default: 1.0E-4D).")
     private double precision = 1.0E-4D;
 
+    @SuppressWarnings("FieldMayBeFinal")
     @Option(name = "-ibex", usage = "Use Ibex for non-full integer equations (default: false).")
     private boolean ibex = false;
 
+    @SuppressWarnings("FieldMayBeFinal")
     @Option(name = "-ninf", usage = "define negative infinity (default: " + IntVar.MIN_INT_BOUND + ").")
-    private double ninf = IntVar.MIN_INT_BOUND;
+    private double ninf = Integer.MIN_VALUE / 10d;
 
+    @SuppressWarnings("FieldMayBeFinal")
     @Option(name = "-pinf", usage = "define positive infinity (default: " + IntVar.MAX_INT_BOUND + ").")
-    private double pinf = IntVar.MAX_INT_BOUND;
+    private double pinf = Integer.MAX_VALUE / 10d;
 
+    @SuppressWarnings("FieldMayBeFinal")
     @Option(name = "-noeq", usage = "Split EQ constraints into a LQ and a GQ constraint.")
     private boolean noeq = false;
 
@@ -76,7 +82,7 @@ public class MPS extends RegParser {
             if (userinterruption) {
                 finalOutPut(getModel().getSolver());
                 if (level.isLoggable(Level.COMPET)) {
-                    getModel().getSolver().log().bold().red().println("Unexpected resolution interruption!");
+                    getModel().getSolver().log().bold().red().println("c Unexpected resolution interruption!");
                 }
             }
         });
@@ -89,6 +95,7 @@ public class MPS extends RegParser {
         parsers = new MPSParser[nb_cores];
         for (int i = 0; i < nb_cores; i++) {
             Model threadModel = new Model(iname + "_" + (i + 1), defaultSettings);
+            threadModel.getSolver().logWithANSI(ansi);
             threadModel.setPrecision(precision);
             portfolio.addModel(threadModel);
             parsers[i] = new MPSParser();
@@ -150,6 +157,8 @@ public class MPS extends RegParser {
         Solver solver = model.getSolver();
         if (level.isLoggable(Level.INFO)) {
             solver.printShortFeatures();
+            getModel().displayVariableOccurrences();
+            getModel().displayPropagatorOccurrences();
         }
         if (enumerate) {
             while (solver.solve()) {
@@ -225,7 +234,7 @@ public class MPS extends RegParser {
             output.insert(0, "UNKNOWN\n");
         }
         if (level.isLoggable(Level.COMPET)) {
-            log.println(output.toString());
+            log.printf("s %s", output.toString());
         }
         log.reset();
         if (level.is(Level.RESANA)) {
@@ -249,7 +258,7 @@ public class MPS extends RegParser {
         }
         if (level.isLoggable(Level.INFO)) {
             solver.printShortFeatures();
-            solver.getMeasures().toOneLineString();
+            solver.log().white().printf("%s %n", solver.getMeasures().toOneLineString());
         }
     }
 }

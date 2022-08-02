@@ -1,7 +1,7 @@
 /*
  * This file is part of examples, http://choco-solver.org/
  *
- * Copyright (c) 2021, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2022, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -35,8 +35,8 @@ public class CostasArraysTest {
 	public void test(){
 		CostasArrays ca = new CostasArrays();
 		ca.execute();
-		Assert.assertEquals(1,ca.getModel().getSolver().getSolutionCount());
-		Assert.assertEquals(6295, ca.getModel().getSolver().getNodeCount());
+		Assert.assertEquals(ca.getModel().getSolver().getSolutionCount(), 1);
+		Assert.assertEquals(ca.getModel().getSolver().getNodeCount(), 6539);
 	}
 
 	@Test(groups = "10s", timeOut = 60000)
