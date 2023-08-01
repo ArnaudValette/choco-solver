@@ -40,6 +40,8 @@ public class Task {
     private final IntVar end;
     private IVariableMonitor<IntVar> update;
 
+    private Task mirror = null;
+
     //***********************************************************************************
     // CONSTRUCTORS
     //***********************************************************************************
@@ -53,7 +55,7 @@ public class Task {
      * @param lst latest starting time
      * @param d duration
      * @param ect earliest completion time
-     * @param lct latest completion time time
+     * @param lct latest completion time
      */
     public Task(Model model, int est, int lst, int d, int ect, int lct) {
         start = model.intVar(est, lst);
@@ -168,6 +170,13 @@ public class Task {
 
     public IVariableMonitor<IntVar> getMonitor() {
         return update;
+    }
+
+    public Task getMirror() {
+        if (mirror == null) {
+            mirror = new Task(end.neg().intVar(), duration, start.neg().intVar());
+        }
+        return mirror;
     }
 
     private static void doExplain(IntVar S, IntVar D, IntVar E,
