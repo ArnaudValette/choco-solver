@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-parsers, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -17,12 +17,12 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
 /*
-* User : CPRUDHOM
-* Mail : cprudhom(a)emn.fr
-* Date : 13 janv. 2010
-* Since : Choco 2.1.1
-* 
-*/
+ * User : CPRUDHOM
+ * Mail : cprudhom(a)emn.fr
+ * Date : 13 janv. 2010
+ * Since : Choco 2.1.1
+ *
+ */
 public class FlatzincModelTest {
 
 
@@ -112,7 +112,7 @@ public class FlatzincModelTest {
         model.getSolver().solve();
         Assert.assertEquals(model.getSolver().getSolutionCount(), 1);
     }
-    
+
     @Test(groups = "1s")
     public void testWarmStart() {
         InputStream in = new ByteArrayInputStream(("array [1..10] of int: X_INTRODUCED_11_ = [1,1,1,1,1,1,1,1,1,1];\n" +
@@ -138,10 +138,196 @@ public class FlatzincModelTest {
         Model model = fzn.getModel();
         //model.getSolver().showDecisions();
         //model.getSolver().limitSolution(3);
-        while(model.getSolver().solve()) {
+        while (model.getSolver().solve()) {
             fzn.datas[0].onSolution();
         }
         Assert.assertEquals(model.getSolver().getSolutionCount(), 176);
+    }
+
+    @Test(groups = "1s")
+    public void testEmptyListOfVariablesInSearch() {
+        InputStream in = new ByteArrayInputStream(("solve :: int_search([], largest, indomain_random, complete) satisfy;").getBytes());
+        Flatzinc fzn = new Flatzinc(false, false, 1);
+        fzn.createSettings();
+        fzn.createSolver();
+        fzn.parse(fzn.getModel(), fzn.datas[0], in);
+        fzn.configureSearch();
+        Model model = fzn.getModel();
+        model.getSolver().solve();
+        // expecting no error
+    }
+
+    @Test(groups = "1s")
+    public void testAllEquals() {
+        InputStream in = new ByteArrayInputStream(("predicate fzn_all_equal_int_reif(array [int] of var int: x,var bool: b);\n" +
+                "constraint fzn_all_equal_int_reif([2,2],false);\n" +
+                "solve  satisfy;\n").getBytes());
+        Flatzinc fzn = new Flatzinc(false, false, 1);
+        fzn.createSettings();
+        fzn.createSolver();
+        fzn.parse(fzn.getModel(), fzn.datas[0], in);
+        fzn.configureSearch();
+        Model model = fzn.getModel();
+        Assert.assertFalse(model.getSolver().solve());
+    }
+
+
+    @Test(groups = "1s")
+    public void testMats1() {
+        InputStream in = new ByteArrayInputStream((
+                "predicate fzn_maximum_arg_int(array [int] of var int: x,var int: z);\n" +
+                        "var 1..2: A:: output_var;\n" +
+                        "var 3..4: B:: output_var;\n" +
+                        "var 3..4: E:: output_var;\n" +
+                        "array [1..4] of var int: X_INTRODUCED_0_ ::var_is_introduced  = [E,B,1,4];\n" +
+                        "constraint fzn_maximum_arg_int(X_INTRODUCED_0_,A);\n" +
+                        "solve  satisfy;\n").getBytes());
+
+        Flatzinc fzn = new Flatzinc(true, false, 1);
+        fzn.createSettings();
+        fzn.createSolver();
+        fzn.parse(fzn.getModel(), fzn.datas[0], in);
+        Model model = fzn.getModel();
+
+        while (model.getSolver().solve()) {
+            fzn.datas[0].onSolution();
+        }
+        Assert.assertEquals(model.getSolver().getSolutionCount(), 3);
+    }
+
+    @Test(groups = "1s")
+    public void testMats2() {
+        InputStream in = new ByteArrayInputStream((
+                "predicate fzn_minimum_arg_int(array [int] of var int: x,var int: z);\n" +
+                        "var 1..2: A:: output_var;\n" +
+                        "var {1,6}: B:: output_var;\n" +
+                        "var {1,6}: D:: output_var;\n" +
+                        "array [1..4] of var int: X_INTRODUCED_0_ ::var_is_introduced  = [D,B,7,5];\n" +
+                        "constraint fzn_minimum_arg_int(X_INTRODUCED_0_,A);\n" +
+                        "solve  satisfy;\n").getBytes());
+
+        Flatzinc fzn = new Flatzinc(true, false, 1);
+        fzn.createSettings();
+        fzn.createSolver();
+        fzn.parse(fzn.getModel(), fzn.datas[0], in);
+        Model model = fzn.getModel();
+
+        while (model.getSolver().solve()) {
+            fzn.datas[0].onSolution();
+        }
+        Assert.assertEquals(model.getSolver().getSolutionCount(), 3);
+    }
+
+    @Test(groups = "1s")
+    public void testMats3() {
+        InputStream in = new ByteArrayInputStream((
+                "predicate fzn_minimum_arg_int(array [int] of var int: x,var int: z);\n" +
+                        "var {1,7}: B:: output_var;\n" +
+                        "var 1..4: C:: output_var;\n" +
+                        "var {1,7}: E:: output_var;\n" +
+                        "array [1..5] of var int: X_INTRODUCED_0_ ::var_is_introduced  = [B,E,B,1,7];\n" +
+                        "constraint fzn_minimum_arg_int(X_INTRODUCED_0_,C);\n" +
+                        "solve :: int_search([B,C,E],occurrence,indomain_reverse_split,complete) satisfy;" +
+                        "\n").getBytes());
+
+        Flatzinc fzn = new Flatzinc(true, false, 1);
+        fzn.createSettings();
+        fzn.createSolver();
+        fzn.parse(fzn.getModel(), fzn.datas[0], in);
+        Model model = fzn.getModel();
+
+        while (model.getSolver().solve()) {
+            fzn.datas[0].onSolution();
+        }
+        Assert.assertEquals(model.getSolver().getSolutionCount(), 4);
+    }
+
+    @Test(groups = "1s")
+    public void testMats4() {
+        InputStream in = new ByteArrayInputStream((
+                "predicate fzn_maximum_arg_int(array [int] of var int: x,var int: z);\n" +
+                        "var {4,5,7}: C:: output_var;\n" +
+                        "array [1..5] of var int: X_INTRODUCED_0_ ::var_is_introduced  = [1,1,1,C,C];\n" +
+                        "constraint fzn_maximum_arg_int(X_INTRODUCED_0_,5);\n" +
+                        "solve  satisfy;\n" +
+                        "\n").getBytes());
+
+        Flatzinc fzn = new Flatzinc(true, false, 1);
+        fzn.createSettings();
+        fzn.createSolver();
+        fzn.parse(fzn.getModel(), fzn.datas[0], in);
+        Model model = fzn.getModel();
+
+        while (model.getSolver().solve()) {
+            fzn.datas[0].onSolution();
+        }
+        Assert.assertEquals(model.getSolver().getSolutionCount(), 0);
+    }
+
+    @Test(groups = "1s")
+    public void testMats5() {
+        InputStream in = new ByteArrayInputStream((
+                "var -1..-1: A;\n" +
+                        "var {-8,-7,-2}: B:: output_var;\n" +
+                        "constraint int_mod(B,B,-1);\n" +
+                        "solve  satisfy;" +
+                        "\n").getBytes());
+
+        Flatzinc fzn = new Flatzinc(true, false, 1);
+        fzn.createSettings();
+        fzn.createSolver();
+        fzn.parse(fzn.getModel(), fzn.datas[0], in);
+        Model model = fzn.getModel();
+
+        while (model.getSolver().solve()) {
+            fzn.datas[0].onSolution();
+        }
+        Assert.assertEquals(model.getSolver().getSolutionCount(), 0);
+    }
+
+    @Test(groups = "1s")
+    public void testMats6() {
+        InputStream in = new ByteArrayInputStream((
+                "predicate choco_fzn_lex_less(array [int] of var int: x,array [int] of var int: y,bool: strict);\n" +
+                        "var 1..3: A:: output_var;\n" +
+                        "array [1..2] of var int: X_INTRODUCED_0_ ::var_is_introduced :: promise_ctx_antitone = [A,0];\n" +
+                        "constraint choco_fzn_lex_less(X_INTRODUCED_0_,X_INTRODUCED_0_,true);\n" +
+                        "solve  satisfy;" +
+                        "\n").getBytes());
+
+        Flatzinc fzn = new Flatzinc(true, false, 1);
+        fzn.createSettings();
+        fzn.createSolver();
+        fzn.parse(fzn.getModel(), fzn.datas[0], in);
+        Model model = fzn.getModel();
+
+        while (model.getSolver().solve()) {
+            fzn.datas[0].onSolution();
+        }
+        Assert.assertEquals(model.getSolver().getSolutionCount(), 0);
+    }
+
+    @Test(groups = "1s")
+    public void testMats7() {
+        InputStream in = new ByteArrayInputStream((
+                "predicate choco_fzn_table(array [int] of var int: x,array [int] of int: t);\n" +
+                        "array [1..12] of int: X_INTRODUCED_2_ = [1,4,2,1,4,7,7,2,7,7,18,18];\n" +
+                        "var {1,2,4,7,18}: A:: output_var;\n" +
+                        "array [1..2] of var int: X_INTRODUCED_1_ ::var_is_introduced  = [A,A];\n" +
+                        "constraint choco_fzn_table(X_INTRODUCED_1_,X_INTRODUCED_2_);\n" +
+                        "solve :: int_search([A],largest,indomain_interval,complete) satisfy;" +
+                        "\n").getBytes());
+
+        Flatzinc fzn = new Flatzinc(true, false, 1);
+        fzn.createSettings();
+        fzn.createSolver();
+        fzn.parse(fzn.getModel(), fzn.datas[0], in);
+        Model model = fzn.getModel();
+
+        while (model.getSolver().solve()) {
+            fzn.datas[0].onSolution();
+        }
+        Assert.assertEquals(model.getSolver().getSolutionCount(), 2);
     }
 
 }

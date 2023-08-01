@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -64,8 +64,12 @@ public class IfArExpression implements ArExpression {
             me = model.intVar(model.generateName("if_exp_"),
                     Math.min(v1.getLB(), v2.getLB()),
                     Math.max(v1.getUB(), v2.getUB()));
-            model.reifyXeqY(me, v1, v0);
-            model.reifyXeqY(me, v2, v0.not());
+            BoolVar b1 = model.boolVar(model.generateName("if_exp_"));
+            BoolVar b2 = model.boolVar(model.generateName("if_exp_"));
+            model.reifyXeqY(me, v1, b1);
+            model.reifyXeqY(me, v2, b2);
+            model.arithm(b1, ">=", v0).post();
+            model.arithm(b2, ">=", v0.not()).post();
         }
         return me;
     }

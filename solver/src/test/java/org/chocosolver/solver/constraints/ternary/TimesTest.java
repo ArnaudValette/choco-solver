@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -11,6 +11,7 @@ package org.chocosolver.solver.constraints.ternary;
 
 import org.chocosolver.memory.EnvironmentBuilder;
 import org.chocosolver.solver.Model;
+import org.chocosolver.solver.Providers;
 import org.chocosolver.solver.Settings;
 import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.constraints.Propagator;
@@ -22,8 +23,7 @@ import org.testng.annotations.Test;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.MIN_VALUE;
 import static org.chocosolver.solver.variables.events.PropagatorEventType.FULL_PROPAGATION;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.*;
 
 /**
  * <br/>
@@ -61,7 +61,7 @@ public class TimesTest extends AbstractTernaryTest {
             }
             assertFalse(a.contains(0));
         } catch (ContradictionException e) {
-            assertFalse(true);
+            fail();
         }
     }
 
@@ -143,4 +143,12 @@ public class TimesTest extends AbstractTernaryTest {
         Assert.assertFalse(s.getSolver().solve());
     }
 
+    @Test(groups = "1s", timeOut = 60000, dataProvider = "trueOrFalse", dataProviderClass = Providers.class)
+    public void testMats1(boolean tableSubs) {
+        Model model = new Model("model", Settings.prod().setEnableTableSubstitution(tableSubs));
+        IntVar i1 = model.intVar("a", new int[]{-4, -1, 2});
+        IntVar i2 = model.intVar("b", new int[]{-2, -1});
+        model.times(i1, i2, i1).post();
+        Assert.assertFalse(model.getSolver().solve());
+    }
 }

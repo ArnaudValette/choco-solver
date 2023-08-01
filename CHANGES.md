@@ -3,20 +3,114 @@ Choco Solver ChangeLog
 
 This file is dedicated to sum up the new features added and bugs fixed in Choco-solver since the version, 4.0.0.
 **Note**: double-space is replaced by "\t" character on release process. Make sure the format is ok.
+
+NEXT MILESTONE
+-------------------
+
+### Major features:
+- NEW: `solver..showRestarts();` to display the number of restarts during the search. 
+- NEW: hybrid table constraints (see `model.table(...)`)
+- NEW: partial assignement generator for COP (see `Search.generatePartialAssignment()`)
+
+### Deprecated API (to be removed in next release):
+
+### Other closed issues and pull requests:
+See [milestone 4.11.0](https://github.com/chocoteam/choco-solver/milestone/38)
+
+#### Contributors to this release:
+
+**Full Changelog**: https://github.com/chocoteam/choco-solver/compare/v4.10.13...v4.11.0
     
-    NEXT MILESTONE
-    -------------------
+4.10.13 - 05 Jun 2023
+-------------------
+
+### Major features: 
+Mainly bug fixes and improvements of Pareto front performances.
+
+### Deprecated API (to be removed in next release):
+
+### Other closed issues and pull requests:
+See [milestone 4.10.13](https://github.com/chocoteam/choco-solver/milestone/xx)
+
+#### Contributors to this release:
+- [Charles Prud'homme](https://github.com/cprudhom) (@cprudhom)
+- [Jani Simomaa](https://github.com/jsimomaa) (@jsimomaa)
     
-    ### Major features:
+4.10.12 - 06 Mar 2023
+-------------------
+
+### Major features:
+- Fix bug #1006, #1011 and #1014
+
+### Deprecated API (to be removed in next release):
+
+### Other closed issues and pull requests:
+See [milestone 4.10.12](https://github.com/chocoteam/choco-solver/milestone/xx)
+
+#### Contributors to this release:
+- [Dimitri Justeau-Allaire](https://github.com/dimitri-justeau) (@dimitri-justeau)
+- [Charles Prud'homme](https://github.com/cprudhom) (@cprudhom)
     
-    ### Deprecated API (to be removed in next release):
-    
-    ### Other closed issues and pull requests:
-    See [milestone 4.10.10](https://github.com/chocoteam/choco-solver/milestone/xx)
-    
-    #### Contributors to this release:
-    
+4.10.11 - 07 Feb 2023
+-------------------
+
+### Major features:
+- Correcting the lack of filtering in `PropIncreasing`
+- Change the SetType for the undirected graph stored in DiffN for efficiency reason
+- `SparseBitSet` for a backtrackable bitset with mostly 0s (#935)
+- Change the way restarting works: not a `Move` anymore, directly included in `Solver` (#950)
+- Simplification of objective manager (#949)
+- Calling `getValue()` on an uninstantiated variable throws an IllegalStateException (#957)
+- Change the MiniZinc complementary search to a FirstFail (instead of DomOverWDeg) (#958)
+- Reduce object creation during solving (#985)
+- Reduce object creation during propagation (#969)
+- Reduce memory footprint of `Model` (#964)
+- Add `model.getEstimatedMemory()` method
+- Add `Model` analysis (#939)
+- Add log file as RegParser option (for parsers)
+- creation of PropPower propagators with exponent as int
+
+### Deprecated API (to be removed in next release):
+From `Solver`:
+- `Propagate getPropagate()`
+- `void setPropagate(Propagate p)`
+- `Closeable outputSearchTreeToCPProfiler(boolean domain)`
+
+Others:
+- `Propagate` class
+- `IntEventType`: `int combine(IntEventType... evts)`
+
+### Other closed issues and pull requests:
+See [milestone 4.10.11](https://github.com/chocoteam/choco-solver/milestone/xx)
+
+#### Contributors to this release:
+- [Jean-Guillaume Fages](https://github.com/jgFages) (@jgFages)
+- [Arthur Godet](https://github.com/ArthurGodet) (@ArthurGodet) 
+- [Fabien Hermenier](https://github.com/fhermeni) (@fhermeni)
+- [Charles Prud'homme](https://github.com/cprudhom) (@cprudhom)
         
+4.10.10 - 11 Oct 2022
+-------------------
+
+### Major features:
+- Fix performance issue of ViewDeltaMonitor
+- Fix lack of filtering in STR2+ when domain is bounded
+- Fix issue relative to `OR` and `AND` in `LogOp`
+- Add missing checks in OneWordS32BitSet and OneWordS64BitSet + update constructors
+- Add new API to VariableUtils
+- Add CITATION.cff
+- Update paper.md
+
+### Deprecated API (to be removed in next release):
+
+### Other closed issues and pull requests:
+See [milestone 4.10.10](https://github.com/chocoteam/choco-solver/milestone/xx)
+
+#### Contributors to this release:
+- [Jean-Guillaume Fages](https://github.com/jgFages) (@jgFages)
+- [Charles Prud'homme](https://github.com/cprudhom) (@cprudhom)
+- [Mehmet Hakan Satman](https://github.com/jbytecode) (@jbytecode)
+      
 4.10.9 - 22 Aug 2022
 -------------------
 

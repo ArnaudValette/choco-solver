@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -32,7 +32,7 @@ public class GlobalCardinality extends Constraint {
     	super(ConstraintsName.GCC, createProp(vars, values, cards));
     }
 
-	private static Propagator createProp(IntVar[] vars, int[] values, IntVar[] cards) {
+	private static Propagator<IntVar> createProp(IntVar[] vars, int[] values, IntVar[] cards) {
 		assert values.length == cards.length;
 		TIntIntHashMap map = new TIntIntHashMap();
 		int idx = 0;

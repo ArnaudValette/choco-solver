@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -50,7 +50,7 @@ public class KruskalMSTGAC extends AbstractTreeFinder {
     private final int[] fifo;
 
     //sort
-    private final ArraySort sorter;
+    private final ArraySort<?> sorter;
     private final IntComparator comparator;
 
     //***********************************************************************************
@@ -76,14 +76,8 @@ public class KruskalMSTGAC extends AbstractTreeFinder {
         repCosts = new double[n][n];
         fifo = new int[n];
         //sort
-        sorter = new ArraySort(n * n, false, true);
-        comparator = (i1, i2) -> {
-            if (costs[i1] < costs[i2])
-                return -1;
-            else if (costs[i1] > costs[i2])
-                return 1;
-            else return 0;
-        };
+        sorter = new ArraySort<>(n * n, false, true);
+        comparator = (i1, i2) -> Double.compare(costs[i1], costs[i2]);
     }
 
     private void sortArcs(double[][] costMatrix) {

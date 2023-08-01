@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -33,7 +33,6 @@ public final class PropGreaterOrEqualX_YC extends Propagator<IntVar> {
     private final IntVar y;
     private final int cste;
 
-    @SuppressWarnings({"unchecked"})
     public PropGreaterOrEqualX_YC(IntVar[] vars, int c) {
         super(vars, PropagatorPriority.BINARY, true);
         this.x = vars[0];
@@ -44,9 +43,9 @@ public final class PropGreaterOrEqualX_YC extends Propagator<IntVar> {
     @Override
     public int getPropagationConditions(int vIdx) {
         if (vIdx == 0) {
-            return IntEventType.combine(IntEventType.INSTANTIATE, IntEventType.DECUPP);
+            return IntEventType.upperBoundAndInst();
         } else {
-            return IntEventType.combine(IntEventType.INSTANTIATE, IntEventType.INCLOW);
+            return IntEventType.lowerBoundAndInst();
         }
     }
 

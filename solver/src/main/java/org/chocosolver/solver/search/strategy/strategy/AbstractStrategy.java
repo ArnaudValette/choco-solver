@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -26,8 +26,7 @@ public abstract class AbstractStrategy<V extends Variable>  {
 
     protected final V[] vars;
 
-    @SafeVarargs
-    protected AbstractStrategy(V... variables) {
+    protected AbstractStrategy(V[] variables) {
         this.vars = variables.clone();
     }
 
@@ -75,7 +74,7 @@ public abstract class AbstractStrategy<V extends Variable>  {
      * @param var a variable
      * @return a decision to be applied to variable var
      */
-    protected Decision<V> computeDecision(V var) {
+    public Decision<V> computeDecision(V var) {
         return null;
     }
 
@@ -94,7 +93,7 @@ public abstract class AbstractStrategy<V extends Variable>  {
      * @param val value to branch on
      * @return an assignment decision object (var = val) for integer variables
      */
-    protected final IntDecision makeIntDecision(IntVar var, int val){
+    public final IntDecision makeIntDecision(IntVar var, int val){
         return var.getModel().getSolver().getDecisionPath().makeIntDecision(var, DecisionOperatorFactory.makeIntEq(),val);
     }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -30,7 +30,7 @@ public class SweepHeiSortCumulFilter extends SweepCumulFilter {
 	//***********************************************************************************
 
 	private final int[] sortedTasks;
-	private final ArraySort taskSorter;
+	private final ArraySort<?> taskSorter;
 	private final IntComparator comparator;
 
 	//***********************************************************************************
@@ -40,7 +40,7 @@ public class SweepHeiSortCumulFilter extends SweepCumulFilter {
 	public SweepHeiSortCumulFilter(int n){
 		super(n);
 		sortedTasks = new int[n];
-		taskSorter = new ArraySort(n,false,true);
+		taskSorter = new ArraySort<>(n,false,true);
 		comparator = (i1, i2) -> hlb[map[i2]]-hlb[map[i1]];
 	}
 

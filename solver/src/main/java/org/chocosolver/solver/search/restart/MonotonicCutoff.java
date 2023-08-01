@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -9,7 +9,7 @@
  */
 package org.chocosolver.solver.search.restart;
 
-import org.chocosolver.cutoffseq.ICutoffStrategy;
+import java.util.function.IntSupplier;
 
 /**
  * Restart strategy to restart every <tt>gap</tt> restarts
@@ -19,11 +19,11 @@ import org.chocosolver.cutoffseq.ICutoffStrategy;
  * @author Charles Prud'homme, Arnaud Malapert
  * @since 13/05/11
  */
-public class MonotonicRestartStrategy implements ICutoffStrategy{
+public class MonotonicCutoff implements ICutoff {
 
-    private final int gap;
+    private final long gap;
 
-    public MonotonicRestartStrategy(int gap) {
+    public MonotonicCutoff(long gap) {
         this.gap = gap;
     }
 
@@ -34,6 +34,11 @@ public class MonotonicRestartStrategy implements ICutoffStrategy{
 
     @Override
     public void reset() {
+        // nothing
+    }
+
+    @Override
+    public void setGrower(IntSupplier grower) {
         // nothing
     }
 }

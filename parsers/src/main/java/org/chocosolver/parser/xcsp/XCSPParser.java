@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-parsers, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -17,7 +17,6 @@ import org.chocosolver.solver.constraints.extension.Tuples;
 import org.chocosolver.solver.constraints.nary.automata.FA.FiniteAutomaton;
 import org.chocosolver.solver.expression.discrete.arithmetic.ArExpression;
 import org.chocosolver.solver.expression.discrete.arithmetic.NaArExpression;
-import org.chocosolver.solver.expression.discrete.logical.BiLoExpression;
 import org.chocosolver.solver.expression.discrete.logical.LoExpression;
 import org.chocosolver.solver.expression.discrete.logical.NaLoExpression;
 import org.chocosolver.solver.expression.discrete.relational.NaReExpression;
@@ -29,6 +28,7 @@ import org.chocosolver.util.objects.graphs.MultivaluedDecisionDiagram;
 import org.chocosolver.util.objects.queues.CircularQueue;
 import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableRangeSet;
 import org.chocosolver.util.tools.ArrayUtils;
+import org.chocosolver.util.tools.MathUtils;
 import org.chocosolver.util.tools.VariableUtils;
 import org.xcsp.common.Condition;
 import org.xcsp.common.Types;
@@ -41,10 +41,12 @@ import org.xcsp.parser.entries.XVariables;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.xcsp.common.Constants.STAR_INT;
+import static org.xcsp.common.Types.TypeExpr.*;
 
 /**
  * <p>
@@ -127,11 +129,18 @@ public class XCSPParser implements XCallbacks2 {
 
     @Override
     public void buildCtrIntension(String id, XVariables.XVarInteger[] scope, XNodeParent<XVariables.XVarInteger> tree) {
-        ReExpression exp = buildRe(tree);
-        if (VariableUtils.domainCardinality(vars(scope)) < Integer.MAX_VALUE / 1000) {
-            exp.extension().post();
+        if(tree.type == IF){
+            ReExpression b = buildRe(tree.sons[0]);
+            b.imp(buildRe(tree.sons[1])).post();
+            b.not().imp(buildRe(tree.sons[2])).post();
+            
         } else {
-            exp.decompose().post();
+            ReExpression exp = buildRe(tree);
+            if (VariableUtils.domainCardinality(vars(scope)) < Integer.MAX_VALUE / 1000) {
+                exp.extension().post();
+            } else {
+                exp.decompose().post();
+            }
         }
     }
 
@@ -165,12 +174,19 @@ public class XCSPParser implements XCallbacks2 {
             case NE:
                 return buildAr(sons[0]).ne(buildAr(sons[1]));
             case IN:
-                List<ArExpression> set = new ArrayList<>();
+                List<ArExpression> set0 = new ArrayList<>();
                 for (XNode<V> sonsons : sons[1].sons) {
-                    set.add(buildAr(sonsons));
+                    set0.add(buildAr(sonsons));
                 }
                 //noinspection ConstantForZeroLengthArrayAllocation
-                return buildAr(sons[0]).in(set.toArray(new ArExpression[0]));
+                return buildAr(sons[0]).in(set0.toArray(new ArExpression[0]));
+            case NOTIN:
+                List<ArExpression> set1 = new ArrayList<>();
+                for (XNode<V> sonsons : sons[1].sons) {
+                    set1.add(buildAr(sonsons));
+                }
+                //noinspection ConstantForZeroLengthArrayAllocation
+                return buildAr(sons[0]).notin(set1.toArray(new ArExpression[0]));
             case EQ:
                 if (sons.length == 2) {
                     return buildAr(sons[0]).eq(buildAr(sons[1]));
@@ -214,7 +230,7 @@ public class XCSPParser implements XCallbacks2 {
                 case OR:
                     return new NaLoExpression(LoExpression.Operator.OR, res);
                 case XOR:
-                    return new BiLoExpression(LoExpression.Operator.XOR, res[0], res[1]);
+                    return new NaLoExpression(LoExpression.Operator.XOR, res);
                 case IFF:
                     return new NaLoExpression(LoExpression.Operator.IFF, res);
                 case IMP:
@@ -225,6 +241,22 @@ public class XCSPParser implements XCallbacks2 {
                     throw new UnsupportedOperationException("Unknown type : " + type);
             }
         } else {
+            if(type == IN){
+                List<ArExpression> set = new ArrayList<>();
+                for (XNode<V> sonsons : sons[1].sons) {
+                    set.add(buildAr(sonsons));
+                }
+                //noinspection ConstantForZeroLengthArrayAllocation
+                return buildAr(sons[0]).in(set.toArray(new ArExpression[0]));
+            }else if(type == NOTIN){
+                List<ArExpression> set = new ArrayList<>();
+                for (XNode<V> sonsons : sons[1].sons) {
+                    set.add(buildAr(sonsons));
+                }
+                //noinspection ConstantForZeroLengthArrayAllocation
+                return buildAr(sons[0]).notin(set.toArray(new ArExpression[0]));
+            }
+
             ArExpression[] aes = extractAr(sons);
             switch (type) {
                 // arithmetic
@@ -264,8 +296,6 @@ public class XCSPParser implements XCallbacks2 {
                     return aes[0].gt(aes[1]);
                 case NE:
                     return aes[0].ne(aes[1]);
-                case IN:
-                    return new NaReExpression(ReExpression.Operator.IN, aes);
                 case EQ:
                     if (aes.length == 2) {
                         return aes[0].eq(aes[1]);
@@ -557,6 +587,11 @@ public class XCSPParser implements XCallbacks2 {
     public void buildCtrLogic(String id, XVariables.XVarInteger x, XVariables.XVarInteger y, Types.TypeConditionOperatorRel op, XVariables.XVarInteger z) {
         repost(id);
     }
+
+    @Override
+    public void buildCtrLogic(String id, XVariables.XVarInteger x, Types.TypeEqNeOperator op, Types.TypeLogicalOperator lop, XVariables.XVarInteger[] vars) {
+        repost(id);
+    }
     
     @Override
     public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, int p, Types.TypeConditionOperatorRel op, int k) {
@@ -730,6 +765,24 @@ public class XCSPParser implements XCallbacks2 {
     }
 
     @Override
+    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, XVariables.XVarInteger[] values, XVariables.XVarInteger[] occurs) {
+        model.globalCardinalityDec(vars(list), vars(values), vars(occurs), closed);
+    }
+
+    @Override
+    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, XVariables.XVarInteger[] values, int[] occurs) {
+        model.globalCardinalityDec(vars(list), vars(values), Arrays.stream(occurs).mapToObj(o -> model.intVar(o))
+                .toArray(IntVar[]::new), closed);
+    }
+
+    @Override
+    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, XVariables.XVarInteger[] values, int[] occursMin, int[] occursMax) {
+        model.globalCardinalityDec(vars(list), vars(values), IntStream.range(0, occursMin.length)
+                        .mapToObj(i -> model.intVar(occursMin[i], occursMax[i])).toArray(IntVar[]::new),
+                closed);
+    }
+
+    @Override
     public void buildCtrClause(String id, XVariables.XVarInteger[] pos, XVariables.XVarInteger[] neg) {
         model.addClauses(bools(pos), bools(neg));
     }
@@ -860,20 +913,20 @@ public class XCSPParser implements XCallbacks2 {
 
     @Override
     public void buildCtrCount(String id, XVariables.XVarInteger[] list, int[] values, Condition condition) {
-        IntVar x = condToVar(condition,0, list.length);
+        IntVar x = condToVar(condition, 0, list.length);
         model.among(x, vars(list), values).post();
     }
 
 
     @Override
     public void buildCtrCount(String id, XNode<XVariables.XVarInteger>[] trees, int[] values, Condition condition) {
-        IntVar x = condToVar(condition,0, trees.length);
+        IntVar x = condToVar(condition, 0, trees.length);
         model.among(x, vars(trees), values).post();
     }
 
     @Override
     public void buildCtrCount(String id, XVariables.XVarInteger[] list, XVariables.XVarInteger[] values, Condition condition) {
-        IntVar x = condToVar(condition,0, list.length);
+        IntVar x = condToVar(condition, 0, list.length);
         model.amongDec(x, vars(list), vars(values));
     }
 
@@ -1010,6 +1063,16 @@ public class XCSPParser implements XCallbacks2 {
     }
 
     @Override
+    public void buildCtrAmong(String id, XVariables.XVarInteger[] list, int[] values, int k) {
+        model.among(model.intVar(k), vars(list), values).post();
+    }
+
+    @Override
+    public void buildCtrAmong(String id, XVariables.XVarInteger[] list, int[] values, XVariables.XVarInteger k) {
+        model.among(var(k), vars(list), values).post();
+    }
+
+    @Override
     public void buildCtrMinimum(String id, XVariables.XVarInteger[] list, Condition condition) {
         buildMin(vars(list), condition);
     }
@@ -1026,6 +1089,26 @@ public class XCSPParser implements XCallbacks2 {
         model.min(x, vars).post();
     }
 
+    @Override
+    public void buildCtrMinimumArg(String id, XVariables.XVarInteger[] list, Types.TypeRank rank, Condition condition) {
+        buildArgmin(vars(list), rank, condition);
+    }
+
+    @Override
+    public void buildCtrMinimumArg(String id, XNode<XVariables.XVarInteger>[] trees, Types.TypeRank rank, Condition condition) {
+        buildArgmin(vars(trees), rank, condition);
+    }
+
+    private void buildArgmin(IntVar[] vars, Types.TypeRank rank, Condition condition) {
+        IntVar max = condToVar(condition, 0, vars.length);
+        if (rank.equals(Types.TypeRank.LAST)) {
+            ArrayUtils.reverse(vars);
+            IntVar max2 = model.intOffsetView(model.intMinusView(max), vars.length);
+            model.argmin(max2, 0, vars).post();
+        } else {
+            model.argmin(max, 0, vars).post();
+        }
+    }
 
     @Override
     public void buildCtrElement(String id, XVariables.XVarInteger[] list, Condition condition) {
@@ -1100,6 +1183,27 @@ public class XCSPParser implements XCallbacks2 {
     }
 
     @Override
+    public void buildCtrMaximumArg(String id, XVariables.XVarInteger[] list, Types.TypeRank rank, Condition condition) {
+        buildArgmax(vars(list), rank, condition);
+    }
+
+    @Override
+    public void buildCtrMaximumArg(String id, XNode<XVariables.XVarInteger>[] trees, Types.TypeRank rank, Condition condition) {
+        buildArgmax(vars(trees), rank, condition);
+    }
+
+    private void buildArgmax(IntVar[] vars, Types.TypeRank rank, Condition condition) {
+        IntVar max = condToVar(condition, 0, vars.length);
+        if (rank.equals(Types.TypeRank.LAST)) {
+            ArrayUtils.reverse(vars);
+            IntVar max2 = model.intOffsetView(model.intMinusView(max), vars.length);
+            model.argmax(max2, 0, vars).post();
+        } else {
+            model.argmax(max, 0, vars).post();
+        }
+    }
+
+    @Override
     public void buildCtrLexMatrix(String id, XVariables.XVarInteger[][] matrix, Types.TypeOperatorRel operator) {
         switch (operator) {
             case LT: {
@@ -1137,6 +1241,19 @@ public class XCSPParser implements XCallbacks2 {
         if (covered) {
             buildCtrAtLeast(id, list, values[values.length - 1], 1);
         }
+    }
+
+    @Override
+    public void buildCtrPrecedence(String id, XVariables.XVarInteger[] list) {
+        IntVar[] vars = vars(list);
+        model.intValuePrecedeChain(vars,
+                Arrays.stream(vars)
+                        .flatMapToInt(IntVar::stream)
+                        .boxed()
+                        .collect(Collectors.toSet())
+                        .stream().mapToInt(i -> i)
+                        .sorted().toArray())
+                .post();
     }
 
     @Override
@@ -1266,14 +1383,29 @@ public class XCSPParser implements XCallbacks2 {
 
     @Override
     public void buildCtrNoOverlap(String id, XVariables.XVarInteger[][] origins, XVariables.XVarInteger[][] lengths, boolean zeroIgnored) {
-        if (origins[0].length == 2) {
+        if (origins[0].length == 2 && zeroIgnored) {
             IntVar[] X = Arrays.stream(origins).map(o -> var(o[0])).toArray(IntVar[]::new);
             IntVar[] Y = Arrays.stream(origins).map(o -> var(o[1])).toArray(IntVar[]::new);
             IntVar[] W = Arrays.stream(lengths).map(l -> var(l[0])).toArray(IntVar[]::new);
             IntVar[] H = Arrays.stream(lengths).map(l -> var(l[1])).toArray(IntVar[]::new);
             model.diffN(X, Y, W, H, true).post();
-        } else {
+        }else{
             XCallbacks2.super.buildCtrNoOverlap(id, origins, lengths, zeroIgnored);
+        }
+    }
+
+    @Override
+    public void buildCtrNoOverlap(String id, XVariables.XVarInteger[] xs, XVariables.XVarInteger[] ys, XVariables.XVarInteger[] lx, int[] ly, boolean zeroIgnored) {
+        if (zeroIgnored) {
+            model.diffN(
+                    vars(xs),
+                    vars(ys),
+                    vars(lx),
+                    IntStream.of(ly).mapToObj(l -> model.intVar(l)).toArray(IntVar[]::new),
+                    true
+            ).post();
+        }else{
+            XCallbacks2.super.buildCtrNoOverlap(id, xs, ys, lx, ly, zeroIgnored);
         }
     }
 
@@ -1298,7 +1430,7 @@ public class XCSPParser implements XCallbacks2 {
     @Override
     public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, XVariables.XVarInteger[] heights, Condition condition) {
         if (condition instanceof Condition.ConditionRel) {
-            int sumLe = (int)Arrays.stream(heights).mapToLong(XVariables.XVarInteger::lastValue).sum();
+            int sumLe = (int) Arrays.stream(heights).mapToLong(XVariables.XVarInteger::lastValue).sum();
             model.cumulative(
                     IntStream.range(0, origins.length)
                             .mapToObj(i -> model.taskVar(var(origins[i]), lengths[i]))
@@ -1332,7 +1464,71 @@ public class XCSPParser implements XCallbacks2 {
     @Override
     public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, XVariables.XVarInteger[] heights, Condition condition) {
         if (condition instanceof Condition.ConditionRel) {
-            int sumLe = (int)Arrays.stream(heights).mapToLong(XVariables.XVarInteger::lastValue).sum();
+            int sumLe = (int) Arrays.stream(heights).mapToLong(XVariables.XVarInteger::lastValue).sum();
+            model.cumulative(
+                    IntStream.range(0, origins.length)
+                            .mapToObj(i -> model.taskVar(var(origins[i]), var(lengths[i])))
+                            .toArray(Task[]::new),
+                    vars(heights),
+                    condToVar(condition, 0, sumLe)
+            ).post();
+            return;
+        }
+        XCallbacks2.super.buildCtrCumulative(id, origins, lengths, heights, condition);
+    }
+
+    @Override
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, XVariables.XVarInteger[] ends, int[] heights, Condition condition) {
+        if (condition instanceof Condition.ConditionRel) {
+            int sumLe = IntStream.of(heights).sum();
+            model.cumulative(
+                    IntStream.range(0, origins.length)
+                            .mapToObj(i -> model.taskVar(var(origins[i]), lengths[i]))
+                            .toArray(Task[]::new),
+                    IntStream.of(heights).mapToObj(i -> model.intVar(i)).toArray(IntVar[]::new),
+                    condToVar(condition, 0, sumLe)
+            ).post();
+            return;
+        }
+        XCallbacks2.super.buildCtrCumulative(id, origins, lengths, heights, condition);
+    }
+
+    @Override
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, XVariables.XVarInteger[] ends, XVariables.XVarInteger[] heights, Condition condition) {
+        if (condition instanceof Condition.ConditionRel) {
+            int sumLe = (int) Arrays.stream(heights).mapToLong(XVariables.XVarInteger::lastValue).sum();
+            model.cumulative(
+                    IntStream.range(0, origins.length)
+                            .mapToObj(i -> model.taskVar(var(origins[i]), lengths[i]))
+                            .toArray(Task[]::new),
+                    vars(heights),
+                    condToVar(condition, 0, sumLe)
+            ).post();
+            return;
+        }
+        XCallbacks2.super.buildCtrCumulative(id, origins, lengths, heights, condition);
+    }
+
+    @Override
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, XVariables.XVarInteger[] ends, int[] heights, Condition condition) {
+        if (condition instanceof Condition.ConditionRel) {
+            int sumLe = IntStream.of(heights).sum();
+            model.cumulative(
+                    IntStream.range(0, origins.length)
+                            .mapToObj(i -> model.taskVar(var(origins[i]), var(lengths[i])))
+                            .toArray(Task[]::new),
+                    IntStream.of(heights).mapToObj(i -> model.intVar(i)).toArray(IntVar[]::new),
+                    condToVar(condition, 0, sumLe)
+            ).post();
+            return;
+        }
+        XCallbacks2.super.buildCtrCumulative(id, origins, lengths, heights, condition);
+    }
+
+    @Override
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, XVariables.XVarInteger[] ends, XVariables.XVarInteger[] heights, Condition condition) {
+        if (condition instanceof Condition.ConditionRel) {
+            int sumLe = (int) Arrays.stream(heights).mapToLong(XVariables.XVarInteger::lastValue).sum();
             model.cumulative(
                     IntStream.range(0, origins.length)
                             .mapToObj(i -> model.taskVar(var(origins[i]), var(lengths[i])))
@@ -1350,9 +1546,30 @@ public class XCSPParser implements XCallbacks2 {
         int sumSiz = Arrays.stream(sizes).sum();
         IntVar[] cds = new IntVar[list.length];
         for (int i = 0; i < cds.length; i++) {
-            cds[i] = condToVar(condition, 0,  sumSiz);
+            cds[i] = condToVar(condition, 0, sumSiz);
         }
         model.binPacking(vars(list), sizes, cds, 0).post();
+    }
+
+    @Override
+    public void buildCtrBinPacking(String id, XVariables.XVarInteger[] list, int[] sizes, int[] capacities, boolean loads) {
+        model.binPacking(vars(list), sizes,
+                IntStream.of(capacities).mapToObj(c -> model.intVar(loads ? c : 0, c)).toArray(IntVar[]::new), 0).post();
+    }
+
+    @Override
+    public void buildCtrBinPacking(String id, XVariables.XVarInteger[] list, int[] sizes, XVariables.XVarInteger[] capacities, boolean loads) {
+        IntVar[] binLoad;
+        if (loads) {
+            binLoad = vars(capacities);
+        } else {
+            binLoad = Arrays.stream(capacities).map(c -> model.intVar(0, (int) c.lastValue())).toArray(IntVar[]::new);
+            for (int i = 0; i < binLoad.length; i++) {
+                binLoad[i].le(var(capacities[i])).post();
+            }
+        }
+        model.binPacking(vars(list), sizes, binLoad, 0).post();
+
     }
 
     @Override
@@ -1360,9 +1577,58 @@ public class XCSPParser implements XCallbacks2 {
         int sumSiz = Arrays.stream(sizes).sum();
         IntVar[] cds = new IntVar[conditions.length];
         for (int i = 0; i < cds.length; i++) {
-            cds[i] = condToVar(conditions[i],0, sumSiz);
+            cds[i] = condToVar(conditions[i], 0, sumSiz);
         }
         model.binPacking(vars(list), sizes, cds, startIndex).post();
+    }
+
+    @Override
+    public void buildCtrKnapsack(String id, XVariables.XVarInteger[] list, int[] weights, Condition wcondition, int[] profits, Condition pcondition) {
+        assert IntStream.of(weights).min().orElse(0) > -1;
+        assert IntStream.of(profits).min().orElse(0) > -1;
+        model.knapsack(vars(list), condToVar(wcondition, 0, Arrays.stream(weights).sum()),
+                condToVar(pcondition, 0, Arrays.stream(profits).sum()),
+                weights, profits).post();
+
+    }
+
+    @Override
+    public void buildCtrFlow(String id, XVariables.XVarInteger[] list, int[] balance, int[][] arcs) {
+        int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE, offset = Integer.MAX_VALUE;
+        for (int i = 0; i < list.length; i++) {
+            assert list[i].firstValue() >= 0;
+            offset = Math.min(Math.min(arcs[i][0],arcs[i][1]), offset);
+            min = Math.min(MathUtils.safeCast(list[i].firstValue()), min);
+            max = Math.max(MathUtils.safeCast(list[i].lastValue()), max);
+        }
+        model.costFlow(
+                ArrayUtils.getColumn(arcs, 0),
+                ArrayUtils.getColumn(arcs, 1),
+                balance,
+                IntStream.range(0, list.length).map(i -> 1).toArray(),
+                vars(list),
+                model.intVar(min * list.length, max * list.length),
+                offset);
+    }
+
+    @Override
+    public void buildCtrFlow(String id, XVariables.XVarInteger[] list, int[] balance, int[][] arcs, int[] weights, Condition condition) {
+        int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE, offset = Integer.MAX_VALUE;
+        for (int i = 0; i < list.length; i++) {
+            assert weights[i] >= 0;
+            assert list[i].firstValue() >= 0;
+            offset = Math.min(Math.min(arcs[i][0], arcs[i][1]), offset);
+            min = Math.min(MathUtils.safeCast(list[i].firstValue() * weights[i]), min);
+            max = Math.max(MathUtils.safeCast(list[i].lastValue() * weights[i]), max);
+        }
+        model.costFlow(
+                ArrayUtils.getColumn(arcs, 0),
+                ArrayUtils.getColumn(arcs, 1),
+                balance,
+                weights,
+                vars(list),
+                condToVar(condition, min * list.length, max * list.length),
+                offset);
     }
 
     @Override
@@ -1374,6 +1640,7 @@ public class XCSPParser implements XCallbacks2 {
 
     /**
      * This method ignore the operator
+     *
      * @param condition
      * @return
      */
@@ -1395,7 +1662,7 @@ public class XCSPParser implements XCallbacks2 {
         int k = (int) condition.k;
         switch (condition.operator) {
             case LT:
-                return model.intVar(Math.min(min, k -1), Math.min(max, k -1));
+                return model.intVar(Math.min(min, k - 1), Math.min(max, k - 1));
             case LE:
                 return model.intVar(Math.min(min, k), Math.min(max, k));
             case GT:
@@ -1512,6 +1779,7 @@ public class XCSPParser implements XCallbacks2 {
 
     private IntVar optScalar(IntVar[] vars, int[] coeffs) {
         int[] bounds = VariableUtils.boundsForScalar(vars, coeffs);
+        //bounds[0] = 184396;
         IntVar res = model.intVar("SCALAR", bounds[0], bounds[1], true);
         model.scalar(vars, coeffs, "=", res).post();
         return res;

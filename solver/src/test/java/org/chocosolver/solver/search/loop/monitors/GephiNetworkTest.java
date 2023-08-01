@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -15,6 +15,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 /**
  * <p>
@@ -28,14 +29,14 @@ public class GephiNetworkTest {
     @Test(groups = "1s", timeOut = 60000)
     public void test1() throws IOException {
         Model s1 = ProblemMaker.makeCostasArrays(7);
-        File temp = File.createTempFile("tmp", ".gexf");
+        File temp = Files.createTempFile("tmp", ".gexf").toFile();
         s1.getSolver().constraintNetworkToGephi(temp.getAbsolutePath());
     }
 
     @Test(groups = "1s", timeOut = 60000)
     public void test2() throws IOException {
         Model s1 = ProblemMaker.makeGolombRuler(11);
-        File temp = File.createTempFile("tmp", ".gexf");
+        File temp = Files.createTempFile("tmp", ".gexf").toFile();
         s1.getSolver().constraintNetworkToGephi(temp.getAbsolutePath());
     }
 

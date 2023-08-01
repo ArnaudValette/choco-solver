@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -102,7 +102,11 @@ public final class IntOffsetView<I extends IntVar> extends IntView<I> {
     }
 
     @Override
-    public int getValue() {
+    public int getValue() throws IllegalStateException{
+        if (!isInstantiated()) {
+            throw new IllegalStateException("getValue() can be only called on instantiated variable. " +
+                    name + " is not instantiated");
+        }
         return var.getValue() + cste;
     }
 
@@ -145,7 +149,7 @@ public final class IntOffsetView<I extends IntVar> extends IntView<I> {
     }
 
     @Override
-    protected EvtScheduler createScheduler() {
+    protected EvtScheduler<IntEventType> createScheduler() {
         return new IntEvtScheduler();
     }
 

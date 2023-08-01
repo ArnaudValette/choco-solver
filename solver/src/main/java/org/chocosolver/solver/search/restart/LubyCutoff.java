@@ -1,13 +1,13 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
  * See LICENSE file in the project root for full license information.
  */
-package org.chocosolver.cutoffseq;
+package org.chocosolver.solver.search.restart;
 
 /**
  * A Luby cutoff strategy.
@@ -25,7 +25,7 @@ package org.chocosolver.cutoffseq;
  * @author Charles Prud'homme, Arnaud Malapert, Hadrien Cambazard
  * @since 13/05/11
  */
-public final class LubyCutoffStrategy extends AbstractCutoffStrategy {
+public final class LubyCutoff extends AbstractCutoff {
 
     /**
      * Current cutoff, starts at 1 and will be multiplied by {@link #scaleFactor}
@@ -43,7 +43,7 @@ public final class LubyCutoffStrategy extends AbstractCutoffStrategy {
      * @param s scale factor
      */
     @SuppressWarnings("WeakerAccess")
-    public LubyCutoffStrategy(long s) {
+    public LubyCutoff(long s) {
         super(s);
     }
 
@@ -55,7 +55,7 @@ public final class LubyCutoffStrategy extends AbstractCutoffStrategy {
      */
     @Override
     public long getNextCutoff() {
-        final long cutoff = scaleFactor * this.vn;
+        final long cutoff = scaleFactor * this.vn * grower.getAsInt();
         if ((this.un & -this.un) == this.vn) {
             this.un = this.un + 1;
             this.vn = 1;

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
  * @since 07/06/2021
  */
 public class PropArgmax extends Propagator<IntVar> {
-
+    private static final boolean INCREMENTAL = false; // incrementality seems buggy .. see test: testMats1
     // nb elements in 'x'
     private final int n;
     //offset
@@ -47,24 +47,32 @@ public class PropArgmax extends Propagator<IntVar> {
     private final IntProcedure proc;
 
     public PropArgmax(IntVar z, int offset, IntVar[] x) {
-        super(ArrayUtils.append(x, new IntVar[]{z}), PropagatorPriority.LINEAR, true);
+        super(ArrayUtils.append(x, new IntVar[]{z}), PropagatorPriority.LINEAR, INCREMENTAL);
         this.n = x.length;
         this.o = offset;
-        this.delta = z.monitorDelta(this);
         this.ubi = z.getModel().getEnvironment().makeInt(-1);
         this.lbi = z.getModel().getEnvironment().makeInt(-1);
-        this.Ir = z.getModel().getEnvironment().makeBitSet(n);
-        this.proc = j -> {
-            int jj = j - o;
-            int lbi_ = lbi.get();
-            int ubi_  = ubi.get();
-            Ir.set(jj, vars[jj].getUB() > vars[lbi_].getLB() - (jj <= lbi_ ? 1 : 0));
-            if (jj == ubi_) {
-                filterUb();
-            } else {
-                vars[jj].updateUpperBound(vars[ubi_].getUB() - (j < lbi_ ? 1 : 0), PropArgmax.this);
-            }
-        };
+        if (INCREMENTAL) {
+            this.delta = z.monitorDelta(this);
+            this.Ir = z.getModel().getEnvironment().makeBitSet(n);
+            this.proc = j -> {
+                int jj = j - o;
+                int lbi_ = lbi.get();
+                int ubi_ = ubi.get();
+                Ir.set(jj, vars[jj].getUB() > vars[lbi_].getLB() - (jj <= lbi_ ? 1 : 0));
+                if (jj == ubi_) {
+                    filterUb();
+                } else {
+                    // Eq (1)
+                    int ub = vars[ubi_].getUB();
+                    vars[jj].updateUpperBound(ub - (jj < ubi_ ? 1 : 0), PropArgmax.this);
+                }
+            };
+        }else{
+            this.delta = null;
+            this.Ir = null;
+            this.proc = null;
+        }
     }
 
     @Override
@@ -79,22 +87,30 @@ public class PropArgmax extends Propagator<IntVar> {
     @Override
     public void propagate(int evtmask) throws ContradictionException {
         vars[n].updateBounds(o, n + o - 1, this);
-        filterUb();
+        int ubi_ = argmaxub(IntVar::getUB);
+        ubi.set(ubi_);
+        int ub = vars[ubi_].getUB();
+        for (int j = 0; j < n; j++) {
+            if (!vars[n].contains(j + o)) {
+                vars[j].updateUpperBound(ub - (j < ubi_ ? 1 : 0), PropArgmax.this);
+            }
+        }
         int lbi_ = argmaxlb(IntVar::getLB);
         lbi.set(lbi_);
         for (int j = vars[n].nextValueOut(-1 + o); j < n + o; j = vars[n].nextValueOut(j)) {
             int jj = j - o;
-            Ir.set(jj, vars[jj].getUB() > vars[lbi_].getLB() - (jj <= lbi_ ? 1 : 0));
+            if(INCREMENTAL)Ir.set(jj, vars[jj].getUB() > vars[lbi_].getLB() - (jj <= lbi_ ? 1 : 0));
         }
         filterZ();
         if (vars[n].isInstantiated()) {
             filterLb(vars[n].getValue() - o);
         }
-        delta.startMonitoring();
+        if(INCREMENTAL)delta.startMonitoring();
     }
 
     @Override
     public void propagate(int j, int mask) throws ContradictionException {
+        assert INCREMENTAL;
         if (j == n) { // on z
             delta.forEachRemVal(proc);
             if (vars[n].isInstantiated()) {
@@ -149,6 +165,7 @@ public class PropArgmax extends Propagator<IntVar> {
     }
 
     private void filterUb() throws ContradictionException {
+        assert INCREMENTAL;
         int ubi_ = argmaxub(IntVar::getUB);
         ubi.set(ubi_);
         int ub = vars[ubi_].getUB();
@@ -164,9 +181,9 @@ public class PropArgmax extends Propagator<IntVar> {
             int jj = j - o;
             if (vars[jj].getUB() <= lb - (jj <= lbi_ ? 1 : 0)) {
                 vars[n].removeValue(j, this);
-                Ir.clear(jj);
+                if(INCREMENTAL)Ir.clear(jj);
             } else {
-                Ir.set(jj);
+                if(INCREMENTAL)Ir.set(jj);
             }
         }
     }

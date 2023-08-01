@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -15,14 +15,9 @@ import org.chocosolver.solver.exception.ContradictionException;
 
 
 /**
- * The "Propagate" component
- * (Inspired from "Unifying search algorithms for CSP" N. Jussien and O. Lhomme, Technical report 02-3-INFO, EMN).
- * <p>
- * The aim of the component is to propagate information throughout the constraint network when a decision is made.
- * <p>
- * Created by cprudhom on 01/09/15.
- * Project: choco.
+ * @deprecated
  */
+@Deprecated
 public interface Propagate {
 
     /**

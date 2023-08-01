@@ -22,21 +22,28 @@ git push origin master || quit "unable  to push on master"
 
 # add new tag
 #Quit if tag already exists
-git ls-remote --exit-code --tags origin ${VERSION} && quit "tag ${VERSION} already exists"
+git ls-remote --exit-code --tags origin v${VERSION} && quit "tag ${VERSION} already exists"
 # We assume the tests have been run before, and everything is OK for the release
 
 # add the tag
-git tag -a ${VERSION} -m "create tag ${VERSION}" || quit "Unable to tag with ${VERSION}"
+git tag -a v${VERSION} -m "create tag ${VERSION}" || quit "Unable to tag with ${VERSION}"
 git push --tags || quit "Unable to push the tag ${VERSION}"
 
 
 # Proceed to the deployment
-# mvn -P ossrhDeploy  javadoc:jar source:jar deploy -DskipTests -B -U  ||quit "Unable to deploy to master"
+mvn -P ossrhDeploy  javadoc:jar source:jar deploy -DskipTests -B -U  ||quit "Unable to deploy to master"
 
 #Set the next development version
 echo "** Prepare master for the next version **"
 ./scripts/set_version.sh --next ${VERSION}
 git commit -m "Prepare the code for the next version" -a ||quit "Unable to commit to master"
+
+read -p "Do you set the milestone number in CHANGES.md?" -n 1 -r
+echo    # (optional) move to a new line
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    quit "Milestone version must be set"
+fi
 
 #Push changes on develop, with the tag
 git push origin master ||quit "Unable to push to master"

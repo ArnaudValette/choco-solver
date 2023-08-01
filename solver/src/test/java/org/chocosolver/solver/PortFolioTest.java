@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -9,7 +9,7 @@
  */
 package org.chocosolver.solver;
 
-import org.chocosolver.solver.search.restart.MonotonicRestartStrategy;
+import org.chocosolver.solver.search.restart.MonotonicCutoff;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.ProblemMaker;
 import org.testng.Assert;
@@ -89,7 +89,7 @@ public class PortFolioTest {
         pares.addModel(knapsack());
         // bad solver that always restarts and never terminates, to check that the first solver is able to kill it
         Model m2 = knapsack();
-        m2.getSolver().setRestarts(value -> true, new MonotonicRestartStrategy(0), 100000);
+        m2.getSolver().setRestarts(value -> true, new MonotonicCutoff(0), 100000);
         pares.addModel(m2);
 
         int nbSols = 0;

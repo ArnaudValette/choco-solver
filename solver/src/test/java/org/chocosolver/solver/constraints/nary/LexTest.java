@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -54,7 +54,7 @@ public class LexTest {
             model.getSolver().setSearch(randomSearch(append(vs1, vs2), seed));
             while (model.getSolver().solve()) ;
             int kpn = (int) pow(k + 1, n1 / 2);
-            assertEquals(model.getSolver().getSolutionCount(), (kpn * (kpn + 1) / 2));
+            assertEquals(model.getSolver().getSolutionCount(), ((long) kpn * (kpn + 1) / 2));
         }
     }
 
@@ -298,9 +298,9 @@ public class LexTest {
         SetVar b = model.setVar("b", new int[]{}, new int[]{1, 2});
         model.setLe(a, b).post();
         Solver solver = model.getSolver();
-        solver.showDecisions();
+        solver.showSolutions(a, b);
         solver.setSearch(Search.setVarSearch(a, b));
-        Assert.assertEquals(solver.findAllSolutions().size(), 6);
+        Assert.assertEquals(solver.findAllSolutions().size(), 13);
         solver.printShortStatistics();
     }
 
@@ -325,9 +325,9 @@ public class LexTest {
         model.setLt(a, b).post();
         Solver solver = model.getSolver();
         //solver.showDecisions();
-        solver.showSolutions();
+        solver.showSolutions(a, b);
         solver.setSearch(Search.setVarSearch(a, b));
-        Assert.assertEquals(solver.findAllSolutions().size(), 4);
+        Assert.assertEquals(solver.findAllSolutions().size(), 11);
         solver.printShortStatistics();
     }
 
@@ -358,6 +358,28 @@ public class LexTest {
         solver.setSearch(Search.setVarSearch(a, b));
         Assert.assertEquals(solver.findAllSolutions().size(), 28);
         solver.printShortStatistics();
+    }
+
+    @Test(groups = "1s")
+    public void testMats1() {
+        Model model = new Model();
+        IntVar[] X0 = new IntVar[]{model.intVar("A", 1, 3), model.intVar("0", 0)};
+        model.lexLess(X0, X0).post();
+        Solver solver = model.getSolver();
+        Assert.assertEquals(solver.findAllSolutions().size(), 0);
+    }
+
+    @Test(groups = "1s")
+    public void testMats2() {
+        Model model = new Model();
+        IntVar A = model.intVar("A", 1, 3);
+        IntVar B = model.intVar("B", 1, 3);
+        IntVar _0 =  model.intVar("0", 0);
+        IntVar[] X0 = new IntVar[]{B, A, _0};
+        IntVar[] X1 = new IntVar[]{A, B, _0};
+        model.lexLessEq(X0, X1).post();
+        Solver solver = model.getSolver();
+        Assert.assertEquals(solver.findAllSolutions().size(), 6);
     }
 
 }

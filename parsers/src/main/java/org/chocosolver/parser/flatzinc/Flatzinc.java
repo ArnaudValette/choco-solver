@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-parsers, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -23,7 +23,7 @@ import org.chocosolver.solver.search.strategy.selectors.values.IntDomainBest;
 import org.chocosolver.solver.search.strategy.selectors.values.IntDomainLast;
 import org.chocosolver.solver.search.strategy.selectors.values.IntDomainMin;
 import org.chocosolver.solver.search.strategy.selectors.values.IntValueSelector;
-import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDegRef;
+import org.chocosolver.solver.search.strategy.selectors.variables.FirstFail;
 import org.chocosolver.solver.search.strategy.strategy.AbstractStrategy;
 import org.chocosolver.solver.search.strategy.strategy.IntStrategy;
 import org.chocosolver.solver.variables.IntVar;
@@ -35,11 +35,10 @@ import org.kohsuke.args4j.Option;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -140,16 +139,41 @@ public class Flatzinc extends RegParser {
     public void buildModel() {
         List<Model> models = portfolio.getModels();
         for (int i = 0; i < models.size(); i++) {
+            Model m = models.get(i);
+            Solver s = m.getSolver();
             try {
                 long ptime = -System.currentTimeMillis();
                 FileInputStream fileInputStream = new FileInputStream(instance);
-                parse(models.get(i), datas[i], fileInputStream);
+                parse(m, datas[i], fileInputStream);
                 fileInputStream.close();
+                if(logFilePath != null) {
+                    s.log().remove(System.out);
+                    s.log().add(new PrintStream(Files.newOutputStream(Paths.get(logFilePath)), true));
+                } else {
+                    s.logWithANSI(ansi);
+                }
                 if (level.isLoggable(Level.INFO)) {
-                    models.get(i).getSolver().log().white().printf(String.format("File parsed in %d ms%n", (ptime + System.currentTimeMillis())));
+                    s.log().white().printf(String.format("File parsed in %d ms%n", (ptime + System.currentTimeMillis())));
                 }
                 if (level.is(Level.JSON)) {
-                    models.get(i).getSolver().log().printf("{\"name\":\"%s\",\"stats\":[", instance);
+                    s.getMeasures().setReadingTimeCount(System.nanoTime() - s.getModel().getCreationTime());
+                    s.log().printf(Locale.US,
+                            "{\t\"name\":\"%s\",\n" +
+                                    "\t\"variables\": %d,\n" +
+                                    "\t\"constraints\": %d,\n" +
+                                    "\t\"policy\": \"%s\",\n" +
+                                    "\t\"parsing time\": %.3f,\n" +
+                                    "\t\"building time\": %.3f,\n" +
+                                    "\t\"memory\": %d,\n" +
+                                    "\t\"stats\":[",
+                            instance,
+                            m.getNbVars(),
+                            m.getNbCstrs(),
+                            m.getSolver().getObjectiveManager().getPolicy(),
+                            (ptime + System.currentTimeMillis()) / 1000f,
+                            s.getReadingTimeCount(),
+                            m.getEstimatedMemory()
+                            );
                 }
             } catch (IOException e) {
                 throw new Error(e.getMessage());
@@ -203,10 +227,9 @@ public class Flatzinc extends RegParser {
                         valueSelector = new IntDomainMin();
                     } else {
                         valueSelector = new IntDomainBest();
-                        m.getSolver().attach(m.getSolver().defaultSolution());
                         valueSelector = new IntDomainLast(m.getSolver().defaultSolution(), valueSelector, null);
                     }
-                    strats.add(Search.lastConflict(new IntStrategy(ivars, new DomOverWDegRef<>(ivars, 0), valueSelector)));
+                    strats.add(Search.lastConflict(new IntStrategy(ivars, new FirstFail(m), valueSelector)));
                 }
                 SetVar[] svars = Stream.of(datas[i].allOutPutVars())
                         .filter(VariableUtils::isSet)

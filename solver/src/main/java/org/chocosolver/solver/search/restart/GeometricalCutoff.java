@@ -1,26 +1,26 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
  * See LICENSE file in the project root for full license information.
  */
-package org.chocosolver.cutoffseq;
+package org.chocosolver.solver.search.restart;
 
 /**
  * A geometrical cutoff strategy.
  * It is based on two parameters: g for <i>geometricalFactor</i> and s for <i>scaleFactor</i>.
  * At step <i>n</i>, the next cutoff is computed with the following function : <i>s*g^n</i>
- *
+ * </br>
  * Example with <i>s</i>=1 and <i>g</i>=1.3:
  * 1, 2, 2, 3, 3, 4, 5, 7, 9, 11, 14, 18, 24, 31, 40, ...
  *
  * @author Charles Prud'homme, Arnaud Malapert
  * @since 13/05/11
  */
-public final class GeometricalCutoffStrategy extends AbstractCutoffStrategy {
+public final class GeometricalCutoff extends AbstractCutoff {
 
     /**
      * Declared geometrical factor
@@ -40,7 +40,7 @@ public final class GeometricalCutoffStrategy extends AbstractCutoffStrategy {
 
      */
     @SuppressWarnings("WeakerAccess")
-    public GeometricalCutoffStrategy(long s, double g) throws IllegalArgumentException{
+    public GeometricalCutoff(long s, double g) throws IllegalArgumentException{
         super(s);
         if (g <= 1) {
             throw new IllegalArgumentException("The geometrical factor of the restart strategy must be strictly greater than 1.");
@@ -55,7 +55,7 @@ public final class GeometricalCutoffStrategy extends AbstractCutoffStrategy {
      */
     @Override
     public long getNextCutoff() {
-        final long cutoff = (long) Math.ceil(scaleFactor * geometricalFactorPower);
+        final long cutoff = (long) Math.ceil(scaleFactor * geometricalFactorPower) * grower.getAsInt();
         geometricalFactorPower *= geometricalFactor;
         return cutoff;
     }

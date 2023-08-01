@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -51,10 +51,6 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
      */
     private final IStateInt UB;
     /**
-     * Current size of domain
-     */
-    private final IStateInt SIZE;
-    /**
      * To iterate over removed values
      */
     private IIntervalDelta delta = NoDelta.singleton;
@@ -75,7 +71,7 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
     /**
      * Signed Literal
      */
-    protected SignedLiteral.Set literal;
+    private SignedLiteral.Set literal;
 
     /**
      * Create a bounded domain IntVar : [min,max]
@@ -92,7 +88,6 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
         IEnvironment env = model.getEnvironment();
         this.LB = env.makeInt(min);
         this.UB = env.makeInt(max);
-        this.SIZE = env.makeInt(max - min + 1);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -220,7 +215,6 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
             }
             this.LB.set(value);
             this.UB.set(value);
-            this.SIZE.set(1);
             this.notifyPropagators(e, cause);
             return true;
         }
@@ -258,7 +252,6 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
                 if (reactOnRemoval) {
                     delta.add(old, value - 1, cause);
                 }
-                SIZE.add(old - value);
                 LB.set(value);
                 if (isInstantiated()) {
                     e = IntEventType.INSTANTIATE;
@@ -301,7 +294,6 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
                 if (reactOnRemoval) {
                     delta.add(value + 1, old, cause);
                 }
-                SIZE.add(value - old);
                 UB.set(value);
 
                 if (isInstantiated()) {
@@ -348,7 +340,6 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
                 d += ub - oub;
                 UB.set(ub);
             }
-            SIZE.add(d);
             if (isInstantiated()) {
                 e = IntEventType.INSTANTIATE;
             }
@@ -360,7 +351,7 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
 
     @Override
     public boolean isInstantiated() {
-        return SIZE.get() == 1;
+        return LB.get() == UB.get();
     }
 
     @Override
@@ -373,14 +364,12 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
         return ((aValue >= LB.get()) && (aValue <= UB.get()));
     }
 
-    /**
-     * Retrieves the current value of the variable if instantiated, otherwier the lower bound.
-     *
-     * @return the current value (or lower bound if not yet instantiated).
-     */
     @Override
-    public int getValue() {
-        assert isInstantiated() : name + " not instantiated";
+    public int getValue() throws IllegalStateException{
+        if(!isInstantiated()) {
+            throw new IllegalStateException("getValue() can be only called on instantiated variable. " +
+                    name + " is not instantiated");
+        }
         return getLB();
     }
 
@@ -406,7 +395,7 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
 
     @Override
     public int getDomainSize() {
-        return SIZE.get();
+        return UB.get() - LB.get() + 1;
     }
 
     @Override
@@ -470,7 +459,7 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
 
     @Override
     public String toString() {
-        if (SIZE.get() == 1) {
+        if (LB.get() == UB.get()) {
             return String.format("%s = %d", name, getLB());
         }
         return String.format("%s = [%d,%d]", name, getLB(), getUB());
@@ -489,7 +478,6 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public IIntDeltaMonitor monitorDelta(ICause propagator) {
         createDelta();
@@ -503,7 +491,7 @@ public final class IntervalIntVarImpl extends AbstractVariable implements IntVar
     }
 
     @Override
-    protected EvtScheduler createScheduler() {
+    protected EvtScheduler<IntEventType> createScheduler() {
         return new IntEvtScheduler();
     }
 

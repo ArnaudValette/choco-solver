@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -43,8 +43,8 @@ public class PropXltYCReif extends Propagator<IntVar> {
                     this.setPassive();
                 }
             } else {
-                vars[0].updateLowerBound(vars[1].getLB() + cste, this);
-                vars[1].updateUpperBound(vars[0].getUB() - cste, this);
+                while(vars[0].updateLowerBound(vars[1].getLB() + cste, this) |
+                        vars[1].updateUpperBound(vars[0].getUB() - cste, this));
                 if (vars[0].getLB() >= vars[1].getUB() + cste) {
                     setPassive();
                 }

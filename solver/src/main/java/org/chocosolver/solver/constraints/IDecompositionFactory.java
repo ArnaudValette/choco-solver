@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -16,13 +16,16 @@ import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.extension.Tuples;
 import org.chocosolver.solver.constraints.nary.automata.FA.IAutomaton;
 import org.chocosolver.solver.constraints.nary.flow.PropMinCostMaxFlow;
+import org.chocosolver.solver.exception.SolverException;
 import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
+import org.chocosolver.solver.variables.SetVar;
 import org.chocosolver.util.tools.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -58,9 +61,9 @@ public interface IDecompositionFactory extends ISelf<Model> {
      */
     default void amongDec(IntVar nbVar, IntVar[] vars, IntVar[] values) {
         BoolVar[] ins = ref().boolVarArray("ins", vars.length);
-        for(int i  = 0; i < vars.length; i++){
+        for (int i = 0; i < vars.length; i++) {
             BoolVar[] eqs = ref().boolVarArray("ins", values.length);
-            for(int j = 0; j < values.length; j++){
+            for (int j = 0; j < values.length; j++) {
                 ref().reifyXeqY(vars[i], values[j], eqs[j]);
             }
             ref().addClausesBoolOrArrayEqVar(eqs, ins[i]);
@@ -151,6 +154,41 @@ public interface IDecompositionFactory extends ISelf<Model> {
         return results;
     }
 
+
+    /**
+     * Creates a global cardinality constraint (GCC):
+     * Each value values[i] should be taken by exactly occurrences[i] variables of vars.
+     * <br/>
+     * This constraint does not ensure any well-defined level of consistency, yet.
+     *
+     * @param vars        collection of variables
+     * @param values      collection of constrained values
+     * @param occurrences collection of cardinality variables
+     * @param closed      restricts domains of vars to values if set to true
+     */
+    default void globalCardinalityDec(IntVar[] vars, IntVar[] values, IntVar[] occurrences, boolean closed) {
+        assert values.length == occurrences.length;
+        for (int i = 0; i < values.length; i++) {
+            ref().count(values[i], vars, occurrences[i]).post();
+        }
+        if (closed) {
+            SetVar svars = ref().setVar(new int[]{},
+                    Arrays.stream(vars)
+                            .flatMapToInt(IntVar::stream)
+                            .boxed()
+                            .collect(Collectors.toSet())
+                            .stream().mapToInt(i -> i)
+                            .sorted().toArray());
+            SetVar svalues = ref().setVar(new int[]{},
+                    Arrays.stream(values)
+                            .flatMapToInt(IntVar::stream)
+                            .boxed()
+                            .collect(Collectors.toSet())
+                            .stream().mapToInt(i -> i)
+                            .sorted().toArray());
+            ref().subsetEq(svars, svalues).post();
+        }
+    }
 
     /**
      * Creates and <b>posts</b> a decomposition of a regular constraint.
@@ -265,7 +303,7 @@ public interface IDecompositionFactory extends ISelf<Model> {
         IntVar[] q = new IntVar[n];
         IntVar M = ref().intVar("M", n * min, n * (max + 1));
         z.ge(offset).post();
-        z.lt(vars.length+offset).post();
+        z.lt(vars.length + offset).post();
         for (int j = 0; j < n; j++) {
             q[j] = ref().intAffineView(n, vars[j], n - j);
             z.ne(j + offset).iff(M.gt(q[j])).post();
@@ -471,6 +509,51 @@ public interface IDecompositionFactory extends ISelf<Model> {
             ref().sum(src.toArray(new IntVar[0]), "=", snk.toArray(new IntVar[0])).post();
         }
         new Constraint("", new PropMinCostMaxFlow(starts, ends, supplies, unitCosts, flows, cost, offset)).post();
+    }
+
+    /**
+     * Creates a decomposed version of tje intValuePrecedeChain(X, S, T) constraint.
+     * Ensure that if there exists <code>j</code> such that X[j] = T, then, there must exist <code>i</code> < <code>j</code> such that
+     * X[i] = S.
+     *
+     * @param X an array of variables
+     * @param S a value
+     * @param T another value
+     */
+    default void intValuePrecedeChainDec(IntVar[] X, int S, int T) {
+        Model model = X[0].getModel();
+        model.arithm(X[0], "!=", T).post();
+        for (int j = 1; j < X.length; j++) {
+            BoolVar bj = model.arithm(X[j], "=", T).reify();
+            BoolVar[] bis = new BoolVar[j];
+            for (int i = 0; i < j; i++) {
+                bis[i] = model.arithm(X[i], "=", S).reify();
+            }
+            model.ifThen(bj, model.or(bis));
+        }
+    }
+
+    /**
+     * Creates a decomposed version of the intValuePrecedeChain(X, V) constraint.
+     * Ensure that, for each pair of V[k] and V[l] of values in V, such that k < l,
+     * if there exists <code>j</code> such that X[j] = V[l], then, there must exist <code>i</code> < <code>j</code> such that
+     * X[i] = V[k].
+     *
+     * @param X array of variables
+     * @param V array of (distinct) values
+     */
+    default void intValuePrecedeChainDec(IntVar[] X, int[] V) {
+        if (V.length > 1) {
+            TIntHashSet values = new TIntHashSet();
+            values.add(V[0]);
+            for (int i = 1; i < V.length; i++) {
+                if (values.contains(V[i])) {
+                    throw new SolverException("\"int_value_precede\" requires V to be made of distinct values");
+                }
+                values.add(V[i]);
+                intValuePrecedeChainDec(X, V[i - 1], V[i]);
+            }
+        }
     }
 
 }

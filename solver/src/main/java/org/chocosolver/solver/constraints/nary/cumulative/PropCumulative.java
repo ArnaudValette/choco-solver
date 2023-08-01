@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -99,7 +99,7 @@ public class PropCumulative extends Propagator<IntVar> {
     @Override
     public int getPropagationConditions(int idx) {
         if (idx == vars.length - 1) {
-            return IntEventType.combine(IntEventType.INSTANTIATE, IntEventType.DECUPP);
+            return IntEventType.upperBoundAndInst();
         }
         return IntEventType.boundAndInst();
     }
@@ -209,7 +209,7 @@ public class PropCumulative extends Propagator<IntVar> {
     /**
      * Return the index of an IntVar
      *
-     * @param pivot
+     * @param pivot variable
      */
     private int getInd(IntVar pivot) {
         int ind = -1;
@@ -218,7 +218,7 @@ public class PropCumulative extends Propagator<IntVar> {
                 ind = i;
             }
         }
-        if (ind == -1) throw new UnsupportedOperationException("Unfindable pivot variable ");
+        if (ind == -1) throw new UnsupportedOperationException("pivot variable cannot be found");
         return ind;
     }
 
@@ -246,10 +246,11 @@ public class PropCumulative extends Propagator<IntVar> {
         int[] indD = IntStream.range(n, n * 2).toArray();
         int t = e.readValue(p);
         int ipivot = getInd(pivot);
-        int dpivot = e.domain(vars[ipivot + n]).min();
         if (ipivot >= n) {
-            throw new UnsupportedOperationException("Try to explain an event not on a start variable");
+            throw new UnsupportedOperationException("Try to explain an event not on a start variable. " +
+                    "Only Cumulative.Filter.NAIVETIME algorithm is currently supported with explanations.");
         }
+        int dpivot = e.domain(vars[ipivot + n]).min();
         switch (e.readMask(p)) {
             case 2://INCLOW
                 if (explainOverlap(e, X, t, indD)) {

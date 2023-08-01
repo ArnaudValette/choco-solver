@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -9,8 +9,9 @@
  */
 package org.chocosolver.solver.search.strategy;
 
-import org.chocosolver.cutoffseq.GeometricalCutoffStrategy;
-import org.chocosolver.cutoffseq.LubyCutoffStrategy;
+import org.chocosolver.solver.search.restart.GeometricalCutoff;
+import org.chocosolver.solver.search.restart.LinearCutoff;
+import org.chocosolver.solver.search.restart.LubyCutoff;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.ResolutionPolicy;
 import org.chocosolver.solver.Solution;
@@ -18,7 +19,7 @@ import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.objective.ObjectiveStrategy;
 import org.chocosolver.solver.objective.OptimizationPolicy;
 import org.chocosolver.solver.search.loop.monitors.IMonitorOpenNode;
-import org.chocosolver.solver.search.restart.MonotonicRestartStrategy;
+import org.chocosolver.solver.search.restart.MonotonicCutoff;
 import org.chocosolver.solver.search.strategy.assignments.DecisionOperator;
 import org.chocosolver.solver.search.strategy.assignments.DecisionOperatorFactory;
 import org.chocosolver.solver.search.strategy.decision.Decision;
@@ -109,6 +110,29 @@ public class Search {
     }
 
     /**
+     * Use the Generating Partial Assignment procedure as a plug-in to improve a former search heuristic
+     * for COPs.
+     * <br/>
+     * The aim of the approach is to find promising partial assignments that have a higher possibility of being optimal,
+     * or can be extended to a high-quality solution whose objective is close to that of an optimal one.
+     * </br>
+     * This meta-heuristic is described in:
+     * "Finding Good Partial Assignments During Restart-based Branch and Bound Search, AAAI'23".
+     *
+     * @param ivars      variables to generate partial assignment from
+     * @param maxSolNum  maximum number of solutions to store
+     * @param largerCutoff whether to use larger cutoff when looking for solutions
+     * @param formerSearch former search heuristic
+     * @return good partial assignment strategy to plug in as first strategy
+     */
+    public static AbstractStrategy<?> generatePartialAssignment(IntVar[] ivars,
+                                                                int maxSolNum,
+                                                                boolean largerCutoff,
+                                                                AbstractStrategy<?> formerSearch) {
+        return new PartialAssignmentGenerator<>(ivars, maxSolNum, largerCutoff, formerSearch);
+    }
+
+    /**
      * Make the input search strategy greedy, that is, decisions can be applied but not refuted.
      *
      * @param search a search heuristic building branching decisions
@@ -124,8 +148,12 @@ public class Search {
      * activated.
      *
      * @param searches ordered set of enumeration strategies
+     * @throws IllegalArgumentException when the array of strategies is either null or empty.
      */
     public static AbstractStrategy sequencer(AbstractStrategy... searches) {
+        if (searches == null || searches.length == 0) {
+            throw new IllegalArgumentException("The array of strategies cannot be null or empty");
+        }
         return new StrategiesSequencer(searches);
     }
 
@@ -141,9 +169,13 @@ public class Search {
      * @param enforceFirst branching order true = enforce first; false = remove first
      * @param sets         SetVar array to branch on
      * @return a strategy to instantiate sets
+     * @throws IllegalArgumentException when the array of variables is either null or empty.
      */
     public static SetStrategy setVarSearch(VariableSelector<SetVar> varS, SetValueSelector valS,
                                            boolean enforceFirst, SetVar... sets) {
+        if (sets == null || sets.length == 0) {
+            throw new IllegalArgumentException("The array of variables cannot be null or empty");
+        }
         return new SetStrategy(sets, varS, valS, enforceFirst);
     }
 
@@ -169,7 +201,7 @@ public class Search {
      * <a href="https://dblp.org/rec/conf/ecai/BoussemartHLS04">https://dblp.org/rec/conf/ecai/BoussemartHLS04</a>
      */
     public static AbstractStrategy<SetVar> domOverWDegSearch(SetVar... vars) {
-        return new SetStrategy(vars, new DomOverWDeg<>(vars, 0), new SetDomainMin(), true);
+        return setVarSearch(new DomOverWDeg<>(vars, 0), new SetDomainMin(), true, vars);
     }
 
     /**
@@ -182,7 +214,7 @@ public class Search {
      * <a href="https://dblp.org/rec/conf/ictai/WattezLPT19">https://dblp.org/rec/conf/ictai/WattezLPT19</a>
      */
     public static AbstractStrategy<SetVar> domOverWDegRefSearch(SetVar... vars) {
-        return new SetStrategy(vars, new DomOverWDegRef<>(vars, 0), new SetDomainMin(), true);
+        return setVarSearch(new DomOverWDegRef<>(vars, 0), new SetDomainMin(), true, vars);
     }
 
     /**
@@ -196,7 +228,7 @@ public class Search {
      * <a href="https://dblp.org/rec/conf/sac/HabetT19">https://dblp.org/rec/conf/sac/HabetT19</a>
      */
     public static AbstractStrategy<SetVar> conflictHistorySearch(SetVar... vars) {
-        return new SetStrategy(vars, new ConflictHistorySearch<>(vars, 0), new SetDomainMin(), true);
+        return setVarSearch(new ConflictHistorySearch<>(vars, 0), new SetDomainMin(), true, vars);
     }
 
     /**
@@ -210,7 +242,7 @@ public class Search {
      * <a href="https://dblp.org/rec/conf/cp/LiYL21">https://dblp.org/rec/conf/cp/LiYL21</a>
      */
     public static AbstractStrategy<SetVar> failureRateBasedSearch(SetVar... vars) {
-        return new SetStrategy(vars, new FailureBased<>(vars, 0, 2), new SetDomainMin(), true);
+        return setVarSearch(new FailureBased<>(vars, 0, 2), new SetDomainMin(), true, vars);
     }
 
     /**
@@ -224,7 +256,7 @@ public class Search {
      * <a href="https://dblp.org/rec/conf/cp/LiYL21">https://dblp.org/rec/conf/cp/LiYL21</a>
      */
     public static AbstractStrategy<SetVar> failureLengthBasedSearch(SetVar... vars) {
-        return new SetStrategy(vars, new FailureBased<>(vars, 0, 4), new SetDomainMin(), true);
+        return setVarSearch(new FailureBased<>(vars, 0, 4), new SetDomainMin(), true, vars);
     }
 
     // ************************************************************************************
@@ -240,11 +272,14 @@ public class Search {
      * @param edgeS        Edge selector (defines which edge to enforce/remove if decision is on edges)
      * @param enforceFirst branching order true = enforce first; false = remove first
      * @param graphs       GraphVar array to branch on
-     * @return
+     * @return a search strategy on GraphVar
      */
     public static GraphStrategy graphVarSearch(VariableSelector<GraphVar> varS, GraphNodeOrEdgeSelector nodeOrEdgeS,
                                                GraphNodeSelector nodeS, GraphEdgeSelector edgeS, boolean enforceFirst,
                                                GraphVar... graphs) {
+        if (graphs == null || graphs.length == 0) {
+            throw new IllegalArgumentException("The set of variables cannot be null or empty");
+        }
         return new GraphStrategy(graphs, varS, nodeOrEdgeS, nodeS, edgeS, enforceFirst);
     }
 
@@ -327,9 +362,13 @@ public class Search {
      * @param rvars     RealVar array to branch on
      * @param leftFirst select left range first
      * @return a strategy to instantiate reals
+     * @throws IllegalArgumentException when the array of variables is either null or empty.
      */
     public static RealStrategy realVarSearch(VariableSelector<RealVar> varS, RealValueSelector valS,
                                              double epsilon, boolean leftFirst, RealVar... rvars) {
+        if (rvars == null || rvars.length == 0) {
+            throw new IllegalArgumentException("The array of variables cannot be null or empty");
+        }
         return new RealStrategy(rvars, varS, valS, epsilon, leftFirst);
     }
 
@@ -404,11 +443,15 @@ public class Search {
      *                         selected value
      * @param vars             variables to branch on
      * @return a custom search strategy
+     * @throws IllegalArgumentException when the array of variables is either null or empty.
      */
     public static IntStrategy intVarSearch(VariableSelector<IntVar> varSelector,
                                            IntValueSelector valSelector,
                                            DecisionOperator<IntVar> decisionOperator,
                                            IntVar... vars) {
+        if (vars == null || vars.length == 0) {
+            throw new IllegalArgumentException("The array of variables cannot be null or empty");
+        }
         return new IntStrategy(vars, varSelector, valSelector, decisionOperator);
     }
 
@@ -444,10 +487,16 @@ public class Search {
             valueSelector = new IntDomainMin();
         } else {
             valueSelector = new IntDomainBest();
-            model.getSolver().attach(model.getSolver().defaultSolution());
-            valueSelector = new IntDomainLast(model.getSolver().defaultSolution(), valueSelector, null);
+            Solution solution;
+            if (model.getSolver().defaultSolutionExists()) {
+                solution = model.getSolver().defaultSolution(); // already attached
+            } else {
+                solution = new Solution(model, vars);
+                model.getSolver().attach(solution);
+            }
+            valueSelector = new IntDomainLast(solution, valueSelector, null);
         }
-        return new IntStrategy(vars, new DomOverWDeg<>(vars, 0), valueSelector);
+        return intVarSearch(new DomOverWDeg<>(vars, 0), valueSelector, vars);
     }
 
     /**
@@ -461,7 +510,7 @@ public class Search {
      * <a href="https://dblp.org/rec/conf/ecai/BoussemartHLS04">https://dblp.org/rec/conf/ecai/BoussemartHLS04</a>
      */
     public static AbstractStrategy<IntVar> domOverWDegSearch(IntVar... vars) {
-        return new IntStrategy(vars, new DomOverWDeg<>(vars, 0), new IntDomainMin());
+        return intVarSearch(new DomOverWDeg<>(vars, 0), new IntDomainMin(), vars);
     }
 
     /**
@@ -474,7 +523,7 @@ public class Search {
      * <a href="https://dblp.org/rec/conf/ictai/WattezLPT19">https://dblp.org/rec/conf/ictai/WattezLPT19</a>
      */
     public static AbstractStrategy<IntVar> domOverWDegRefSearch(IntVar... vars) {
-        return new IntStrategy(vars, new DomOverWDegRef<>(vars, 0), new IntDomainMin());
+        return intVarSearch(new DomOverWDegRef<>(vars, 0), new IntDomainMin(), vars);
     }
 
     /**
@@ -488,8 +537,12 @@ public class Search {
      * @implNote This is based on "Activity-Based Search for Black-Box Constraint Programming Solvers."
      * Michel et al. CPAIOR 2012.
      * <a href="https://dblp.org/rec/conf/cpaior/MichelH12">https://dblp.org/rec/conf/cpaior/MichelH12</a>
+     * @throws IllegalArgumentException when the array of variables is either null or empty.
      */
     public static AbstractStrategy<IntVar> activityBasedSearch(IntVar... vars) {
+        if (vars == null || vars.length == 0) {
+            throw new IllegalArgumentException("The array of variables cannot be null or empty");
+        }
         return new ActivityBased(vars);
     }
 
@@ -504,7 +557,7 @@ public class Search {
      * <a href="https://dblp.org/rec/conf/sac/HabetT19">https://dblp.org/rec/conf/sac/HabetT19</a>
      */
     public static AbstractStrategy<IntVar> conflictHistorySearch(IntVar... vars) {
-        return new IntStrategy(vars, new ConflictHistorySearch<>(vars, 0), new IntDomainMin());
+        return intVarSearch(new ConflictHistorySearch<>(vars, 0), new IntDomainMin(), vars);
     }
 
     /**
@@ -518,7 +571,7 @@ public class Search {
      * <a href="https://dblp.org/rec/conf/cp/LiYL21">https://dblp.org/rec/conf/cp/LiYL21</a>
      */
     public static AbstractStrategy<IntVar> failureRateBasedSearch(IntVar... vars) {
-        return new IntStrategy(vars, new FailureBased<>(vars, 0, 2), new IntDomainMin());
+        return intVarSearch(new FailureBased<>(vars, 0, 2), new IntDomainMin(), vars);
     }
 
     /**
@@ -532,7 +585,7 @@ public class Search {
      * <a href="https://dblp.org/rec/conf/cp/LiYL21">https://dblp.org/rec/conf/cp/LiYL21</a>
      */
     public static AbstractStrategy<IntVar> failureLengthBasedSearch(IntVar... vars) {
-        return new IntStrategy(vars, new FailureBased<>(vars, 0, 4), new IntDomainMin());
+        return intVarSearch(new FailureBased<>(vars, 0, 4), new IntDomainMin(), vars);
     }
 
     /**
@@ -595,7 +648,7 @@ public class Search {
     }
 
     /**
-     * Assigns the non-instantiated variable of smallest domain size to its lower bound.
+     * Assigns the non-instantiated variable of the smallest domain size to its lower bound.
      *
      * @param vars list of variables
      * @return assignment strategy
@@ -605,7 +658,7 @@ public class Search {
     }
 
     /**
-     * Assigns the non-instantiated variable of smallest domain size to its upper bound.
+     * Assigns the non-instantiated variable of the smallest domain size to its upper bound.
      *
      * @param vars list of variables
      * @return assignment strategy
@@ -1155,7 +1208,6 @@ public class Search {
                 if (model.getResolutionPolicy() == ResolutionPolicy.SATISFACTION) {
                     return selector;
                 }
-                model.getSolver().attach(model.getSolver().defaultSolution());
                 return new IntDomainLast(model.getSolver().defaultSolution(), selector, null);
             } else {
                 return selector;
@@ -1190,14 +1242,31 @@ public class Search {
          * <p>This policy will restart every {@code cutoff} failures, until {@code offset} restarts occur.
          *
          * @implNote {@code factor} is ignored.
-         * @see MonotonicRestartStrategy
+         * @see MonotonicCutoff
          */
         MONOTONIC {
             @Override
             public void declare(Solver solver, int cutoff, double factor, int offset) {
                 solver.setRestarts(
                         count -> solver.getFailCount() >= count,
-                        new MonotonicRestartStrategy(cutoff),
+                        new MonotonicCutoff(cutoff),
+                        offset
+                );
+                solver.setNoGoodRecordingFromRestarts();
+            }
+        },
+        /**
+         * To use a linear restart strategy.
+         *
+         * @implNote {@code factor} is ignored.
+         * @see LinearCutoff
+         */
+        LINEAR {
+            @Override
+            public void declare(Solver solver, int cutoff, double factor, int offset) {
+                solver.setRestarts(
+                        count -> solver.getFailCount() >= count,
+                        new LinearCutoff(cutoff),
                         offset
                 );
                 solver.setNoGoodRecordingFromRestarts();
@@ -1207,14 +1276,14 @@ public class Search {
          * To use a Luby restart strategy.
          *
          * @implNote {@code factor} is ignored.
-         * @see LubyCutoffStrategy
+         * @see LubyCutoff
          */
         LUBY {
             @Override
             public void declare(Solver solver, int cutoff, double factor, int offset) {
                 solver.setRestarts(
                         count -> solver.getFailCount() >= count,
-                        new LubyCutoffStrategy(cutoff),
+                        new LubyCutoff(cutoff),
                         offset
                 );
                 solver.setNoGoodRecordingFromRestarts();
@@ -1223,14 +1292,14 @@ public class Search {
         /**
          * To use a geometric restart strategy.
          *
-         * @see GeometricalCutoffStrategy
+         * @see GeometricalCutoff
          */
         GEOMETRIC {
             @Override
             public void declare(Solver solver, int cutoff, double factor, int offset) {
                 solver.setRestarts(
                         count -> solver.getFailCount() >= count,
-                        new GeometricalCutoffStrategy(cutoff, factor),
+                        new GeometricalCutoff(cutoff, factor),
                         offset
                 );
                 solver.setNoGoodRecordingFromRestarts();

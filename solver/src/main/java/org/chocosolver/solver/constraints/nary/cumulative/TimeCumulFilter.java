@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -91,7 +91,9 @@ public class TimeCumulFilter extends CumulFilter {
 					h[i].updateUpperBound(minH,aCause);
 				}
 			}
-			for (int i : tasks) {
+			tIter = tasks.iterator();
+			while (tIter.hasNext()){
+				int i = tIter.nextInt();
 				if (h[i].getLB() > 0) {
 					// filters
 					if (s[i].getLB() + d[i].getLB() > min) {

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -9,7 +9,6 @@
  */
 package org.chocosolver.solver.search.loop;
 
-import org.chocosolver.cutoffseq.LubyCutoffStrategy;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Settings;
 import org.chocosolver.solver.Solver;
@@ -17,8 +16,10 @@ import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.propagation.PropagationProfiler;
 import org.chocosolver.solver.search.limits.NodeCounter;
 import org.chocosolver.solver.search.loop.lns.neighbors.RandomNeighborhood;
+import org.chocosolver.solver.search.loop.monitors.SolvingStatisticsFlow;
 import org.chocosolver.solver.search.loop.move.MoveBinaryDFS;
 import org.chocosolver.solver.search.loop.move.MoveBinaryLDS;
+import org.chocosolver.solver.search.restart.LubyCutoff;
 import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.decision.Decision;
 import org.chocosolver.solver.search.strategy.strategy.AbstractStrategy;
@@ -26,12 +27,15 @@ import org.chocosolver.solver.search.strategy.strategy.FullyRandom;
 import org.chocosolver.solver.search.strategy.strategy.IntStrategy;
 import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
+import org.chocosolver.util.ProblemMaker;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.chocosolver.solver.search.strategy.Search.*;
 import static org.chocosolver.util.ProblemMaker.makeGolombRuler;
@@ -181,7 +185,7 @@ public class SolverTest {
         Solver r = model.getSolver();
         r.setDFS();
         r.setSearch(inputOrderLBSearch(model.retrieveIntVars(false)));
-        model.getSolver().setRestarts(limit -> model.getSolver().getNodeCount() >= limit, new LubyCutoffStrategy(2), 2);
+        model.getSolver().setRestarts(limit -> model.getSolver().getNodeCount() >= limit, new LubyCutoff(2), 2);
         while (model.getSolver().solve()) ;
 
         assertEquals(model.getSolver().getRestartCount(), 2);
@@ -379,8 +383,7 @@ public class SolverTest {
                 " id        coarse      fine    filter     fails  name\n" +
                 " 0              3         2         2         0  \"PropBinPacking(VGU0, VGU1, VGU2, ..., binLoad[2])\"\n" +
                 " 1              1         0         0         0  \"binLoad[0] + binLoad[1] + binLoad[2] = 24576\"\n" +
-                " 2              1         0         0         0  \"true\"\n" +
-                "Total           5         2         2         0\n" +
+                "Total           4         2         2         0\n" +
                 "\n" +
                 "Integer variables\n" +
                 " \n" +
@@ -402,7 +405,32 @@ public class SolverTest {
                 " 6              1         0         0         0         0  \"binLoad[0]\"\n" +
                 " 7              1         0         0         0         0  \"binLoad[1]\"\n" +
                 " 8              1         0         0         0         0  \"binLoad[2]\"\n" +
-                " 9              0         0         0         0         0  \"cste -- 24576\"\n" +
-                " 10             0         0         0         0         0  \"cste -- 1\"\n\n");
+                " 9              0         0         0         0         0  \"cste -- 24576\"\n\n");
+    }
+
+    @Test(groups = "1s")
+    public void testSolvingFlow() {
+        Model model = ProblemMaker.makeGolombRuler(9);
+        Solver solver = model.getSolver();
+        String jsonObject = SolvingStatisticsFlow.toJSON(solver);
+        Pattern p = Pattern.compile("\"variables\":\"(\\d+)\"," +
+                "\"constraints\":\"(\\d+)\"," +
+                "\"objective\":\"(\\d+)\"," +
+                "\"solutions\":\"(\\d+)\"," +
+                "\"nodes\":\"(\\d+)\"," +
+                "\"fails\":\"(\\d+)\"," +
+                "\"backtracks\":\"(\\d+)\"," +
+                "\"backjumps\":\"(\\d+)\"," +
+                "\"restarts\":\"(\\d+)\"," +
+                "\"fixpoints\":\"(\\d+)\"," +
+                "\"depth\":\"(\\d+)\"," +
+                "\"time\":\"(\\d+):(\\d+):(\\d+)\"," +
+                "\"memory\":\"-?(\\d+)\"}"
+        );
+        Matcher m = p.matcher(jsonObject);
+        Assert.assertTrue(m.find());
+        Assert.assertEquals(m.group(1), "45");
+        Assert.assertEquals(m.group(2), "155");
+        Assert.assertEquals(m.group(3), "1024");
     }
 }

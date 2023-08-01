@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2022, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -58,7 +58,6 @@ public final class BoolEqView<I extends IntVar> extends BoolIntView<I> {
             this.contradiction(cause, MSG_EMPTY);
         } else if (!isInstantiated()) {
             model.getSolver().getEventObserver().instantiateTo(this, value, cause, getLB(), getUB());
-            this.fixed.set(true);
             if (reactOnRemoval) {
                 delta.add(1 - value, cause);
             }
@@ -67,6 +66,7 @@ public final class BoolEqView<I extends IntVar> extends BoolIntView<I> {
             } else {
                 done = var.removeValue(cste, this);
             }
+            this.fixed.set(done);
             notifyPropagators(IntEventType.INSTANTIATE, cause);
         }
         return done;
