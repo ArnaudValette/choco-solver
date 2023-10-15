@@ -1,11 +1,17 @@
 /*
-@author Arthur Godet <arth.godet@gmail.com>
-@since 17/08/2021
-*/
-
+ * This file is part of choco-solver, http://choco-solver.org/
+ *
+ * Copyright (c) 2023, IMT Atlantique. All rights reserved.
+ *
+ * Licensed under the BSD 4-clause license.
+ *
+ * See LICENSE file in the project root for full license information.
+ */
 package org.chocosolver.solver;
 
 import java.util.Arrays;
+import java.util.function.Function;
+
 import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.constraints.nary.cumulative.CumulFilter;
 import org.chocosolver.solver.constraints.nary.cumulative.Cumulative;
@@ -225,12 +231,20 @@ public interface ISchedulingFactory extends ISelf<Model> {
     ////////////////////////////////// SEARCH ///////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////
 
-    private IntVar[] extractStarts(Task[] tasks) {
-        IntVar[] starts = new IntVar[tasks.length];
-        for(int i = 0; i < starts.length; i++) {
-            starts[i] = tasks[i].getStart();
-        }
-        return starts;
+    default IntVar[] extractVars(Task[] tasks, Function<Task, IntVar> function) {
+        return Arrays.stream(tasks).map(function).toArray(IntVar[]::new);
+    }
+
+    default IntVar[] extractStartVars(Task[] tasks) {
+        return extractVars(tasks, Task::getStart);
+    }
+
+    default IntVar[] extractDurationVars(Task[] tasks) {
+        return extractVars(tasks, Task::getDuration);
+    }
+
+    default IntVar[] extractEndVars(Task[] tasks) {
+        return extractVars(tasks, Task::getEnd);
     }
 
     /**
@@ -245,17 +259,12 @@ public interface ISchedulingFactory extends ISelf<Model> {
     default IntStrategy setTimes(Task[] tasks) {
         SetTimes setTimes = new SetTimes(tasks);
         ref().post(new Constraint("SET_TIMES", setTimes));
-        return Search.intVarSearch(setTimes, new IntDomainMin(), extractStarts(tasks));
+        return Search.intVarSearch(setTimes, new IntDomainMin(), extractStartVars(tasks));
     }
 
-    int MIN_EST = 0;
-    int MAX_EST = 1;
-    int MIN_LST = 2;
-    int MAX_LST = 3;
-    int MIN_EET = 4;
-    int MAX_EET = 5;
-    int MIN_LET = 6;
-    int MAX_LET = 7;
+    enum ArbitrationRule {
+        MIN_EST, MAX_EST, MIN_LST, MAX_LST, MIN_ECT, MAX_ECT, MIN_LCT, MAX_LCT
+    }
 
     /**
      * Returns true if the first task is before the second task according to the rule.
@@ -263,26 +272,26 @@ public interface ISchedulingFactory extends ISelf<Model> {
      * If the rule is MAX_EST(1), then returns task1.est > task2.est
      * If the rule is MIN_LST(2), then returns task1.lst < task2.lst
      * If the rule is MAX_LST(3), then returns task1.lst > task2.lst
-     * If the rule is MIN_EET(4), then returns task1.eet < task2.eet
-     * If the rule is MAX_EET(5), then returns task1.eet > task2.eet
-     * If the rule is MIN_LET(6), then returns task1.let < task2.let
-     * If the rule is MAX_LET(7), then returns task1.let > task2.let
+     * If the rule is MIN_ECT(4), then returns task1.eet < task2.eet
+     * If the rule is MAX_ECT(5), then returns task1.eet > task2.eet
+     * If the rule is MIN_LCT(6), then returns task1.let < task2.let
+     * If the rule is MAX_LCT(7), then returns task1.let > task2.let
      *
      * @param task1 the first task
      * @param task2 the second task
      * @param rule the rule
      * @return true iff task1 is before task2 according to the rule
      */
-    private boolean before(Task task1, Task task2, int rule) {
+    default boolean before(Task task1, Task task2, ArbitrationRule rule) {
         switch(rule) {
             case MIN_EST: return task1.getStart().getLB() < task2.getStart().getLB();
             case MAX_EST: return task1.getStart().getLB() > task2.getStart().getLB();
             case MIN_LST: return task1.getStart().getUB() < task2.getStart().getUB();
             case MAX_LST: return task1.getStart().getUB() > task2.getStart().getUB();
-            case MIN_EET: return task1.getEnd().getLB() < task2.getEnd().getLB();
-            case MAX_EET: return task1.getEnd().getLB() > task2.getEnd().getLB();
-            case MIN_LET: return task1.getEnd().getUB() < task2.getEnd().getUB();
-            case MAX_LET: return task1.getEnd().getUB() > task2.getEnd().getUB();
+            case MIN_ECT: return task1.getEnd().getLB() < task2.getEnd().getLB();
+            case MAX_ECT: return task1.getEnd().getLB() > task2.getEnd().getLB();
+            case MIN_LCT: return task1.getEnd().getUB() < task2.getEnd().getUB();
+            case MAX_LCT: return task1.getEnd().getUB() > task2.getEnd().getUB();
             default: throw new UnsupportedOperationException("Task comparison should be either MIN_EST(0), MAX_EST(1), MIN_LST(2), MAX_LST(3), MIN_EET(4), MAX_EET(5), MIN_LET(6) or MAX_LET(7).");
         }
     }
@@ -294,11 +303,11 @@ public interface ISchedulingFactory extends ISelf<Model> {
      * @return the strategy
      */
     default IntStrategy smallest(Task[] tasks) {
-        return smallest(tasks, MIN_EET);
+        return smallest(tasks, ArbitrationRule.MIN_ECT);
     }
 
-    default IntStrategy smallest(Task[] tasks, int arbitrationRule) {
-        IntVar[] starts = extractStarts(tasks);
+    default IntStrategy smallest(Task[] tasks, ArbitrationRule arbitrationRule) {
+        IntVar[] starts = extractStartVars(tasks);
         return Search.intVarSearch(
             variables -> {
                 int idx = -1;
