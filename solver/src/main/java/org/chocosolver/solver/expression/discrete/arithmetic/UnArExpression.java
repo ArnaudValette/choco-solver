@@ -82,15 +82,15 @@ public class UnArExpression implements ArExpression {
             IntVar v = e.intVar();
             switch (op){
                 case NEG:
-                    me = model.intMinusView(v);
+                    me = model.neg(v);
                     break;
                 case ABS:
-                    me = model.intAbsView(v);
+                    me = model.abs(v);
                     break;
                 case SQR:
                     int[] bounds = VariableUtils.boundsForMultiplication(v, v);
                     me = model.intVar(model.generateName("sqr_exp_"), bounds[0], bounds[1]);
-                    model.times(v, v, me).post();
+                    model.square(me, v).post();
                     break;
                 default:
                     throw new UnsupportedOperationException("Unary arithmetic expressions does not support "+op.name());

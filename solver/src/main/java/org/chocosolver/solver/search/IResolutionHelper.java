@@ -343,7 +343,7 @@ public interface IResolutionHelper extends ISelf<Solver> {
             Constraint forceOptimal = ref().getModel().arithm(objective, "=", opt);
             forceOptimal.post();
             if (defaultS)
-                ref().setSearch(Search.defaultSearch(ref().getModel()));// best bound (in default) is only for optim
+                Search.defaultSearch(ref().getModel());// best bound (in default) is only for optim
             List<Solution> solutions = findAllSolutions(stop);
             ref().getModel().unpost(forceOptimal);
             return solutions;
@@ -413,7 +413,7 @@ public interface IResolutionHelper extends ISelf<Solver> {
             forceOptimal.post();
             ref().getModel().getEnvironment().save(() -> ref().getModel().unpost(forceOptimal));
             if (defaultS)
-                ref().setSearch(Search.defaultSearch(ref().getModel()));// best bound (in default) is only for optim
+                Search.defaultSearch(ref().getModel());// best bound (in default) is only for optim
             /*CPRU cannot infer type arguments for java.util.Spliterator<T>*/
             Spliterator<Solution> it = new Spliterator<Solution>() {
 
@@ -490,7 +490,7 @@ public interface IResolutionHelper extends ISelf<Solver> {
         ref().addStopCriterion(stop);
         ref().getModel().clearObjective();
         ParetoMaximizer pareto = new ParetoMaximizer(
-                Stream.of(objectives).map(o -> maximize ? o : ref().getModel().intMinusView(o)).toArray(IntVar[]::new)
+                Stream.of(objectives).map(o -> maximize ? o : ref().getModel().neg(o)).toArray(IntVar[]::new)
         );
         Constraint c = new Constraint("PARETO", pareto);
         c.post();
@@ -533,7 +533,7 @@ public interface IResolutionHelper extends ISelf<Solver> {
         // 1. copy objective variables and transform it if necessary
         IntVar[] mobj = new IntVar[objectives.length];
         for (int i = 0; i < objectives.length; i++) {
-            mobj[i] = maximize ? ref().getModel().intMinusView(objectives[i]) : objectives[i];
+            mobj[i] = maximize ? ref().getModel().neg(objectives[i]) : objectives[i];
         }
         // 2. try to find a first solution
         while (ref().solve()) {

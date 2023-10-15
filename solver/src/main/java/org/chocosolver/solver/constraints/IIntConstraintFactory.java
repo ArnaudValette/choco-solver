@@ -70,12 +70,11 @@ import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Task;
 import org.chocosolver.solver.variables.Variable;
-import org.chocosolver.solver.variables.view.integer.IntOffsetView;
+import org.chocosolver.solver.variables.view.integer.IntAffineView;
 import org.chocosolver.util.iterators.DisposableRangeIterator;
 import org.chocosolver.util.objects.graphs.MultivaluedDecisionDiagram;
 import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableRangeSet;
 import org.chocosolver.util.tools.ArrayUtils;
-import org.chocosolver.util.tools.MathUtils;
 import org.chocosolver.util.tools.VariableUtils;
 
 import java.util.ArrayList;
@@ -387,35 +386,7 @@ public interface IIntConstraintFactory extends ISelf<Model> {
      */
     default Constraint square(IntVar var1, IntVar var2) {
         assert var2.getModel() == var1.getModel();
-        if (var2.isInstantiated()) {
-            int v1 = var2.getValue();
-            if (var1.isInstantiated()) {
-                int v2 = var1.getValue();
-                if (v1 * v1 == v2) {
-                    return ref().trueConstraint();
-                } else {
-                    return ref().falseConstraint();
-                }
-            } else {
-                return ref().arithm(var1, "=", v1 * v1);
-            }
-        } else {
-            if (var1.isInstantiated()) {
-                int v2 = var1.getValue();
-                if (v2 == 0) {
-                    return ref().arithm(var2, "=", 0);
-                } else {
-                    if (v2 > 0 && MathUtils.isPerfectSquare(v2)) {
-                        int sqt = (int) Math.sqrt(v2);
-                        return ref().member(var2, new int[]{-sqt, sqt});
-                    } else {
-                        return ref().falseConstraint();
-                    }
-                }
-            } else {
-                return new Constraint(ConstraintsName.SQUARE, new PropSquare(var1, var2));
-            }
-        }
+        return pow(var2, 2, var1);
     }
 
     /**
@@ -494,7 +465,7 @@ public interface IIntConstraintFactory extends ISelf<Model> {
         } else if (Y == 1) {
             return arithm(X, "=", Z);
         } else if (Y < 0) {
-            return times(X.getModel().intMinusView(X), -Y, Z);
+            return times(X.getModel().neg(X), -Y, Z);
         } else {
             return new Constraint(ConstraintsName.TIMES, new PropScale(X, Y, Z));
         }
@@ -517,42 +488,44 @@ public interface IIntConstraintFactory extends ISelf<Model> {
      * @param base     first variable
      * @param exponent an integer, should be positive
      * @param result   result variable
-     * @implSpec The 'power' propagator does not exist.
-     * So, if the constraint can be posted in extension, then it will be, otherwise, the constraint is decomposed into
-     * 'times' constraints.
      */
     default Constraint pow(IntVar base, int exponent, IntVar result) {
         if (exponent <= 0) {
             throw new SolverException("The power parameter should be strictly greater than 0.");
         }
-        /*if (TuplesFactory.canBeTupled(X, Y)) {
-            return table(new IntVar[]{Y, X}, TuplesFactory.power(Y, X, C));
-        } else */{
-            /*/ DECOMPOSITION
-            final HashMap<Integer, IntVar> mm = new HashMap<>();
-            mm.put(1, X);
-            int mid = (int) Math.pow(2, Math.ceil(Math.log(C / 2.) / Math.log(2)));
-            IntVar a, b, c;
-            for (int i = 2; i <= mid; i++) {
-                int m = (int) Math.pow(2, Math.ceil(Math.log(i / 2.) / Math.log(2)));
-                a = mm.get(m);
-                b = mm.get(i - m);
-                int[] bnds = VariableUtils.boundsForMultiplication(a, b);
-                c = ref().intVar(X.getName() + "^" + i, bnds[0], bnds[1]);
-                ref().times(a, b, c).post();
-                mm.put(i, c);
-            }
-            a = mm.get(mid);
-            b = mm.get(C - mid);
-            return ref().times(a, b, Y);
-            /*/
-            if ((exponent % 2) == 0) {
-                return new Constraint(ConstraintsName.POWER, new PropPowEven(result, base, exponent));
-            } else {
-                return new Constraint(ConstraintsName.POWER, new PropPowOdd(result, base, exponent));
-            }
-            //*/
+        if (exponent == 1) {
+            return arithm(result, "=", base);
         }
+        if ((exponent % 2) == 0) {
+            return new Constraint(ConstraintsName.POWER, new PropPowEven(result, base, exponent));
+        } else {
+            return new Constraint(ConstraintsName.POWER, new PropPowOdd(result, base, exponent));
+        }
+    }
+
+    /**
+     * <p>Creates a power constraint: X^Y = Z.</p>
+     *
+     * @param base     first variable
+     * @param exponent second variable
+     * @param result   result variable
+     * @implSpec The 'power' propagator does not exist. The general case is handled by a table decomposition.
+     */
+    default Constraint pow(IntVar base, IntVar exponent, IntVar result) {
+        if (exponent.isInstantiated()) {
+            return pow(base, exponent.getValue(), result);
+        }
+        // table decomposition todo as intension constraint
+        Tuples tuples = new Tuples(true);
+        for (int val1 : base) {
+            for (int val2 : exponent) {
+                int res = (int) Math.pow(val1, val2);
+                if (result.contains(res)) {
+                    tuples.add(val1, val2, res);
+                }
+            }
+        }
+        return base.getModel().table(new IntVar[]{base, exponent, result}, tuples);
     }
 
     //##################################################################################################################
@@ -736,7 +709,9 @@ public interface IIntConstraintFactory extends ISelf<Model> {
      */
     @SuppressWarnings("SuspiciousNameCombination")
     default Constraint times(IntVar X, IntVar Y, IntVar Z) {
-        if (Y.isInstantiated()) {
+        if (X == Y) {
+            return square(Z, X);
+        } else if (Y.isInstantiated()) {
             return times(X, Y.getValue(), Z);
         } else if (X.isInstantiated()) {
             return times(Y, X.getValue(), Z);
@@ -1606,7 +1581,7 @@ public interface IIntConstraintFactory extends ISelf<Model> {
                 int nb = occurrences[i].getUB();
                 BoolVar[] doms = new BoolVar[nb];
                 for (int k = 0; k < nb; k++) {
-                    doms[k] = ref().intGeView(occurrences[i], k + 1);
+                    doms[k] = ref().isGeq(occurrences[i], k + 1);
                     bs.add(doms[k]);
                     es.add(energy[i]);
                     ws.add(weight[i]);
@@ -1752,7 +1727,7 @@ public interface IIntConstraintFactory extends ISelf<Model> {
      * @param z      a variable
      * @param offset offset wrt to 'z'
      * @param vars   a vector of variables, of size > 0
-     * @implNote This introduces {@link org.chocosolver.solver.variables.view.integer.IntMinusView}[]
+     * @implNote This introduces {@link org.chocosolver.solver.variables.view.integer.IntAffineView}[]
      * and returns an {@link #argmax(IntVar, int, IntVar[])} constraint
      * on this views.
      */
@@ -1760,7 +1735,7 @@ public interface IIntConstraintFactory extends ISelf<Model> {
         Object[] args = variableUniqueness(vars, new IntVar[]{z});
         vars = (IntVar[]) args[0];
         z = ((IntVar[]) args[1])[0];
-        IntVar[] views = Arrays.stream(vars).map(v -> ref().intMinusView(v)).toArray(IntVar[]::new);
+        IntVar[] views = Arrays.stream(vars).map(v -> ref().neg(v)).toArray(IntVar[]::new);
         return new Constraint(ConstraintsName.ARGMAX, new PropArgmax(z, offset, views));
     }
 
@@ -2166,7 +2141,7 @@ public interface IIntConstraintFactory extends ISelf<Model> {
             default:
                 return Constraint.merge(ConstraintsName.SUBPATH,
                         arithm(start, "<", vars.length + offset),
-                        subCircuit(ArrayUtils.concat(vars, start), offset, end.getModel().intOffsetView(SIZE, 1)),
+                        subCircuit(ArrayUtils.concat(vars, start), offset, end.getModel().offset(SIZE, 1)),
                         element(end.getModel().intVar(vars.length + offset), vars, end, offset)
                 );
         }
@@ -2477,7 +2452,7 @@ public interface IIntConstraintFactory extends ISelf<Model> {
      * Get the list of values in the domains of vars
      *
      * @param vars an array of integer variables
-     * @return the list of values in the domains of vars
+     * @return the array of values in the domains of vars
      */
     default int[] getDomainUnion(IntVar... vars) {
         int m = vars[0].getLB(), M = vars[0].getUB(), j, k;
@@ -2535,7 +2510,8 @@ public interface IIntConstraintFactory extends ISelf<Model> {
         for (int i = 0; i < allvars.size(); i++) {
             for (int j = i + 1; j < allvars.size(); j++) {
                 if (allvars.get(i).equals(allvars.get(j))) {
-                    allvars.set(j, new IntOffsetView<IntVar>(allvars.get(i), 0));
+                    // force the view to be created, no call to ref().intView() here !
+                    allvars.set(j, new IntAffineView<>(allvars.get(i), 1, 0));
                 }
             }
         }

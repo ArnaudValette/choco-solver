@@ -33,6 +33,7 @@ import org.chocosolver.solver.search.loop.propagate.Propagate;
 import org.chocosolver.solver.search.measure.IMeasures;
 import org.chocosolver.solver.search.measure.MeasuresRecorder;
 import org.chocosolver.solver.search.restart.AbstractRestart;
+import org.chocosolver.solver.search.strategy.BlackBoxConfigurator;
 import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.decision.Decision;
 import org.chocosolver.solver.search.strategy.decision.DecisionPath;
@@ -433,12 +434,11 @@ public class Solver implements ISolver, IMeasures, IOutputFactory {
                 logger.white().println("Set to default ones.");
             }
             defaultSearch = true;
-            setSearch(mModel.getSettings().makeDefaultSearch(mModel));
+            mModel.getSettings().makeDefaultSearch(mModel);
         }
         if (completeSearch && !defaultSearch) {
-            AbstractStrategy<Variable> declared = M.getStrategy();
-            AbstractStrategy<?> complete = mModel.getSettings().makeDefaultSearch(mModel);
-            setSearch(declared, complete);
+            BlackBoxConfigurator bb = BlackBoxConfigurator.init();
+            bb.complete(mModel, M.getStrategy());
         }
         if (warmStart != null) {
             AbstractStrategy<Variable> declared = M.getStrategy();
@@ -1162,8 +1162,10 @@ public class Solver implements ISolver, IMeasures, IOutputFactory {
      * @see #clearRestarter()
      */
     public void addRestarter(AbstractRestart restarter) {
-        restarter.setNext(this.restarter);
-        this.restarter = restarter;
+        if(restarter != AbstractRestart.NO_RESTART) {
+            restarter.setNext(this.restarter);
+            this.restarter = restarter;
+        }
     }
 
     /**

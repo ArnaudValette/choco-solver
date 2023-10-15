@@ -711,12 +711,16 @@ public enum FConstraint {
     fzn_all_different_int {
         @Override
         public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
-            boolean AC = annotations.stream().anyMatch(a -> a.id.toString().equals("domain"));
             IntVar[] vars = exps.get(0).toIntVarArray(model);
             if (vars.length > 1) {
-                model.allDifferent(vars, AC ? "AC" : "").post();
+                if (annotations.stream().anyMatch(a -> a.id.toString().equals("domain"))) {
+                    model.allDifferent(vars, "AC").post();
+                } else if (annotations.stream().anyMatch(a -> a.id.toString().startsWith("bounds"))) {
+                    model.allDifferent(vars, "BC").post();
+                } else {
+                    model.allDifferent(vars).post();
+                }
             }
-
         }
     },
     alldifferentBut0Choco {
@@ -942,6 +946,89 @@ public enum FConstraint {
 
         }
     },
+    fzn_count_geq {
+        @Override
+        public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
+
+            IntVar[] x = exps.get(0).toIntVarArray(model);
+            IntVar y = exps.get(1).intVarValue(model);
+            IntVar c = exps.get(2).intVarValue(model);
+            IntVar c2;
+            if (c.isAConstant()) {
+                c2 = model.intVar(c.getName() + "_2", 0, c.getValue());
+            } else {
+                c2 = model.intVar(c.getName() + "_2", 0, x.length);
+                model.arithm(c, ">=", c2).post();
+            }
+            model.count(y, x, c2).post();
+        }
+    },
+    fzn_count_gt {
+        @Override
+        public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
+
+            IntVar[] x = exps.get(0).toIntVarArray(model);
+            IntVar y = exps.get(1).intVarValue(model);
+            IntVar c = exps.get(2).intVarValue(model);
+            IntVar c2;
+            if (c.isAConstant()) {
+                c2 = model.intVar(c.getName() + "_2", 0, c.getValue() - 1);
+            } else {
+                c2 = model.intVar(c.getName() + "_2", 0, x.length);
+                model.arithm(c, ">", c2).post();
+            }
+            model.count(y, x, c2).post();
+
+        }
+    },
+    fzn_count_leq {
+        @Override
+        public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
+
+            IntVar[] x = exps.get(0).toIntVarArray(model);
+            IntVar y = exps.get(1).intVarValue(model);
+            IntVar c = exps.get(2).intVarValue(model);
+            IntVar c2;
+            if (c.isAConstant()) {
+                c2 = model.intVar(c.getName() + "_2", c.getValue(), x.length);
+            } else {
+                c2 = model.intVar(c.getName() + "_2", 0, x.length);
+                model.arithm(c, "<=", c2).post();
+            }
+            model.count(y, x, c2).post();
+        }
+    },
+    fzn_count_lt {
+        @Override
+        public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
+
+            IntVar[] x = exps.get(0).toIntVarArray(model);
+            IntVar y = exps.get(1).intVarValue(model);
+            IntVar c = exps.get(2).intVarValue(model);
+            IntVar c2;
+            if (c.isAConstant()) {
+                c2 = model.intVar(c.getName() + "_2", c.getValue() + 1, x.length);
+            } else {
+                c2 = model.intVar(c.getName() + "_2", 0, x.length);
+                model.arithm(c, "<", c2).post();
+            }
+            model.count(y, x, c2).post();
+
+        }
+    },
+    fzn_count_neq {
+        @Override
+        public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
+
+            IntVar[] x = exps.get(0).toIntVarArray(model);
+            IntVar y = exps.get(1).intVarValue(model);
+            IntVar c = exps.get(2).intVarValue(model);
+            IntVar c2 = model.intVar(c.getName() + "_2", 0, x.length);
+            model.count(y, x, c2).post();
+            model.arithm(c2, "!=", c).post();
+
+        }
+    },
     cumulativeChoco {
         @Override
         public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
@@ -1057,6 +1144,35 @@ public enum FConstraint {
                     }
                     break;
             }
+        }
+    },
+    fzn_disjunctive {
+        @Override
+        public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
+            IntVar[] s = exps.get(0).toIntVarArray(model);
+            IntVar[] d = exps.get(1).toIntVarArray(model);
+            Task[] t = new Task[s.length];
+            IntVar[] h = new IntVar[s.length];
+            for (int i = 0; i < s.length; i++) {
+                t[i] = model.taskVar(s[i], d[i]);
+                h[i] = model.intVar(1);
+            }
+            model.cumulative(t, h, model.intVar(1)).post();
+        }
+    },
+    fzn_disjunctive_strict {
+        @Override
+        public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
+            IntVar[] s = exps.get(0).toIntVarArray(model);
+            IntVar[] d = exps.get(1).toIntVarArray(model);
+            Task[] t = new Task[s.length];
+            IntVar[] h = new IntVar[s.length];
+            for (int i = 0; i < s.length; i++) {
+                t[i] = model.taskVar(s[i], d[i]);
+                h[i] = model.intVar(1);
+                d[i].gt(0).post();
+            }
+            model.cumulative(t, h, model.intVar(1)).post();
         }
     },
     diffnChoco {
@@ -1726,6 +1842,21 @@ public enum FConstraint {
             SetVar c = exps.get(2).setVarValue(model);
             model.element(b, as, 1, c).post();
 
+        }
+    },
+    fzn_disjoint{
+        @Override
+        public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
+            SetVar a = exps.get(0).setVarValue(model);
+            SetVar b = exps.get(1).setVarValue(model);
+            model.disjoint(a, b).post();
+        }
+    },
+    fzn_all_disjoint {
+        @Override
+        public void build(Model model, Datas datas, String id, List<Expression> exps, List<EAnnotation> annotations) {
+            SetVar[] as = exps.get(0).toSetVarArray(model);
+            model.allDisjoint(as).post();
         }
     },
     set_card {
