@@ -168,6 +168,22 @@ public class Task {
         return end;
     }
 
+    public int getEst() {
+        return start.getLB();
+    }
+
+    public int getLst() {
+        return start.getUB();
+    }
+
+    public int getEct() {
+        return end.getLB();
+    }
+
+    public int getLct() {
+        return end.getUB();
+    }
+
     public IVariableMonitor<IntVar> getMonitor() {
         return update;
     }
