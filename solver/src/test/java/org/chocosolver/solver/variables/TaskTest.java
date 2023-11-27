@@ -168,103 +168,195 @@ public class TaskTest {
     ///////////////////////////////////////////////////////////////
 
     private static boolean sameTaskVars(Task t1, Task t2) {
-        return t1.getStart().getLB() == t2.getStart().getLB() && t1.getStart().getUB() == t2.getStart().getUB()
+        return t1.getEst() == t2.getEst() && t1.getLst() == t2.getLst()
                 && t1.getDuration().getLB() == t2.getDuration().getLB() && t1.getDuration().getUB() == t2.getDuration().getUB()
-                && t1.getEnd().getLB() == t2.getEnd().getLB() && t1.getEnd().getUB() == t2.getEnd().getUB();
+                && t1.getEct() == t2.getEct() && t1.getLct() == t2.getLct();
     }
 
     private static boolean hasTaskMonitor(Task task) {
         return task.getMonitor() != null;
     }
 
-    private void specificToTask(Model m) {
-        // Task(Model model, int est, int lst, int d, int ect, int lct)
-        Task t1 = new Task(m, 0, 10, 2, 0, 10);
-        Assert.assertTrue(hasTaskMonitor(t1));
-        Task t2 = new Task(m, 0, 10, 2, 2, 12);
-        Assert.assertFalse(hasTaskMonitor(t2));
+    @FunctionalInterface
+    private interface TaskCreator {
+        Task create();
     }
 
-    private void specificToIVariableFactory(Model m) {
-        // taskVar(IntVar s, IntVar d)
-        IntVar s = m.intVar(0, 10);
-        IntVar d = m.intVar(1, 5);
-        Task t1 = m.taskVar(s, d);
-        Assert.assertTrue(hasTaskMonitor(t1));
-
-        Task t2 = m.taskVar(s, m.intVar(2));
-        Assert.assertTrue(t2.getEnd() instanceof IntAffineView);
-        Assert.assertFalse(hasTaskMonitor(t2));
+    private static Task[] createTasks(TaskCreator[] creators) {
+        Task[] tasks = new Task[creators.length];
+        for (int i = 0; i < tasks.length; i++) {
+            tasks[i] = creators[i].create();
+        }
+        return tasks;
     }
 
-    private void inCommon(Model m) {
-        int d = 2;
+    @FunctionalInterface
+    private interface TaskTester {
+        boolean test(Task task);
+    }
 
-        // Task(IntVar s, int d)
-        Task t1 = new Task(m.intVar(0, 10), d);
-        Task t2 = m.taskVar(m.intVar(0, 10), d);
-        Assert.assertTrue(sameTaskVars(t1, t2));
-        Assert.assertFalse(hasTaskMonitor(t1));
-        Assert.assertFalse(hasTaskMonitor(t2));
-
-        // Task(IntVar s, int d, IntVar e)
-        Task t3 = new Task(m.intVar(0, 10), d, m.intVar(0, 10));
-        Task t4 = m.taskVar(m.intVar(0, 10), d, m.intVar(0, 10));
-        Assert.assertTrue(sameTaskVars(t3, t4));
-        Assert.assertTrue(hasTaskMonitor(t3));
-        Assert.assertTrue(hasTaskMonitor(t4));
-
-        IntVar s5 = m.intVar(0, 10);
-        Task t5 = new Task(s5, d, m.offset(s5, d));
-        IntVar s6 = m.intVar(0, 10);
-        Task t6 = m.taskVar(s6, d, m.offset(s6, d));
-        Assert.assertTrue(sameTaskVars(t5, t6));
-        Assert.assertFalse(hasTaskMonitor(t5));
-        Assert.assertFalse(hasTaskMonitor(t6));
-
-        // Task(IntVar s, IntVar d, IntVar e)
-        Task t7 = new Task(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10));
-        Task t8 = m.taskVar(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10));
-        Assert.assertTrue(sameTaskVars(t7, t8));
-        Assert.assertTrue(hasTaskMonitor(t7));
-        Assert.assertTrue(hasTaskMonitor(t8));
-
-        IntVar s9 = m.intVar(0, 10);
-        Task t9 = new Task(s9, m.intVar(d), m.offset(s9, d));
-        IntVar s10 = m.intVar(0, 10);
-        Task t10 = m.taskVar(s10, m.intVar(d), m.offset(s10, d));
-        Assert.assertTrue(sameTaskVars(t9, t10));
-        Assert.assertFalse(hasTaskMonitor(t9));
-        Assert.assertFalse(hasTaskMonitor(t10));
-
-        // Task(IntVar s, IntVar d, IntVar e, boolean declareMonitor)
-        Task t11 = new Task(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10));
-        Task t12 = m.taskVar(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10));
-        Assert.assertTrue(sameTaskVars(t11, t12));
-        Assert.assertTrue(hasTaskMonitor(t11));
-        Assert.assertTrue(hasTaskMonitor(t12));
-
-        IntVar s13 = m.intVar(0, 10);
-        Task t13 = new Task(s13, m.intVar(d), m.offset(s13, d));
-        IntVar s14 = m.intVar(0, 10);
-        Task t14 = m.taskVar(s14, m.intVar(d), m.offset(s14, d));
-        Assert.assertTrue(sameTaskVars(t13, t14));
-        Assert.assertFalse(hasTaskMonitor(t13));
-        Assert.assertFalse(hasTaskMonitor(t14));
+    private void testTaskVars(Task[] tasks, boolean shouldHaveMonitor, TaskTester[] testers) {
+        for (int i = 0; i < tasks.length; i++) {
+            Assert.assertEquals(hasTaskMonitor(tasks[i]), shouldHaveMonitor);
+            if (testers != null) {
+                for (int j = 0; j < testers.length; j++) {
+                    Assert.assertTrue(testers[j].test(tasks[i]));
+                }
+            }
+            if (tasks[i] instanceof OptionalTask) {
+                Assert.assertTrue(tasks[i].mayBePerformed());
+                Assert.assertFalse(tasks[i].mustBePerformed());
+            } else {
+                Assert.assertTrue(tasks[i].mayBePerformed());
+                Assert.assertTrue(tasks[i].mustBePerformed());
+            }
+            if (i > 0) {
+                Assert.assertTrue(sameTaskVars(tasks[0], tasks[i]));
+            }
+        }
     }
 
     @Test(groups = "1s", timeOut = 60000)
-    public void testingTaskConstructors() {
+    public void testTaskConstructors() {
         Model m = new Model();
+        int d = 2;
+        boolean shouldHaveMonitor = false;
 
-        /* Task specific constructors */
-        specificToTask(m);
-        /* Constructing methods in common between Task and IVariableFactory */
-        inCommon(m);
-        /* IVariableFactory specific constructors */
-        specificToIVariableFactory(m);
+        // Task(Model m, int est, int lst, int d, int ect, int lct)
+        TaskCreator[] creators = new TaskCreator[]{
+                () -> new Task(m, 1, 10, 2, 0, 10),
+                () -> new OptionalTask(m, 1, 10, 2, 0, 10),
+                () -> new OptionalTask(m, 1, 10, 2, 0, 10, m.boolVar()),
+                () -> m.taskVar(1, 10, 2, 0, 10),
+                () -> m.taskVar(1, 10, 2, 0, 10, false),
+                () -> m.taskVar(1, 10, 2, 0, 10, true),
+                () -> m.taskVar(1, 10, 2, 0, 10, m.boolVar())
+        };
+        TaskTester[] testers = new TaskTester[]{
+                t -> t.getEnd() instanceof IntAffineView,
+                t -> t.getEst() == 1,
+                t -> t.getLst() == 8,
+                t -> t.getEct() == 3,
+                t -> t.getLct() == 10
+        };
+        testTaskVars(createTasks(creators), shouldHaveMonitor, testers);
+
+        shouldHaveMonitor = false;
+        creators = new TaskCreator[]{
+                () -> new Task(m, 0, 10, 2, 2, 12),
+                () -> new OptionalTask(m, 0, 10, 2, 2, 12),
+                () -> new OptionalTask(m, 0, 10, 2, 2, 12, m.boolVar()),
+                () -> m.taskVar(0, 10, 2, 2, 12),
+                () -> m.taskVar(0, 10, 2, 2, 12, false),
+                () -> m.taskVar(0, 10, 2, 2, 12, true),
+                () -> m.taskVar(0, 10, 2, 2, 12, m.boolVar())
+        };
+        testers = new TaskTester[]{
+                t -> t.getEnd() instanceof IntAffineView,
+                t -> t.getEst() == 0,
+                t -> t.getLst() == 10,
+                t -> t.getEct() == 2,
+                t -> t.getLct() == 12
+        };
+        testTaskVars(createTasks(creators), shouldHaveMonitor, testers);
+
+        // Task(IntVar s, int d)
+        shouldHaveMonitor = false;
+        creators = new TaskCreator[]{
+                () -> new Task(m.intVar(0, 10), d),
+                () -> new OptionalTask(m.intVar(0, 10), d),
+                () -> new OptionalTask(m.intVar(0, 10), d, m.boolVar()),
+                () -> m.taskVar(m.intVar(0, 10), d),
+                () -> m.taskVar(m.intVar(0, 10), d, false),
+                () -> m.taskVar(m.intVar(0, 10), d, true),
+                () -> m.taskVar(m.intVar(0, 10), d, m.boolVar())
+        };
+        testers = null;
+        testTaskVars(createTasks(creators), shouldHaveMonitor, testers);
+
+        // Task(IntVar s, int d, IntVar e)
+        shouldHaveMonitor = true;
+        creators = new TaskCreator[]{
+                () -> new Task(m.intVar(0, 10), d, m.intVar(0, 10)),
+                () -> new OptionalTask(m.intVar(0, 10), d, m.intVar(0, 10)),
+                () -> new OptionalTask(m.intVar(0, 10), d, m.intVar(0, 10), m.boolVar()),
+                () -> m.taskVar(m.intVar(0, 10), d, m.intVar(0, 10)),
+                () -> m.taskVar(m.intVar(0, 10), d, m.intVar(0, 10), false),
+                () -> m.taskVar(m.intVar(0, 10), d, m.intVar(0, 10), true),
+                () -> m.taskVar(m.intVar(0, 10), d, m.intVar(0, 10), m.boolVar())
+        };
+        testers = null;
+        testTaskVars(createTasks(creators), shouldHaveMonitor, testers);
+
+        shouldHaveMonitor = false;
+        creators = new TaskCreator[]{
+                () -> {IntVar s = m.intVar(0, 10); return new Task(s, d, m.offset(s, d));},
+                () -> {IntVar s = m.intVar(0, 10); return new OptionalTask(s, d, m.offset(s, d));},
+                () -> {IntVar s = m.intVar(0, 10); return new OptionalTask(s, d, m.offset(s, d), m.boolVar());},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, d, m.offset(s, d));},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, d, m.offset(s, d), false);},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, d, m.offset(s, d), true);},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, d, m.offset(s, d), m.boolVar());}
+        };
+        testers = null;
+        testTaskVars(createTasks(creators), shouldHaveMonitor, testers);
+
+        // Task(IntVar s, IntVar d, IntVar e)
+        shouldHaveMonitor = true;
+        creators = new TaskCreator[]{
+                () -> new Task(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10)),
+                () -> new OptionalTask(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10)),
+                () -> new OptionalTask(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10), m.boolVar()),
+                () -> m.taskVar(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10)),
+                () -> m.taskVar(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10), false),
+                () -> m.taskVar(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10), true),
+                () -> m.taskVar(m.intVar(0, 10), m.intVar(1, 5), m.intVar(0, 10), m.boolVar())
+        };
+        testers = null;
+        testTaskVars(createTasks(creators), shouldHaveMonitor, testers);
+
+        shouldHaveMonitor = false;
+        creators = new TaskCreator[]{
+                () -> {IntVar s = m.intVar(0, 10); return new Task(s, m.intVar(d), m.offset(s, d));},
+                () -> {IntVar s = m.intVar(0, 10); return new OptionalTask(s, m.intVar(d), m.offset(s, d));},
+                () -> {IntVar s = m.intVar(0, 10); return new OptionalTask(s, m.intVar(d), m.offset(s, d), m.boolVar());},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(d), m.offset(s, d));},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(d), m.offset(s, d), false);},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(d), m.offset(s, d), true);},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(d), m.offset(s, d), m.boolVar());}
+        };
+        testers = null;
+        testTaskVars(createTasks(creators), shouldHaveMonitor, testers);
+
+        // taskVar(IntVar s, IntVar d)
+        shouldHaveMonitor = true;
+        creators = new TaskCreator[]{
+                () -> {IntVar s = m.intVar(0, 10); return new Task(s, m.intVar(1, 5));},
+                () -> {IntVar s = m.intVar(0, 10); return new OptionalTask(s, m.intVar(1, 5));},
+                () -> {IntVar s = m.intVar(0, 10); return new OptionalTask(s, m.intVar(1, 5), m.boolVar());},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(1, 5));},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(1, 5), false);},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(1, 5), true);},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(1, 5), m.boolVar());}
+        };
+        testers = null;
+        testTaskVars(createTasks(creators), shouldHaveMonitor, testers);
+
+        shouldHaveMonitor = false;
+        creators = new TaskCreator[]{
+                () -> {IntVar s = m.intVar(0, 10); return new Task(s, m.intVar(2));},
+                () -> {IntVar s = m.intVar(0, 10); return new OptionalTask(s, m.intVar(2));},
+                () -> {IntVar s = m.intVar(0, 10); return new OptionalTask(s, m.intVar(2), m.boolVar());},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(2));},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(2), false);},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(2), true);},
+                () -> {IntVar s = m.intVar(0, 10); return m.taskVar(s, m.intVar(2), m.boolVar());}
+        };
+        testers = new TaskTester[]{
+                t -> t.getEnd() instanceof IntAffineView
+        };
+        testTaskVars(createTasks(creators), shouldHaveMonitor, testers);
     }
-
 
     @Test(groups = "1s")
     public void testMonitor1() {
@@ -308,4 +400,3 @@ public class TaskTest {
         Assert.assertTrue(s.solve());
     }
 }
-

@@ -187,7 +187,7 @@ public interface IVariableFactory extends ISelf<Model> {
      * @return an IntVar of domain [<i>lb</i>, <i>ub</i>]
      */
     default IntVar intVar(int lb, int ub, boolean boundedDomain) {
-		if (lb == ub) return intVar(lb);
+        if (lb == ub) return intVar(lb);
         return intVar(generateName("IV_"), lb, ub, boundedDomain);
     }
 
@@ -502,6 +502,25 @@ public interface IVariableFactory extends ISelf<Model> {
     //*************************************************************************************
 
     /**
+     * Creates a task variable, based on an earliest starting time <i>est</i>, a latest completion time <i>lst</i>,
+     * a duration <i>d</i>, an earliest completion time <i>ect</i> and a latest completion time <i>lct</i>
+     * such that: start + duration = end.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param est earliest starting time
+     * @param lst latest starting time
+     * @param d duration
+     * @param ect earliest completion time
+     * @param lct latest completion time
+     * @return a task variable.
+     */
+    default Task taskVar(int est, int lst, int d, int ect, int lct) {
+        return taskVar(est, lst, d, ect, lct, false);
+    }
+
+    /**
      * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
      * such that: s + d = e, where <i>e</i> is the ending time.
      *
@@ -513,7 +532,7 @@ public interface IVariableFactory extends ISelf<Model> {
      * @return a task variable.
      */
     default Task taskVar(IntVar s, int d) {
-        return new Task(s, d);
+        return taskVar(s, d, false);
     }
 
     /**
@@ -528,13 +547,7 @@ public interface IVariableFactory extends ISelf<Model> {
      * @return a task variable.
      */
     default Task taskVar(IntVar s, IntVar d) {
-        if(d.isInstantiated()) {
-            return new Task(s, d, ref().offset(s, d.getValue()));
-        } else {
-            int[] bounds = VariableUtils.boundsForAddition(s, d);
-            IntVar end = ref().intVar(bounds[0], bounds[1]);
-            return new Task(s, d, end);
-        }
+        return taskVar(s, d, false);
     }
 
     /**
@@ -550,7 +563,7 @@ public interface IVariableFactory extends ISelf<Model> {
      * @return a task variable.
      */
     default Task taskVar(IntVar s, int d, IntVar e) {
-        return new Task(s, d, e);
+        return taskVar(s, d, e, false);
     }
 
     /**
@@ -566,7 +579,199 @@ public interface IVariableFactory extends ISelf<Model> {
      * @return a task variable.
      */
     default Task taskVar(IntVar s, IntVar d, IntVar e) {
-        return new Task(s, d, e);
+        return taskVar(s, d, e, false);
+    }
+
+    /**
+     * Creates a task variable, based on an earliest starting time <i>est</i>, a latest completion time <i>lst</i>,
+     * a duration <i>d</i>, an earliest completion time <i>ect</i> and a latest completion time <i>lct</i>
+     * such that: start + duration = end.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param est earliest starting time
+     * @param lst latest starting time
+     * @param d duration
+     * @param ect earliest completion time
+     * @param lct latest completion time
+     * @param optional whether to create an OptionalTask or a Task
+     * @return a task variable.
+     */
+    default Task taskVar(int est, int lst, int d, int ect, int lct, boolean optional) {
+        if (optional) {
+            return new OptionalTask(ref(), est, lst, d, ect, lct);
+        } else {
+            return new Task(ref(), est, lst, d, ect, lct);
+        }
+    }
+
+    /**
+     * Creates a task variable, based on an earliest starting time <i>est</i>, a latest completion time <i>lst</i>,
+     * a duration <i>d</i>, an earliest completion time <i>ect</i> and a latest completion time <i>lct</i>
+     * such that: start + duration = end.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param est earliest starting time
+     * @param lst latest starting time
+     * @param d duration
+     * @param ect earliest completion time
+     * @param lct latest completion time
+     * @param performed boolean variable, whether the task is performed or not
+     * @return a task variable.
+     */
+    default OptionalTask taskVar(int est, int lst, int d, int ect, int lct, BoolVar performed) {
+        return new OptionalTask(ref(), est, lst, d, ect, lct, performed);
+    }
+
+    /**
+     * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
+     * such that: s + d = e, where <i>e</i> is the ending time.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param s integer variable, starting time
+     * @param d fixed duration
+     * @param optional whether to create an OptionalTask or a Task
+     * @return a task variable.
+     */
+    default Task taskVar(IntVar s, int d, boolean optional) {
+        if (optional) {
+            return new OptionalTask(s, d);
+        } else {
+            return new Task(s, d);
+        }
+    }
+
+    /**
+     * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
+     * such that: s + d = e, where <i>e</i> is the ending time.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param s integer variable, starting time
+     * @param d fixed duration
+     * @param performed boolean variable, whether the task is performed or not
+     * @return a task variable.
+     */
+    default OptionalTask taskVar(IntVar s, int d, BoolVar performed) {
+        return new OptionalTask(s, d, performed);
+    }
+
+    /**
+     * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
+     * such that: s + d = e, where <i>e</i> is the ending time.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param s integer variable, starting time
+     * @param d integer variable, duration
+     * @param optional whether to create an OptionalTask or a Task
+     * @return a task variable.
+     */
+    default Task taskVar(IntVar s, IntVar d, boolean optional) {
+        if (optional) {
+            return new OptionalTask(s, d);
+        } else {
+            return new Task(s, d);
+        }
+    }
+
+    /**
+     * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
+     * such that: s + d = e, where <i>e</i> is the ending time.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param s integer variable, starting time
+     * @param d integer variable, duration
+     * @param performed boolean variable, whether the task is performed or not
+     * @return a task variable.
+     */
+    default OptionalTask taskVar(IntVar s, IntVar d, BoolVar performed) {
+        return new OptionalTask(s, d, performed);
+    }
+
+    /**
+     * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
+     * such that: s + d = e, where <i>e</i> is the ending time.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param s integer variable, starting time
+     * @param d fixed duration
+     * @param e integer variable, ending time
+     * @param optional whether to create an OptionalTask or a Task
+     * @return a task variable.
+     */
+    default Task taskVar(IntVar s, int d, IntVar e, boolean optional) {
+        if (optional) {
+            return new OptionalTask(s, d, e);
+        } else {
+            return new Task(s, d, e);
+        }
+    }
+
+    /**
+     * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
+     * such that: s + d = e, where <i>e</i> is the ending time.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param s integer variable, starting time
+     * @param d fixed duration
+     * @param e integer variable, ending time
+     * @param performed boolean variable, whether the task is performed or not
+     * @return a task variable.
+     */
+    default OptionalTask taskVar(IntVar s, int d, IntVar e, BoolVar performed) {
+        return new OptionalTask(s, d, e, performed);
+    }
+
+    /**
+     * Creates a task variable, made of a starting time <i>s</i>,
+     * a duration <i>d</i> and an ending time <i>e</i> such that: s + d = e.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param s integer variable, starting time
+     * @param d integer variable, duration
+     * @param e integer variable, ending time
+     * @param optional whether to create an OptionalTask or a Task
+     * @return a task variable.
+     */
+    default Task taskVar(IntVar s, IntVar d, IntVar e, boolean optional) {
+        if (optional) {
+            return new OptionalTask(s, d, e);
+        } else {
+            return new Task(s, d, e);
+        }
+    }
+
+    /**
+     * Creates a task variable, made of a starting time <i>s</i>,
+     * a duration <i>d</i> and an ending time <i>e</i> such that: s + d = e.
+     *
+     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
+     * this will not be done automatically.
+     *
+     * @param s integer variable, starting time
+     * @param d integer variable, duration
+     * @param e integer variable, ending time
+     * @param performed boolean variable, whether the task is performed or not
+     * @return a task variable.
+     */
+    default OptionalTask taskVar(IntVar s, IntVar d, IntVar e, BoolVar performed) {
+        return new OptionalTask(s, d, e, performed);
     }
 
     /**

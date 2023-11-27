@@ -9,6 +9,7 @@
  */
 package org.chocosolver.solver.variables;
 
+import org.chocosolver.solver.ICause;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.learn.ExplanationForSignedClause;
@@ -35,12 +36,12 @@ public class Task {
     // VARIABLES
     //***********************************************************************************
 
-    private final IntVar start;
-    private final IntVar duration;
-    private final IntVar end;
+    protected final IntVar start;
+    protected final IntVar duration;
+    protected final IntVar end;
     private IVariableMonitor<IntVar> update;
 
-    private Task mirror = null;
+    protected Task mirror = null;
 
     //***********************************************************************************
     // CONSTRUCTORS
@@ -58,14 +59,9 @@ public class Task {
      * @param lct latest completion time
      */
     public Task(Model model, int est, int lst, int d, int ect, int lct) {
-        start = model.intVar(est, lst);
+        start = model.intVar(Math.max(est, ect - d), Math.min(lst, lct - d));
         duration = model.intVar(d);
-        if(ect == est+d && lct == lst+d) {
-            end = start.getModel().offset(start, d);
-        } else {
-            end = model.intVar(ect, lct);
-            declareMonitor();
-        }
+        end = start.getModel().offset(start, d);
     }
 
     /**
@@ -79,6 +75,26 @@ public class Task {
         start = s;
         duration = start.getModel().intVar(d);
         end = start.getModel().offset(start, d);
+    }
+
+    /**
+     * Container representing a task:
+     * It ensures that: start + duration = end, end being an offset view of start + duration.
+     *
+     * @param s start variable
+     * @param d duration value
+     */
+    public Task(IntVar s, IntVar d) {
+        if (d.isInstantiated()) {
+            start = s;
+            duration = start.getModel().intVar(d);
+            end = start.getModel().offset(start, d.getValue());
+        } else {
+            start = s;
+            duration = d;
+            end = start.getModel().intVar(s.getLB() + d.getLB(), s.getUB() + d.getUB());
+            declareMonitor();
+        }
     }
 
     /**
@@ -184,6 +200,30 @@ public class Task {
         return end.getUB();
     }
 
+    public boolean updateEst(int est, ICause cause) throws ContradictionException {
+        return start.updateLowerBound(est, cause);
+    }
+
+    public boolean updateLst(int lst, ICause cause) throws ContradictionException {
+        return start.updateUpperBound(lst, cause);
+    }
+
+    public boolean updateEct(int ect, ICause cause) throws ContradictionException {
+        return end.updateLowerBound(ect, cause);
+    }
+
+    public boolean updateLct(int lct, ICause cause) throws ContradictionException {
+        return end.updateUpperBound(lct, cause);
+    }
+
+    public boolean mayBePerformed() {
+        return true;
+    }
+
+    public boolean mustBePerformed() {
+        return true;
+    }
+
     public IVariableMonitor<IntVar> getMonitor() {
         return update;
     }
@@ -226,10 +266,10 @@ public class Task {
     @Override
     public String toString() {
         return "Task[" +
-            "start=" + start +
-            ", duration=" + duration +
-            ", end=" + end +
-            ']';
+                "start=" + start +
+                ", duration=" + duration +
+                ", end=" + end +
+                ']';
     }
 
     private static class TaskMonitor implements IVariableMonitor<IntVar> {
