@@ -38,6 +38,7 @@ import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.decision.Decision;
 import org.chocosolver.solver.search.strategy.decision.DecisionPath;
 import org.chocosolver.solver.search.strategy.strategy.AbstractStrategy;
+import org.chocosolver.solver.search.strategy.strategy.StrategiesSequencer;
 import org.chocosolver.solver.search.strategy.strategy.WarmStart;
 import org.chocosolver.solver.trace.IOutputFactory;
 import org.chocosolver.solver.variables.IntVar;
@@ -49,6 +50,7 @@ import org.chocosolver.util.logger.ANSILogger;
 import org.chocosolver.util.logger.Logger;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.chocosolver.solver.Solver.Action.*;
 import static org.chocosolver.solver.constraints.Constraint.Status.FREE;
@@ -779,7 +781,7 @@ public class Solver implements ISolver, IMeasures, IOutputFactory {
      * <p>
      * Steps 1. and 2. are ignored when <i>dec</i> is <i>null</i>.
      * <p>
-     * In case of success, a call {@link #moveForward(Decision)} is possible.
+     * In case of success, a call moveForward(Decision) is possible.
      * Otherwise, a call {@link #moveBackward()} is required to keep on exploring the search space.
      * If no such call is done, the state maybe inconsistent with the decision path.
      * </p>
@@ -1205,6 +1207,7 @@ public class Solver implements ISolver, IMeasures, IOutputFactory {
      *
      * @param strategies the search strategies to use.
      */
+    @SuppressWarnings({"rawtypes", "ReassignedVariable", "unchecked"})
     public void setSearch(AbstractStrategy... strategies) {
         if (strategies == null || strategies.length == 0) {
             throw new UnsupportedOperationException("no search strategy has been specified");
@@ -1214,8 +1217,16 @@ public class Solver implements ISolver, IMeasures, IOutputFactory {
                     "A strategy must be attached to each of them independently, and it cannot be achieved calling this method." +
                     "An iteration over it child moves is needed: this.getMove().getChildMoves().");
         } else {
-            //noinspection unchecked
-            M.setStrategy(strategies.length == 1 ? strategies[0] : Search.sequencer(strategies));
+            strategies = Arrays.stream(strategies).filter(Objects::nonNull)
+                            .flatMap(s -> (s instanceof StrategiesSequencer) ? Arrays.stream(((StrategiesSequencer<?>) s).getStrategies()) : Stream.of(s))
+                            .toArray(AbstractStrategy[]::new);
+            if(strategies.length == 0){
+                M.removeStrategy();
+            }else if(strategies.length == 1) {
+                M.setStrategy(strategies[0]);
+            }else{
+                M.setStrategy(Search.sequencer(strategies));
+            }
         }
     }
 

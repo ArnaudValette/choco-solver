@@ -70,7 +70,7 @@ public class XCSP extends RegParser {
     public void createSolver() {
         super.createSolver();
         if (level.isLoggable(Level.COMPET)) {
-            System.out.println("c Choco 230706");
+            System.out.println("c Choco 231102");
         }
         String iname = Paths.get(instance).getFileName().toString();
         parsers = new XCSPParser[nb_cores];
@@ -134,7 +134,6 @@ public class XCSP extends RegParser {
     public void parse(Model target, XCSPParser parser) throws Exception {
         parser.model(target, instance);
         // and define a search strategy
-        // Since there is no search strategy in XCSP3, we define a default one as the free search
         freesearch(target.getSolver());
     }
 
@@ -162,7 +161,7 @@ public class XCSP extends RegParser {
         if (level.isLoggable(Level.INFO)) {
             solver.log().println(bb.toString());
         }
-        bb.make(solver.getModel());
+        bb.complete(solver.getModel(), solver.getSearch());
     }
 
     protected void singleThread() {
