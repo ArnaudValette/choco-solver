@@ -216,6 +216,14 @@ public class Task {
         return end.updateUpperBound(lct, cause);
     }
 
+    public boolean fixStartAt(int t, ICause cause) throws ContradictionException {
+        return start.instantiateTo(t, cause);
+    }
+
+    public boolean fixEndAt(int t, ICause cause) throws ContradictionException {
+        return end.instantiateTo(t, cause);
+    }
+
     public boolean mayBePerformed() {
         return true;
     }

@@ -264,6 +264,30 @@ public class OptionalTask extends Task {
     }
 
     @Override
+    public boolean fixStartAt(int t, ICause cause) throws ContradictionException {
+        if (mayBePerformed()) {
+            try {
+                return start.instantiateTo(t, cause);
+            } catch (ContradictionException ex) {
+                performed.updateUpperBound(0, cause);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean fixEndAt(int t, ICause cause) throws ContradictionException {
+        if (mayBePerformed()) {
+            try {
+                return end.instantiateTo(t, cause);
+            } catch (ContradictionException ex) {
+                performed.updateUpperBound(0, cause);
+            }
+        }
+        return false;
+    }
+
+    @Override
     public boolean updateLct(int lct, ICause cause) throws ContradictionException {
         if (mayBePerformed()) {
             try {
