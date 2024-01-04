@@ -200,6 +200,14 @@ public class Task {
         return end.getUB();
     }
 
+    public int getMinDuration() {
+        return duration.getLB();
+    }
+
+    public int getMaxDuration() {
+        return duration.getUB();
+    }
+
     public boolean updateEst(int est, ICause cause) throws ContradictionException {
         return start.updateLowerBound(est, cause);
     }
@@ -216,11 +224,11 @@ public class Task {
         return end.updateUpperBound(lct, cause);
     }
 
-    public boolean fixStartAt(int t, ICause cause) throws ContradictionException {
+    public boolean instantiateStartAt(int t, ICause cause) throws ContradictionException {
         return start.instantiateTo(t, cause);
     }
 
-    public boolean fixEndAt(int t, ICause cause) throws ContradictionException {
+    public boolean instantiateEndAt(int t, ICause cause) throws ContradictionException {
         return end.instantiateTo(t, cause);
     }
 

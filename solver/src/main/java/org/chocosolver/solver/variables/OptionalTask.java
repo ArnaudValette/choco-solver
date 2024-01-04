@@ -219,6 +219,24 @@ public class OptionalTask extends Task {
         }
     }
 
+    @Override
+    public int getMinDuration() {
+        if (mayBePerformed()) {
+            return duration.getLB();
+        } else {
+            return 0;
+        }
+    }
+
+    @Override
+    public int getMaxDuration() {
+        if (mayBePerformed()) {
+            return duration.getUB();
+        } else {
+            return Integer.MAX_VALUE;
+        }
+    }
+
     public boolean forceToBePerformed(ICause cause) throws ContradictionException {
         return performed.updateLowerBound(1, cause);
     }
@@ -264,7 +282,7 @@ public class OptionalTask extends Task {
     }
 
     @Override
-    public boolean fixStartAt(int t, ICause cause) throws ContradictionException {
+    public boolean instantiateStartAt(int t, ICause cause) throws ContradictionException {
         if (mayBePerformed()) {
             try {
                 return start.instantiateTo(t, cause);
@@ -276,7 +294,7 @@ public class OptionalTask extends Task {
     }
 
     @Override
-    public boolean fixEndAt(int t, ICause cause) throws ContradictionException {
+    public boolean instantiateEndAt(int t, ICause cause) throws ContradictionException {
         if (mayBePerformed()) {
             try {
                 return end.instantiateTo(t, cause);
