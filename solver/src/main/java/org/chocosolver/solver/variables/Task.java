@@ -208,6 +208,14 @@ public class Task {
         return duration.getUB();
     }
 
+    public boolean isStartInstantiated() {
+        return start.isInstantiated();
+    }
+
+    public boolean isEndInstantiated() {
+        return end.isInstantiated();
+    }
+
     public boolean updateEst(int est, ICause cause) throws ContradictionException {
         return start.updateLowerBound(est, cause);
     }
