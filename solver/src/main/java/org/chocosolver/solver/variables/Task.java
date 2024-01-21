@@ -248,6 +248,16 @@ public class Task {
         return true;
     }
 
+    public boolean forceToBePerformed(ICause cause) throws ContradictionException {
+        return false;
+    }
+
+    public boolean forceToBeOptional(ICause cause) throws ContradictionException {
+        ContradictionException ex = new ContradictionException();
+        ex.set(cause, null, "forcing Task to be optional");
+        throw ex;
+    }
+
     public IVariableMonitor<IntVar> getMonitor() {
         return update;
     }

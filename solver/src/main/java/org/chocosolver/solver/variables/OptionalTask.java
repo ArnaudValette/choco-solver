@@ -237,10 +237,12 @@ public class OptionalTask extends Task {
         }
     }
 
+    @Override
     public boolean forceToBePerformed(ICause cause) throws ContradictionException {
         return performed.updateLowerBound(1, cause);
     }
 
+    @Override
     public boolean forceToBeOptional(ICause cause) throws ContradictionException {
         return performed.updateUpperBound(0, cause);
     }
