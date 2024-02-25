@@ -232,6 +232,10 @@ public class Task {
         return end.updateUpperBound(lct, cause);
     }
 
+    public boolean updateDuration(int minDuration, int maxDuration, ICause cause) throws ContradictionException {
+        return duration.updateBounds(minDuration, maxDuration, cause);
+    }
+
     public boolean instantiateStartAt(int t, ICause cause) throws ContradictionException {
         return start.instantiateTo(t, cause);
     }

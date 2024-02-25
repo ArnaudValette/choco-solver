@@ -320,6 +320,18 @@ public class OptionalTask extends Task {
     }
 
     @Override
+    public boolean updateDuration(int minDuration, int maxDuration, ICause cause) throws ContradictionException {
+        if (mayBePerformed()) {
+            try {
+                return duration.updateBounds(minDuration, maxDuration, cause);
+            } catch (ContradictionException ex) {
+                performed.updateUpperBound(0, cause);
+            }
+        }
+        return false;
+    }
+
+    @Override
     public Task getMirror() {
         if (mirror == null) {
             mirror = new OptionalTask(end.neg().intVar(), duration, start.neg().intVar(), performed);
