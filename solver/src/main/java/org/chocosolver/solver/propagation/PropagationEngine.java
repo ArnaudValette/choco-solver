@@ -309,6 +309,19 @@ public class PropagationEngine {
         notEmpty |= (1 << prop.doSchedule(pro_queue));
     }
 
+    public void schedule(Propagator<?> prop, int mask) {
+        int p = -1;
+        for (int i = 0; i < propagators.size(); i++) {
+            if (propagators.get(i) != null && propagators.get(i).equals(prop)) {
+                p = i;
+                break;
+            }
+        }
+        if (p != -1) {
+            schedule(prop, p, mask);
+        }
+    }
+
     /**
      * Exeucte a delayed propagator
      *
