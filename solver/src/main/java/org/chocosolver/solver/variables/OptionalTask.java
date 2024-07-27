@@ -320,6 +320,18 @@ public class OptionalTask extends Task {
     }
 
     @Override
+    public boolean updateDuration(int minDuration, ICause cause) throws ContradictionException {
+        if (mayBePerformed()) {
+            try {
+                return duration.updateLowerBound(minDuration, cause);
+            } catch (ContradictionException ex) {
+                performed.updateUpperBound(0, cause);
+            }
+        }
+        return false;
+    }
+
+    @Override
     public boolean updateDuration(int minDuration, int maxDuration, ICause cause) throws ContradictionException {
         if (mayBePerformed()) {
             try {
