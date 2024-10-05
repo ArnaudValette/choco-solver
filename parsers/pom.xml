@@ -17,7 +17,7 @@
     <parent>
         <groupId>org.choco-solver</groupId>
         <artifactId>choco</artifactId>
-        <version>4.10.15-SNAPSHOT</version>
+        <version>4.10.17</version>
     </parent>
     <artifactId>choco-parsers</artifactId>
     <packaging>jar</packaging>
@@ -83,6 +83,18 @@
                                 </transformer>
                             </transformers>
                             <filters>
+                                <filter>
+                                    <artifact>org.choco-solver:choco-solver</artifact>
+                                    <includes>
+                                        <include>**</include>
+                                    </includes>
+                                </filter>
+                                <filter>
+                                    <artifact>org.choco-solver:choco-parsers</artifact>
+                                    <includes>
+                                        <include>**</include>
+                                    </includes>
+                                </filter>
                                 <filter>
                                     <artifact>com.ibm.icu:icu4j</artifact>
                                     <excludes>

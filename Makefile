@@ -2,7 +2,7 @@
 # like running test suites
 
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-DATE := $(shell date +'%y%m%d')
+DATE := $(shell date +'%y%m%d_%H:%M')
 CURRENT_VERSION := $(shell mvn help:evaluate -Dexpression=project.version | grep -v "\[INFO\]" | grep -v "\[WARNING\]")
 
 .PHONY: all clean compile tests 1s 10s ibex checker mzn xcsp mps dimacs expl update_date compet msc delmsc help

@@ -4,10 +4,31 @@ Choco Solver ChangeLog
 This file is dedicated to sum up the new features added and bugs fixed in Choco-solver since the version, 4.0.0.
 **Note**: double-space is replaced by "\t" character on release process. Make sure the format is ok.
 
-NEXT MILESTONE
+4.10.17 - 23 Sep 2024
+-------------------
+
+### Hotfix
+- Fix bug in `PropHybridTable` (#1102)
+
+**Full Changelog**: https://github.com/chocoteam/choco-solver/compare/v4.10.16...v4.10.17
+
+4.10.16 - 12 Sep 2024
+-------------------
+
+### Hotfix
+- Fix bug in `IntAffineView` (#1101)
+
+**Full Changelog**: https://github.com/chocoteam/choco-solver/compare/v4.10.15...v4.10.16
+
+4.10.15 - 09 Sep 2024
 -------------------
 
 ### Major features:
+
+- Add `PickOnDom` and variants (see `Search.pickOnDom`)       
+- Enhance MiniZinc output
+- Revamp scripts to solver flatzinc files
+- Fix bugs (see closed issues)
 
 ### Deprecated API (to be removed in next release):
 
@@ -15,6 +36,11 @@ NEXT MILESTONE
 See [milestone 4.10.15](https://github.com/chocoteam/choco-solver/milestone/39)
 
 #### Contributors to this release:
+- [Arthur Godet](https://github.com/ArthurGodet) (@ArthurGodet) 
+- [Paul King](https://github.com/paulk-asert) (@paulk-asert)
+- [Zhang Yang](https://github.com/zy-nesime) (@zy-nesime)
+- [Charles Prud'homme](https://github.com/cprudhom) (@cprudhom)
+                                                                         
 
 **Full Changelog**: https://github.com/chocoteam/choco-solver/compare/v4.10.14...v4.10.15
 
