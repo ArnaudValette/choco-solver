@@ -907,13 +907,17 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
         fineevt.accept(pindice, mask);
     }
 
+    public boolean hasFineEventsToPropagate() {
+        return !eventsets.isEmpty();
+    }
+
     /**
      * Apply fine event propagation of this.
      * It iterates over pending modified variables and run propagation on each of them.
      * @throws ContradictionException if a contradiction occurred.
      */
     public void doFinePropagation() throws ContradictionException {
-        while (eventsets.size() > 0) {
+        while (!eventsets.isEmpty()) {
             int v = eventsets.pollFirst();
             assert isActive() : "propagator is not active:" + this.getClass();
             // clear event
@@ -929,7 +933,7 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
      */
     public void doFlush(){
         if (reactToFineEvent()) {
-            while (eventsets.size() > 0) {
+            while (!eventsets.isEmpty()) {
                 int v = eventsets.pollLast();
                 eventmasks[v] = 0;
             }

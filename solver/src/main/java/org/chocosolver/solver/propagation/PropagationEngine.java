@@ -224,7 +224,7 @@ public class PropagationEngine {
     }
 
     protected void propagateEvents() throws ContradictionException {
-        if (lastProp.reactToFineEvent()) {
+        if (lastProp.reactToFineEvent() && lastProp.hasFineEventsToPropagate()) {
             lastProp.doFinePropagation();
             // now we can check whether a delayed propagation has been scheduled
             if (delayedPropagationType > 0) {
@@ -331,17 +331,8 @@ public class PropagationEngine {
         notEmpty |= (1 << prop.doSchedule(pro_queue));
     }
 
-    public void schedule(Propagator<?> prop, int mask) {
-        int p = -1;
-        for (int i = 0; i < propagators.size(); i++) {
-            if (propagators.get(i) != null && propagators.get(i).equals(prop)) {
-                p = i;
-                break;
-            }
-        }
-        if (p != -1) {
-            schedule(prop, p, mask);
-        }
+    public void schedule(Propagator<?> prop) {
+        notEmpty |= (1 << prop.doSchedule(pro_queue));
     }
 
     /**
