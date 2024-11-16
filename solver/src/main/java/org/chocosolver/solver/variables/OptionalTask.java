@@ -250,9 +250,9 @@ public class OptionalTask extends Task {
     @Override
     public boolean updateEst(int est, ICause cause) throws ContradictionException {
         if (mayBePerformed()) {
-            try {
+            if (est <= start.getUB()) {
                 return start.updateLowerBound(est, cause);
-            } catch (ContradictionException ex) {
+            } else {
                 performed.updateUpperBound(0, cause);
             }
         }
@@ -262,9 +262,9 @@ public class OptionalTask extends Task {
     @Override
     public boolean updateLst(int lst, ICause cause) throws ContradictionException {
         if (mayBePerformed()) {
-            try {
+            if (lst >= start.getLB()) {
                 return start.updateUpperBound(lst, cause);
-            } catch (ContradictionException ex) {
+            } else {
                 performed.updateUpperBound(0, cause);
             }
         }
@@ -274,33 +274,9 @@ public class OptionalTask extends Task {
     @Override
     public boolean updateEct(int ect, ICause cause) throws ContradictionException {
         if (mayBePerformed()) {
-            try {
+            if (ect <= end.getUB()) {
                 return end.updateLowerBound(ect, cause);
-            } catch (ContradictionException ex) {
-                performed.updateUpperBound(0, cause);
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean instantiateStartAt(int t, ICause cause) throws ContradictionException {
-        if (mayBePerformed()) {
-            try {
-                return start.instantiateTo(t, cause);
-            } catch (ContradictionException ex) {
-                performed.updateUpperBound(0, cause);
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean instantiateEndAt(int t, ICause cause) throws ContradictionException {
-        if (mayBePerformed()) {
-            try {
-                return end.instantiateTo(t, cause);
-            } catch (ContradictionException ex) {
+            } else {
                 performed.updateUpperBound(0, cause);
             }
         }
@@ -310,9 +286,9 @@ public class OptionalTask extends Task {
     @Override
     public boolean updateLct(int lct, ICause cause) throws ContradictionException {
         if (mayBePerformed()) {
-            try {
+            if (lct >= end.getLB()) {
                 return end.updateUpperBound(lct, cause);
-            } catch (ContradictionException ex) {
+            } else {
                 performed.updateUpperBound(0, cause);
             }
         }
@@ -320,11 +296,23 @@ public class OptionalTask extends Task {
     }
 
     @Override
-    public boolean updateDuration(int minDuration, ICause cause) throws ContradictionException {
+    public boolean updateMinDuration(int minDuration, ICause cause) throws ContradictionException {
         if (mayBePerformed()) {
-            try {
+            if (minDuration <= duration.getUB()) {
                 return duration.updateLowerBound(minDuration, cause);
-            } catch (ContradictionException ex) {
+            } else {
+                performed.updateUpperBound(0, cause);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean updateMaxDuration(int maxDuration, ICause cause) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (maxDuration >= duration.getLB()) {
+                return duration.updateUpperBound(maxDuration, cause);
+            } else {
                 performed.updateUpperBound(0, cause);
             }
         }
@@ -334,9 +322,33 @@ public class OptionalTask extends Task {
     @Override
     public boolean updateDuration(int minDuration, int maxDuration, ICause cause) throws ContradictionException {
         if (mayBePerformed()) {
-            try {
+            if (minDuration <= maxDuration && minDuration <= duration.getUB() && maxDuration >= duration.getLB()) {
                 return duration.updateBounds(minDuration, maxDuration, cause);
-            } catch (ContradictionException ex) {
+            } else {
+                performed.updateUpperBound(0, cause);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean instantiateStartAt(int t, ICause cause) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (start.getLB() <= t && t <= start.getUB()) {
+                return start.instantiateTo(t, cause);
+            } else {
+                performed.updateUpperBound(0, cause);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean instantiateEndAt(int t, ICause cause) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (end.getLB() <= t && t <= end.getUB()) {
+                return end.instantiateTo(t, cause);
+            } else {
                 performed.updateUpperBound(0, cause);
             }
         }
