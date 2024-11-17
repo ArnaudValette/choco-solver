@@ -50,9 +50,11 @@ public class TaskTest {
     public void testDecreaseDuration() throws ContradictionException {
         checkVariable(duration, 0, 10);
         start.removeValue(0, Cause.Null);
+        task.ensureBoundConsistency();
         checkVariable(duration, 0, 9);
 
         end.removeValue(10, Cause.Null);
+        task.ensureBoundConsistency();
         checkVariable(duration, 0, 8);
     }
 
@@ -60,11 +62,13 @@ public class TaskTest {
     @Test(groups = "1s", timeOut = 60000)
     public void testIncreaseDuration() throws ContradictionException {
         start.removeInterval(4, 5, Cause.Null);
+        task.ensureBoundConsistency();
         checkVariable(duration, 2, 10);
 
         end.removeValue(5, Cause.Null);
         end.removeValue(6, Cause.Null);
         end.removeValue(7, Cause.Null);
+        task.ensureBoundConsistency();
         checkVariable(duration, 5, 10);
     }
 
@@ -99,8 +103,9 @@ public class TaskTest {
     public void testRemoveValueSameVariable() throws ContradictionException {
         IntVar start = model.intVar(-5, 0);
         IntVar durationAndEnd = model.intVar(10);
-        new Task(start, durationAndEnd, durationAndEnd);
+        Task task = new Task(start, durationAndEnd, durationAndEnd);
         start.removeValue(0, Cause.Null);
+        task.ensureBoundConsistency();
     }
 
     @Test(groups = "1s", timeOut = 60000)
@@ -173,8 +178,8 @@ public class TaskTest {
                 && t1.getEct() == t2.getEct() && t1.getLct() == t2.getLct();
     }
 
-    private static boolean hasTaskMonitor(Task task) {
-        return task.getMonitor() != null;
+    private static boolean hasArithmConstraint(Task task) {
+        return task.getArithmConstraint() != null;
     }
 
     @FunctionalInterface
@@ -197,7 +202,7 @@ public class TaskTest {
 
     private void testTaskVars(Task[] tasks, boolean shouldHaveMonitor, TaskTester[] testers) {
         for (int i = 0; i < tasks.length; i++) {
-            Assert.assertEquals(hasTaskMonitor(tasks[i]), shouldHaveMonitor);
+            Assert.assertEquals(hasArithmConstraint(tasks[i]), shouldHaveMonitor);
             if (testers != null) {
                 for (int j = 0; j < testers.length; j++) {
                     Assert.assertTrue(testers[j].test(tasks[i]));
