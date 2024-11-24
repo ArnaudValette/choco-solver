@@ -506,9 +506,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * a duration <i>d</i>, an earliest completion time <i>ect</i> and a latest completion time <i>lct</i>
      * such that: start + duration = end.
      *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
-     *
      * @param est earliest starting time
      * @param lst latest starting time
      * @param d duration
@@ -524,9 +521,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
      * such that: s + d = e, where <i>e</i> is the ending time.
      *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
-     *
      * @param s integer variable, starting time
      * @param d fixed duration
      * @return a task variable.
@@ -539,9 +533,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
      * such that: s + d = e, where <i>e</i> is the ending time.
      *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
-     *
      * @param s integer variable, starting time
      * @param d integer variable, duration
      * @return a task variable.
@@ -553,9 +544,6 @@ public interface IVariableFactory extends ISelf<Model> {
     /**
      * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
      * such that: s + d = e, where <i>e</i> is the ending time.
-     *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
      *
      * @param s integer variable, starting time
      * @param d fixed duration
@@ -570,9 +558,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * Creates a task variable, made of a starting time <i>s</i>,
      * a duration <i>d</i> and an ending time <i>e</i> such that: s + d = e.
      *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
-     *
      * @param s integer variable, starting time
      * @param d integer variable, duration
      * @param e integer variable, ending time
@@ -586,9 +571,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * Creates a task variable, based on an earliest starting time <i>est</i>, a latest completion time <i>lst</i>,
      * a duration <i>d</i>, an earliest completion time <i>ect</i> and a latest completion time <i>lct</i>
      * such that: start + duration = end.
-     *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
      *
      * @param est earliest starting time
      * @param lst latest starting time
@@ -611,9 +593,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * a duration <i>d</i>, an earliest completion time <i>ect</i> and a latest completion time <i>lct</i>
      * such that: start + duration = end.
      *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
-     *
      * @param est earliest starting time
      * @param lst latest starting time
      * @param d duration
@@ -629,9 +608,6 @@ public interface IVariableFactory extends ISelf<Model> {
     /**
      * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
      * such that: s + d = e, where <i>e</i> is the ending time.
-     *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
      *
      * @param s integer variable, starting time
      * @param d fixed duration
@@ -650,9 +626,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
      * such that: s + d = e, where <i>e</i> is the ending time.
      *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
-     *
      * @param s integer variable, starting time
      * @param d fixed duration
      * @param performed boolean variable, whether the task is performed or not
@@ -665,9 +638,6 @@ public interface IVariableFactory extends ISelf<Model> {
     /**
      * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
      * such that: s + d = e, where <i>e</i> is the ending time.
-     *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
      *
      * @param s integer variable, starting time
      * @param d integer variable, duration
@@ -686,9 +656,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
      * such that: s + d = e, where <i>e</i> is the ending time.
      *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
-     *
      * @param s integer variable, starting time
      * @param d integer variable, duration
      * @param performed boolean variable, whether the task is performed or not
@@ -701,9 +668,6 @@ public interface IVariableFactory extends ISelf<Model> {
     /**
      * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
      * such that: s + d = e, where <i>e</i> is the ending time.
-     *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
      *
      * @param s integer variable, starting time
      * @param d fixed duration
@@ -723,9 +687,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * Creates a task variable, based on a starting time <i>s</i> and a duration <i>d</i>
      * such that: s + d = e, where <i>e</i> is the ending time.
      *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
-     *
      * @param s integer variable, starting time
      * @param d fixed duration
      * @param e integer variable, ending time
@@ -739,9 +700,6 @@ public interface IVariableFactory extends ISelf<Model> {
     /**
      * Creates a task variable, made of a starting time <i>s</i>,
      * a duration <i>d</i> and an ending time <i>e</i> such that: s + d = e.
-     *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
      *
      * @param s integer variable, starting time
      * @param d integer variable, duration
@@ -761,9 +719,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * Creates a task variable, made of a starting time <i>s</i>,
      * a duration <i>d</i> and an ending time <i>e</i> such that: s + d = e.
      *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
-     *
      * @param s integer variable, starting time
      * @param d integer variable, duration
      * @param e integer variable, ending time
@@ -778,9 +733,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * Creates an array of <i>s.length</i> task variables,
      * where task <i>i</i> is made of a starting time <i>s_i</i>,
      * a processing time <i>p_i</i> and an ending time <i>e_i</i> such that: s_i + p_i = e_i.
-     *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
      *
      * @param s integer variables, starting times
      * @param p integer variables, processing times
@@ -803,9 +755,6 @@ public interface IVariableFactory extends ISelf<Model> {
      * where task <i>i,j</i> is made of a starting time <i>s_(i,j)</i>,
      * a processing time <i>p_(i,j)</i> and an ending time <i>e_(i,j)</i> such that:
      * s_(i,j) + p_(i,j) = e_(i,j).
-     *
-     * A call to {@link Task#ensureBoundConsistency()} is required before launching the resolution,
-     * this will not be done automatically.
      *
      * @param s integer variables, starting times
      * @param p integer variables, processing times
