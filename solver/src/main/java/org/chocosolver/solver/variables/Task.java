@@ -13,10 +13,11 @@ import org.chocosolver.solver.ICause;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.constraints.Propagator;
+import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.learn.ExplanationForSignedClause;
-import org.chocosolver.solver.variables.events.PropagatorEventType;
 import org.chocosolver.solver.variables.view.integer.IntAffineView;
+import org.chocosolver.util.ESat;
 import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableRangeSet;
 
 import java.util.function.Consumer;
@@ -30,7 +31,7 @@ import static org.chocosolver.util.objects.setDataStructures.iterable.IntIterabl
  * @author Jean-Guillaume Fages
  * @since 04/02/2013
  */
-public class Task implements ICause {
+public class Task extends Propagator<IntVar> {
 
     //***********************************************************************************
     // VARIABLES
@@ -39,7 +40,6 @@ public class Task implements ICause {
     protected final IntVar start;
     protected final IntVar duration;
     protected final IntVar end;
-    private Constraint arithmConstraint;
 
     protected Task mirror = null;
 
@@ -59,9 +59,14 @@ public class Task implements ICause {
      * @param lct latest completion time
      */
     public Task(Model model, int est, int lst, int d, int ect, int lct) {
-        start = model.intVar(Math.max(est, ect - d), Math.min(lst, lct - d));
-        duration = model.intVar(d);
-        end = start.getModel().offset(start, d);
+        this(buildVars(model, est, lst, d, ect, lct));
+    }
+
+    private static IntVar[] buildVars(Model model, int est, int lst, int d, int ect, int lct) {
+        IntVar start = model.intVar(Math.max(est, ect - d), Math.min(lst, lct - d));
+        IntVar duration = model.intVar(d);
+        IntVar end = start.getModel().offset(start, d);
+        return new IntVar[]{start, duration, end};
     }
 
     /**
@@ -72,9 +77,7 @@ public class Task implements ICause {
      * @param d duration value
      */
     public Task(IntVar s, int d) {
-        start = s;
-        duration = start.getModel().intVar(d);
-        end = start.getModel().offset(start, d);
+        this(new IntVar[]{s, s.getModel().intVar(d), s.getModel().offset(s, d)});
     }
 
     /**
@@ -85,17 +88,12 @@ public class Task implements ICause {
      * @param d duration value
      */
     public Task(IntVar s, IntVar d) {
-        if (d.isInstantiated()) {
-            start = s;
-            duration = d;
-            end = start.getModel().offset(start, d.getValue());
-        } else {
-            start = s;
-            duration = d;
-            end = start.getModel().intVar(s.getLB() + d.getLB(), s.getUB() + d.getUB());
-            arithmConstraint = start.getModel().arithm(start, "+", duration, "=", end);
-            arithmConstraint.post();
-        }
+        this(new IntVar[]{
+                s,
+                d,
+                d.isInstantiated() ? s.getModel().offset(s, d.getValue())
+                                   : s.getModel().intVar(s.getLB() + d.getLB(), s.getUB() + d.getUB())
+        });
     }
 
     /**
@@ -119,21 +117,24 @@ public class Task implements ICause {
      * @param e end variable
      */
     public Task(IntVar s, IntVar d, IntVar e) {
-        this(s, d, e, !d.isInstantiated() || !isOffsetView(s, d.getValue(), e));
-    }
-
-    private Task(IntVar s, IntVar d, IntVar e, boolean postArithm) {
+        super(new IntVar[]{s, d, e}, PropagatorPriority.TERNARY, false, false);
         start = s;
         duration = d;
         end = e;
-        if (postArithm) {
-            arithmConstraint = start.getModel().arithm(start, "+", duration, "=", end);
-            arithmConstraint.post();
+        if (shouldPassivate(s, d, e)) {
+            setActive();
+            setPassive();
+        } else {
+            this.getModel().post(new Constraint("Task relation", this));
         }
     }
 
-    private static boolean isOffsetView(IntVar s, int d, IntVar e) {
-        if(e instanceof IntAffineView) {
+    private Task(IntVar[] vars) {
+        this(vars[0], vars[1], vars[2]);
+    }
+
+    public static boolean isOffsetView(IntVar s, int d, IntVar e) {
+        if (e instanceof IntAffineView) {
             IntAffineView<?> intOffsetView = (IntAffineView<?>) e;
             if (intOffsetView.p) {
                 return intOffsetView.equals(s, 1, d);
@@ -145,25 +146,8 @@ public class Task implements ICause {
         return false;
     }
 
-    //***********************************************************************************
-    // METHODS
-    //***********************************************************************************
-
-    /**
-     * Applies BC-filtering so that start + duration = end
-     *
-     * @throws ContradictionException thrown if a inconsistency has been detected between start, end and duration
-     */
-    public void ensureBoundConsistency() throws ContradictionException {
-        boolean hasFiltered;
-        do {
-            // start
-            hasFiltered = start.updateBounds(end.getLB() - duration.getUB(), end.getUB() - duration.getLB(), this);
-            // end
-            hasFiltered |= end.updateBounds(start.getLB() + duration.getLB(), start.getUB() + duration.getUB(), this);
-            // duration
-            hasFiltered |= duration.updateBounds(end.getLB() - start.getUB(), end.getUB() - start.getLB(), this);
-        } while (hasFiltered);
+    public static boolean shouldPassivate(final IntVar s, final IntVar d, final IntVar e) {
+        return d.isInstantiated() && isOffsetView(s, d.getValue(), e);
     }
 
     //***********************************************************************************
@@ -268,15 +252,37 @@ public class Task implements ICause {
         throw ex;
     }
 
-    public Constraint getArithmConstraint() {
-        return arithmConstraint;
-    }
-
     public Task getMirror() {
         if (mirror == null) {
-            mirror = new Task(end.neg().intVar(), duration, start.neg().intVar(), false);
+            mirror = new Task(end.neg().intVar(), duration, start.neg().intVar());
         }
         return mirror;
+    }
+
+    @Override
+    public void propagate(int evtmask) throws ContradictionException {
+        boolean hasFiltered;
+        do {
+            hasFiltered = false;
+            if (mayBePerformed()) {
+                hasFiltered = updateEst(end.getLB() - duration.getUB(), this);
+                hasFiltered |= updateLst(end.getUB() - duration.getLB(), this);
+
+                hasFiltered |= updateEct(start.getLB() + duration.getLB(), this);
+                hasFiltered |= updateLct(start.getUB() + duration.getUB(), this);
+
+                hasFiltered |= updateDuration(end.getLB() - start.getUB(), end.getUB() - start.getLB(), this);
+            }
+        } while (hasFiltered);
+    }
+
+    @Override
+    public ESat isEntailed() {
+        if (start.isInstantiated() && duration.isInstantiated() && end.isInstantiated()) {
+            return ESat.eval(start.getValue() + duration.getValue() == end.getValue());
+        } else {
+            return ESat.UNDEFINED;
+        }
     }
 
     private static void doExplain(IntVar S, IntVar D, IntVar E,

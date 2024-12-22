@@ -45,6 +45,7 @@ import org.chocosolver.solver.trace.IOutputFactory;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Task;
 import org.chocosolver.solver.variables.Variable;
+import org.chocosolver.solver.variables.events.PropagatorEventType;
 import org.chocosolver.util.ESat;
 import org.chocosolver.util.criteria.Criterion;
 import org.chocosolver.util.iterators.DisposableValueIterator;
@@ -408,13 +409,6 @@ public class Solver implements ISolver, IMeasures, IOutputFactory {
         M.setTopDecisionPosition(0);
         mModel.getEnvironment().worldPush(); // store state before initial propagation; w = 0 -> 1
         try {
-            if (mModel.getHook(Model.TASK_SET_HOOK_NAME) != null) {
-                //noinspection unchecked
-                ArrayList<Task> tset = (ArrayList<Task>) mModel.getHook(Model.TASK_SET_HOOK_NAME);
-                for (int i = 0; i < tset.size(); i++) {
-                    tset.get(i).ensureBoundConsistency();
-                }
-            }
             mMeasures.incFixpointCount();
             doPropagate();
             action = extend;
@@ -765,13 +759,6 @@ public class Solver implements ISolver, IMeasures, IOutputFactory {
     public void propagate() throws ContradictionException {
         if (!engine.isInitialized()) {
             engine.initialize();
-        }
-        if (mModel.getHook(Model.TASK_SET_HOOK_NAME) != null) {
-            //noinspection unchecked
-            ArrayList<Task> tset = (ArrayList<Task>) mModel.getHook(Model.TASK_SET_HOOK_NAME);
-            for (int i = 0; i < tset.size(); i++) {
-                tset.get(i).ensureBoundConsistency();
-            }
         }
         try {
             engine.propagate();

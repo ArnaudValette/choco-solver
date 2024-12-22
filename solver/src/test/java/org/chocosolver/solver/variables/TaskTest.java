@@ -16,6 +16,7 @@ import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.constraints.ternary.PropXplusYeqZ;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.search.strategy.Search;
+import org.chocosolver.solver.variables.events.PropagatorEventType;
 import org.chocosolver.solver.variables.impl.BitsetIntVarImpl;
 import org.chocosolver.solver.variables.view.integer.IntAffineView;
 import org.chocosolver.util.ESat;
@@ -50,11 +51,11 @@ public class TaskTest {
     public void testDecreaseDuration() throws ContradictionException {
         checkVariable(duration, 0, 10);
         start.removeValue(0, Cause.Null);
-        task.ensureBoundConsistency();
+        task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
         checkVariable(duration, 0, 9);
 
         end.removeValue(10, Cause.Null);
-        task.ensureBoundConsistency();
+        task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
         checkVariable(duration, 0, 8);
     }
 
@@ -62,13 +63,13 @@ public class TaskTest {
     @Test(groups = "1s", timeOut = 60000)
     public void testIncreaseDuration() throws ContradictionException {
         start.removeInterval(4, 5, Cause.Null);
-        task.ensureBoundConsistency();
+        task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
         checkVariable(duration, 2, 10);
 
         end.removeValue(5, Cause.Null);
         end.removeValue(6, Cause.Null);
         end.removeValue(7, Cause.Null);
-        task.ensureBoundConsistency();
+        task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
         checkVariable(duration, 5, 10);
     }
 
@@ -76,7 +77,7 @@ public class TaskTest {
     public void testBadDomainFilteringOK() throws ContradictionException {
         Task task = new Task(end, duration, start);
         System.out.println(task);
-        task.ensureBoundConsistency();
+        task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
         checkVariable(duration, 0, 0);
         checkVariable(start, 5, 5);
         checkVariable(end, 5, 5);
@@ -87,7 +88,7 @@ public class TaskTest {
         IntVar start = model.intVar(5, 6);
         IntVar end = model.intVar(1, 2);
         task = new Task(start, duration, end);
-        task.ensureBoundConsistency();
+        task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
     }
 
 
@@ -105,7 +106,7 @@ public class TaskTest {
         IntVar durationAndEnd = model.intVar(10);
         Task task = new Task(start, durationAndEnd, durationAndEnd);
         start.removeValue(0, Cause.Null);
-        task.ensureBoundConsistency();
+        task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
     }
 
     @Test(groups = "1s", timeOut = 60000)
@@ -114,7 +115,7 @@ public class TaskTest {
         IntVar end = model.intVar(-5);
         IntVar duration = model.intVar(-5);
         Task task = new Task(start, duration, end);
-        task.ensureBoundConsistency();
+        task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
         // TODO: 21/03/2016 is it possible ?
         System.out.println("odd behaviour: " + task);
     }
@@ -178,10 +179,6 @@ public class TaskTest {
                 && t1.getEct() == t2.getEct() && t1.getLct() == t2.getLct();
     }
 
-    private static boolean hasArithmConstraint(Task task) {
-        return task.getArithmConstraint() != null;
-    }
-
     @FunctionalInterface
     private interface TaskCreator {
         Task create();
@@ -202,7 +199,7 @@ public class TaskTest {
 
     private void testTaskVars(Task[] tasks, boolean shouldHaveMonitor, TaskTester[] testers) {
         for (int i = 0; i < tasks.length; i++) {
-            Assert.assertEquals(hasArithmConstraint(tasks[i]), shouldHaveMonitor);
+            Assert.assertEquals(!tasks[i].isPassive(), shouldHaveMonitor);
             if (testers != null) {
                 for (int j = 0; j < testers.length; j++) {
                     Assert.assertTrue(testers[j].test(tasks[i]));
