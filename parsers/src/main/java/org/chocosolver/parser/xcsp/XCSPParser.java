@@ -101,7 +101,7 @@ public class XCSPParser implements XCallbacks2 {
 
     @Override
     public void endArray(XVariables.XArray a) {
-        IntVar[] array = Arrays.stream(a.vars).map(x -> mvars.get(x)).toArray(IntVar[]::new);
+        IntVar[] array = Arrays.stream(a.vars).filter(v -> v.degree != 0).map(x -> mvars.get(x)).toArray(IntVar[]::new);
         model.addAsGroup(a.id, array);
     }
 
