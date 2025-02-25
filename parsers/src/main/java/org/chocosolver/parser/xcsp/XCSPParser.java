@@ -751,10 +751,9 @@ public class XCSPParser implements XCallbacks2 {
         if (except.length == 0) {
             model.allDifferent(vars(list)).post();
         } else if (except.length == 1) {
-            model.allDifferentUnderCondition(vars(list), x -> !x.contains(except[0]), true).post();
+            model.allDifferentExcept0(vars(list)).post();
         } else {
-            IntIterableRangeSet set = new IntIterableRangeSet(except);
-            model.allDifferentUnderCondition(vars(list), x -> !set.intersect(x), true).post();
+            model.allDifferentExceptValues(vars(list), except).post();
         }
     }
 

@@ -21,6 +21,7 @@ import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.SetVar;
 import org.chocosolver.solver.variables.Task;
+import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableRangeSet;
 import org.chocosolver.util.tools.ArrayUtils;
 
 import java.util.ArrayList;
@@ -45,6 +46,55 @@ import static java.lang.String.format;
  * @since 12/06/2018.
  */
 public interface IDecompositionFactory extends ISelf<Model> {
+
+    /**
+     * Creates and <b>posts</b> a decomposition of an allDifferent_except constraint.
+     * <p>
+     * This constraint ensures that all variables from vars are pairwise different, except those which are in except.
+     * </p>
+     * This decomposition is based on the simple arithmetic reasoning.
+     *
+     * @param vars   array of integer variables
+     * @param except array of values that can be excluded from the allDifferent constraint
+     */
+    default void allDifferentExceptDec(IntVar[] vars, int[] except) {
+        BoolVar[] bs = new BoolVar[vars.length];
+        IntIterableRangeSet set = new IntIterableRangeSet(except);
+        for (int i = 0; i < vars.length; i++) {
+            bs[i] = ref().boolVar();
+            ref().reifyXnotinS(vars[i], set, bs[i]);
+        }
+        for (int i = 0; i < vars.length - 1; i++) {
+            for (int j = i + 1; j < vars.length; j++) {
+                ref().impXrelYC(vars[i], "!=", vars[j], 0, bs[i].and(bs[j]).boolVar());
+            }
+        }
+    }
+
+    /**
+     * Creates and <b>posts</b> a decomposition of an allDifferent_except constraint.
+     * <p>
+     * This constraint ensures that all variables from vars are pairwise different, except those which are in except.
+     * </p>
+     * This decomposition is based on the global cardinality constraint.
+     *
+     * @param vars   array of integer variables
+     * @param except array of values that can be excluded from the allDifferent constraint
+     */
+    default void allDifferentExceptDec2(IntVar[] vars, int[] except) {
+        IntIterableRangeSet values = new IntIterableRangeSet();
+        for (IntVar var : vars) {
+            values.addAll(var);
+        }
+        values.addAll(except);
+        IntIterableRangeSet sexcept = new IntIterableRangeSet(except);
+        int[] valuesArray = values.toArray();
+        IntVar[] occurrences = new IntVar[valuesArray.length];
+        for (int i = 0; i < valuesArray.length; i++) {
+            occurrences[i] = ref().intVar(0, sexcept.contains(valuesArray[i]) ? vars.length : 1);
+        }
+        ref().globalCardinality(vars, valuesArray, occurrences, true).post();
+    }
 
     /**
      * Posts a decomposition of an among constraint.
@@ -359,7 +409,7 @@ public interface IDecompositionFactory extends ISelf<Model> {
     default void circuitDec(IntVar[] S, int offset) {
         int n = S.length;
         ref().allDifferent(S, "AC").post();
-        IntVar[] t = ref().intVarArray("t", n - 1, offset + 1, n + offset -1 );
+        IntVar[] t = ref().intVarArray("t", n - 1, offset + 1, n + offset - 1);
         ref().allDifferent(t, "AC").post();
         ref().arithm(t[0], "=", S[0]).post();
         for (int i = 1; i < n - 2; i++) {

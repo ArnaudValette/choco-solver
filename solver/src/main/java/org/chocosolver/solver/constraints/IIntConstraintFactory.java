@@ -895,7 +895,29 @@ public interface IIntConstraintFactory extends ISelf<Model> {
      * @param vars collection of variables
      */
     default Constraint allDifferentExcept0(IntVar[] vars) {
+        if (ref().getSolver().isLCG()) {
+            return allDifferentExceptValues(vars, 0);
+        }
         return allDifferentUnderCondition(vars, Condition.EXCEPT_0, true);
+    }
+
+    /**
+     * Creates an allDifferent constraint for variables that are not equal to 0.
+     * There can be multiple variables equal to 0.
+     *
+     * @param vars collection of variables
+     */
+    default Constraint allDifferentExceptValues(IntVar[] vars, int... values) {
+        if (ref().getSolver().isLCG()) {
+            if (ref().getSettings().warnUser()) {
+                ref().getSolver().log().white().println(
+                        "Warning: allDifferentExceptValues constraint is decomposed (due to LCG).");
+            }
+            ref().allDifferentExceptDec(vars, values);
+            return ref().voidConstraint();
+        }
+        final IntIterableRangeSet svalues = new IntIterableRangeSet(values);
+        return allDifferentUnderCondition(vars, svalues::intersect, true);
     }
 
     /**
