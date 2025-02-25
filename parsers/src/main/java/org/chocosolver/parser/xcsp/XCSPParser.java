@@ -146,7 +146,7 @@ public class XCSPParser implements XCallbacks2 {
 
         } else {
             ReExpression exp = buildRe(tree);
-            if (VariableUtils.domainCardinality(vars(scope)) < Integer.MAX_VALUE / 1000) {
+            if (VariableUtils.domainCardinality(vars(scope)) < 100_000) {
                 exp.extension().post();
             } else {
                 exp.decompose().post();
