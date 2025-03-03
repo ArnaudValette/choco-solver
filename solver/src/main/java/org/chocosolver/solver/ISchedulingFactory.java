@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -209,7 +209,7 @@ public interface ISchedulingFactory extends ISelf<Model> {
      * @param heights   resource consumption of each task
      * @param capacity  resource capacity
      */
-    default void cumulative(IntVar[] starts, int[] durations, int[] heights, int capacity) {
+    default Constraint cumulative(IntVar[] starts, int[] durations, int[] heights, int capacity) {
         int n = starts.length;
         final IntVar[] d = new IntVar[n];
         final IntVar[] h = new IntVar[n];
@@ -224,7 +224,7 @@ public interface ISchedulingFactory extends ISelf<Model> {
                                 true);
             tasks[i] = new Task(starts[i], d[i], e[i]);
         }
-        ref().cumulative(tasks, h, ref().intVar(capacity), false, Cumulative.Filter.NAIVETIME).post();
+        return ref().cumulative(tasks, h, ref().intVar(capacity), false, Cumulative.Filter.NAIVETIME);
     }
 
     /////////////////////////////////////////////////////////////////////////////
