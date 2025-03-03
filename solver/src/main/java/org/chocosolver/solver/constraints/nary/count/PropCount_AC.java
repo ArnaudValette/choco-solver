@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -9,6 +9,7 @@
  */
 package org.chocosolver.solver.constraints.nary.count;
 
+import org.chocosolver.solver.constraints.Explained;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.variables.IntVar;
@@ -33,6 +34,7 @@ import static org.chocosolver.util.tools.ArrayUtils.concat;
  *
  * @author Jean-Guillaume Fages
  */
+@Explained(ignored = true, comment = "Decomposed into arithmetic constraints")
 public class PropCount_AC extends Propagator<IntVar> {
 
     //***********************************************************************************

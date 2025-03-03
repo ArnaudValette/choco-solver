@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -46,7 +46,7 @@ public class MoveBinaryDDS extends MoveBinaryLDS {
         Decision current = strategy.getDecision();
         if (current != null) { // null means there is no more decision
             solver.getDecisionPath().pushDecision(current);
-            solver.getEnvironment().worldPush();
+            solver.pushTrail();
             if (dis.get() == 1) {
                 solver.getDecisionPath().getLastDecision().buildNext();
             }

@@ -1,16 +1,13 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.search.loop.learn;
-
-import org.chocosolver.solver.Solver;
-
 
 
 /**
@@ -24,15 +21,17 @@ import org.chocosolver.solver.Solver;
  */
 public interface Learn {
 
+    void init();
+
     /**
      * Validate and record a new piece of knowledge, that is, the current position is a dead-end.
      * @return <i>true</i> if something is learned (one or more clauses)
      */
-    boolean record(Solver solver);
+    boolean record();
 
     /**
      * Forget some pieces of knowledge.
      */
-    void forget(Solver solver);
+    void forget();
 
 }

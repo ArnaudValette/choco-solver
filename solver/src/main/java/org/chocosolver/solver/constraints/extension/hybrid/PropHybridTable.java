@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -9,6 +9,7 @@
  */
 package org.chocosolver.solver.constraints.extension.hybrid;
 
+import org.chocosolver.solver.constraints.Explained;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.exception.ContradictionException;
@@ -31,6 +32,7 @@ import java.util.BitSet;
  * @author Charles Prud'homme
  * @since 22/03/2023
  */
+@Explained(ignored = true, comment = "Turned into clauses")
 public class PropHybridTable extends Propagator<IntVar> {
 
     private final ISupportable[][] table;

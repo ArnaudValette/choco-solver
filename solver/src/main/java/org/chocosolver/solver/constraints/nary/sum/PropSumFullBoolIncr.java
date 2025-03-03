@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -10,6 +10,7 @@
 package org.chocosolver.solver.constraints.nary.sum;
 
 import org.chocosolver.memory.IStateInt;
+import org.chocosolver.solver.constraints.Explained;
 import org.chocosolver.solver.constraints.Operator;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.variables.BoolVar;
@@ -25,6 +26,7 @@ import org.chocosolver.solver.variables.events.PropagatorEventType;
  * @author Charles Prud'homme
  * @since 18/03/11
  */
+@Explained
 public class PropSumFullBoolIncr extends PropSumFullBool {
 
     /**

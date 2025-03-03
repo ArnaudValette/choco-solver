@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -295,7 +295,7 @@ public class ClauseTest {
         for (int i = 1; i < n; i++) {
             e.worldPush();
             bs[i] = s.boolVar("b" + i);
-            sat.addLearnt(MiniSat.makeLiteral(sat.makeBool(bs[i]), true));
+            sat.addLearnt(MiniSat.makeLiteral(bs[i].satVar(), true));
             s.getSolver().propagate();
             Assert.assertTrue(bs[i].isInstantiatedTo(1));
         }

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -55,28 +55,20 @@ public class IntDomainMiddle implements IntValueSelector {
     @SuppressWarnings("PointlessBooleanExpression")
     @Override
     public int selectValue(IntVar var) {
-        double mean = middle.applyAsDouble(var);
         int value;
-        if (roundingPolicy == FLOOR) {
-            value = (int) Math.floor(mean);
-        } else {
-            value = (int) Math.ceil(mean);
-        }
         if (var.hasEnumeratedDomain()) {
-            if (!var.contains(value)) {
-                double a = var.previousValue(value);
-                double b = var.nextValue(value);
-                if (mean - a < b - mean) {
-                    return (int) a;
-                } else if (mean - a > b - mean) {
-                    return (int) b;
-                } else { //tie break
-                    if (roundingPolicy == FLOOR) {
-                        return (int) a;
-                    } else {
-                        return (int) b;
-                    }
-                }
+            int min = var.getLB();
+            int max = var.getUB();
+            if (roundingPolicy == FLOOR) {
+                value = min + (max - min ) / 2;
+            } else {
+                value = min + (max - min + 1) / 2;
+            }
+        } else {
+            if (roundingPolicy == FLOOR) {
+                value = var.getLB();
+            } else {
+                value = var.getUB();
             }
         }
         return value;

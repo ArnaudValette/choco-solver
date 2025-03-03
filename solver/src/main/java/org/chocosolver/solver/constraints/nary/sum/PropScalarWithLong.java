@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -79,7 +79,7 @@ public class PropScalarWithLong extends PropSumWithLong {
         do {
             anychange = false;
             // When explanations are on, no global failure allowed
-            if (model.getSolver().isLearnOff() && F < 0 || E < 0) {
+            if (!lcg() && F < 0 || E < 0) {
                 fails();
             }
             if (maxI > F || maxI > E) {
@@ -149,7 +149,7 @@ public class PropScalarWithLong extends PropSumWithLong {
         long F = b - sumLB;
         long E = sumUB - b;
         // When explanations are on, no global failure allowed
-        if (model.getSolver().isLearnOff() &&F < 0) {
+        if (!lcg() &&F < 0) {
             fails();
         }
         if (maxI > F) {
@@ -196,7 +196,7 @@ public class PropScalarWithLong extends PropSumWithLong {
         long F = b - sumLB;
         long E = sumUB - b;
         // When explanations are on, no global failure allowed
-        if (model.getSolver().isLearnOff() && E < 0) {
+        if (!lcg() && E < 0) {
             fails();
         }
         if (maxI > E) {

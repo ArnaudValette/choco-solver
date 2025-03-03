@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -34,7 +34,7 @@ public interface ISearchMonitorFactory extends ISelf<Solver> {
      * @param vars array of decision variables
      */
     default void setNoGoodRecordingFromSolutions(IntVar... vars) {
-        ref().plugMonitor(new NogoodFromSolutions(vars));
+        if(!ref().isLCG()) ref().plugMonitor(new NogoodFromSolutions(vars));
     }
 
     /**
@@ -42,7 +42,7 @@ public interface ISearchMonitorFactory extends ISelf<Solver> {
      * scanning the same sub-search tree.
      */
     default void setNoGoodRecordingFromRestarts() {
-        ref().plugMonitor(new NogoodFromRestarts(ref().getModel()));
+        if(!ref().isLCG()) ref().plugMonitor(new NogoodFromRestarts(ref().getModel()));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

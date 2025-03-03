@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -59,10 +59,10 @@ public class MoveBinaryLDS extends MoveBinaryDFS {
     @Override
     public boolean repair(Solver solver) {
         solver.getMeasures().incBackTrackCount();
-        solver.getEnvironment().worldPop();
+        solver.cancelTrail();
         boolean repaired = rewind(solver);
         // increase the discrepancy max, if allowed, when the root node is reached
-        Decision head = solver.getDecisionPath().getLastDecision();
+        Decision<?> head = solver.getDecisionPath().getLastDecision();
         if (head.getPosition() == topDecisionPosition && dis.get() < DIS) {
             dis.add(1);
             solver.restart();
@@ -75,11 +75,11 @@ public class MoveBinaryLDS extends MoveBinaryDFS {
     protected boolean rewind(Solver solver) {
         boolean repaired = false;
         DecisionPath path = solver.getDecisionPath();
-        Decision head = path.getLastDecision();
+        Decision<?> head = path.getLastDecision();
         while (!repaired && head.getPosition() != topDecisionPosition) {
             solver.setJumpTo(solver.getJumpTo()-1);
             if (dis.get() > 0 && solver.getJumpTo() <= 0 && head.hasNext()) {
-                solver.getEnvironment().worldPush();
+                solver.pushTrail();
                 repaired = true;
                 dis.add(-1);
             } else {

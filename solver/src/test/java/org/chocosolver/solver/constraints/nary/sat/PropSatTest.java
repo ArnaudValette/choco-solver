@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -240,7 +240,7 @@ public class PropSatTest {
         IntVar var = vars[0].getModel().intVar("X4", -1, 1, false);
         declareDomainNogood(var);
         try {
-            PNG.getMiniSat().touched_variables_.add(7);
+            PNG.getMiniSat().onLiteralPushed(7);
             ((SatDecorator)PNG.getMiniSat()).storeEarlyDeductions();
             ((SatDecorator)PNG.getMiniSat()).applyEarlyDeductions(Cause.Null);
             PNG.doBound(0);

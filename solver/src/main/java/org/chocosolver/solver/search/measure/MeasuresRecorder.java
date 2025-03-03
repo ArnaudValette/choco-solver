@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -117,6 +117,7 @@ public final class MeasuresRecorder extends Measures {
         restartCount = 0;
         depth = 0;
         maxDepth = 0;
+        propagationCount = 0;
     }
 
     //****************************************************************************************************************//
@@ -159,6 +160,10 @@ public final class MeasuresRecorder extends Measures {
      */
     public void incFixpointCount() {
         fixpointCount++;
+    }
+
+    public void incPropagationCount() {
+        propagationCount++;
     }
 
     /**

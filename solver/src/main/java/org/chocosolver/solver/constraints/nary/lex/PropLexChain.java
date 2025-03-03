@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -9,6 +9,7 @@
  */
 package org.chocosolver.solver.constraints.nary.lex;
 
+import org.chocosolver.solver.constraints.Explained;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.exception.ContradictionException;
@@ -27,6 +28,7 @@ import org.chocosolver.util.tools.ArrayUtils;
  * @author Charles Prud'homme
  * @since 09/08/11
  */
+@Explained(ignored = true, comment = "Decomposed into lexLess constraints")
 public class PropLexChain extends Propagator<IntVar> {
 
     // the number of variables in each vector of the chain - v1 <= lexChainEq/lexChain <= v2 .....

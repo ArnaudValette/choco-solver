@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -10,19 +10,17 @@
 package org.chocosolver.solver.variables;
 
 import org.chocosolver.solver.ICause;
+import org.chocosolver.sat.Reason;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.exception.ContradictionException;
-import org.chocosolver.solver.learn.ExplanationForSignedClause;
 import org.chocosolver.solver.variables.view.integer.IntAffineView;
 import org.chocosolver.util.ESat;
 import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableRangeSet;
 
 import java.util.function.Consumer;
-
-import static org.chocosolver.util.objects.setDataStructures.iterable.IntIterableSetUtils.unionOf;
 
 /**
  * Container representing a task:
@@ -226,6 +224,34 @@ public class Task extends Propagator<IntVar> {
         return duration.updateBounds(minDuration, maxDuration, cause);
     }
 
+    public boolean updateEst(int est, ICause cause, Reason reason) throws ContradictionException {
+        return start.updateLowerBound(est, cause, reason);
+    }
+
+    public boolean updateLst(int lst, ICause cause, Reason reason) throws ContradictionException {
+        return start.updateUpperBound(lst, cause, reason);
+    }
+
+    public boolean updateEct(int ect, ICause cause, Reason reason) throws ContradictionException {
+        return end.updateLowerBound(ect, cause, reason);
+    }
+
+    public boolean updateLct(int lct, ICause cause, Reason reason) throws ContradictionException {
+        return end.updateUpperBound(lct, cause, reason);
+    }
+
+    public boolean updateMinDuration(int minDuration, ICause cause, Reason reason) throws ContradictionException {
+        return duration.updateLowerBound(minDuration, cause, reason);
+    }
+
+    public boolean updateMaxDuration(int maxDuration, ICause cause, Reason reason) throws ContradictionException {
+        return duration.updateUpperBound(maxDuration, cause, reason);
+    }
+
+    public boolean updateDuration(int minDuration, int maxDuration, ICause cause, Reason reason) throws ContradictionException {
+        return duration.updateBounds(minDuration, maxDuration, cause, reason);
+    }
+
     public boolean instantiateStartAt(int t, ICause cause) throws ContradictionException {
         return start.instantiateTo(t, cause);
     }
@@ -262,16 +288,29 @@ public class Task extends Propagator<IntVar> {
     @Override
     public void propagate(int evtmask) throws ContradictionException {
         boolean hasFiltered;
+        final boolean lcg = getModel().getSolver().isLCG();
         do {
             hasFiltered = false;
             if (mayBePerformed()) {
-                hasFiltered = updateEst(end.getLB() - duration.getUB(), this);
-                hasFiltered |= updateLst(end.getUB() - duration.getLB(), this);
+                if (lcg) {
+                    hasFiltered = updateEst(end.getLB() - duration.getUB(), this, Reason.r(end.getMinLit(), duration.getMaxLit()));
+                    hasFiltered |= updateLst(end.getUB() - duration.getLB(), this, Reason.r(end.getMaxLit(), duration.getMinLit()));
 
-                hasFiltered |= updateEct(start.getLB() + duration.getLB(), this);
-                hasFiltered |= updateLct(start.getUB() + duration.getUB(), this);
+                    hasFiltered |= updateEct(start.getLB() + duration.getLB(), this, Reason.r(start.getMinLit(), duration.getMinLit()));
+                    hasFiltered |= updateLct(start.getUB() + duration.getUB(), this, Reason.r(start.getMaxLit(), duration.getMaxLit()));
 
-                hasFiltered |= updateDuration(end.getLB() - start.getUB(), end.getUB() - start.getLB(), this);
+                    hasFiltered |= updateMinDuration(end.getLB() - start.getUB(), this, Reason.r(end.getMinLit(), start.getMaxLit()));
+                    hasFiltered |= updateMaxDuration(end.getUB() - start.getLB(), this, Reason.r(end.getMaxLit(), start.getMinLit()));
+                } else {
+                    hasFiltered = updateEst(end.getLB() - duration.getUB(), this);
+                    hasFiltered |= updateLst(end.getUB() - duration.getLB(), this);
+
+                    hasFiltered |= updateEct(start.getLB() + duration.getLB(), this);
+                    hasFiltered |= updateLct(start.getUB() + duration.getUB(), this);
+
+                    hasFiltered |= updateMinDuration(end.getLB() - start.getUB(), this);
+                    hasFiltered |= updateMaxDuration(end.getUB() - start.getLB(), this);
+                }
             }
         } while (hasFiltered);
     }
@@ -285,34 +324,6 @@ public class Task extends Propagator<IntVar> {
         }
     }
 
-    private static void doExplain(IntVar S, IntVar D, IntVar E,
-                                  int p,
-                                  ExplanationForSignedClause explanation) {
-        IntVar pivot = explanation.readVar(p);
-        IntIterableRangeSet dom;
-        dom = explanation.complement(S);
-        if (S == pivot) {
-            unionOf(dom, explanation.readDom(p));
-            S.intersectLit(dom, explanation);
-        } else {
-            S.unionLit(dom, explanation);
-        }
-        dom = explanation.complement(D);
-        if (D == pivot) {
-            unionOf(dom, explanation.readDom(p));
-            D.intersectLit(dom, explanation);
-        } else {
-            D.unionLit(dom, explanation);
-        }
-        dom = explanation.complement(E);
-        if (E == pivot) {
-            unionOf(dom, explanation.readDom(p));
-            E.intersectLit(dom, explanation);
-        } else {
-            E.unionLit(dom, explanation);
-        }
-    }
-
     @Override
     public String toString() {
         return "Task[" +
@@ -320,11 +331,6 @@ public class Task extends Propagator<IntVar> {
                 ", duration=" + duration +
                 ", end=" + end +
                 ']';
-    }
-
-    @Override
-    public void explain(int p, ExplanationForSignedClause explanation) {
-        doExplain(start, duration, end, p, explanation);
     }
 
     @Override

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -103,6 +103,11 @@ public class Measures implements IMeasures, Cloneable {
     protected long fixpointCount;
 
     /**
+     * Stores the number of propagations
+     */
+    protected long propagationCount;
+
+    /**
      * Counts the number of non chronological backtracks done so far.
      */
     protected long backjumpCount;
@@ -124,6 +129,7 @@ public class Measures implements IMeasures, Cloneable {
     /**
      * Copy constructor
      * with shallow copy of the bounds manager.
+     *
      * @param measures to copy
      */
     public Measures(IMeasures measures) {
@@ -162,6 +168,11 @@ public class Measures implements IMeasures, Cloneable {
     @Override
     public final long getFixpointCount() {
         return fixpointCount;
+    }
+
+    @Override
+    public long getPropagationCount() {
+        return propagationCount;
     }
 
     @Override

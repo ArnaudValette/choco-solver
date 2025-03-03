@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -119,9 +119,9 @@ public class IntLinCombFactory {
                     IntVar var = view.getVariable();
                     int a = view.a * (view.p ? 1 : -1);
                     long b = view.b;
+                    RESULT -= b * NCOEFFS[i];
                     NVARS[i] = var;
                     NCOEFFS[i] *= a;
-                    RESULT -= b * NCOEFFS[i];
                 }
                 int id = NVARS[i].getId();
                 int pos = map.get(id);

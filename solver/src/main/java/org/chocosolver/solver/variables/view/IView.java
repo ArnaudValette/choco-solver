@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -13,7 +13,6 @@ import org.chocosolver.solver.ICause;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.variables.Variable;
 import org.chocosolver.solver.variables.events.IEventType;
-import org.chocosolver.solver.variables.events.IntEventType;
 
 /**
  * An interface to define views.
@@ -53,16 +52,6 @@ public interface IView<V extends Variable> extends ICause, Variable {
     default int getNbObservedVariables() {
         return getVariables().length;
     }
-
-    /**
-     * This methods is related to explanations, it binds an event occurring on the observed
-     * variable to the view.
-     * @param mask  type of modification
-     * @param one   an int
-     * @param two   an int
-     * @param three an int
-     */
-    void justifyEvent(IntEventType mask, int one, int two, int three);
 
     /**
      * To notify a view that the variable is observed has been modified.

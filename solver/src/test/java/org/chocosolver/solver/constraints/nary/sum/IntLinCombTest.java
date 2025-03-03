@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -1073,5 +1073,17 @@ public class IntLinCombTest {
         model.sum(bvars, "!=", 5).post();
         model.getSolver().findAllSolutions();
         Assert.assertEquals(model.getSolver().getSolutionCount(), 772);
+    }
+
+    @Test(groups = "1s", timeOut = 60000)
+    public void testWithViews() {
+        Model model = new Model();
+        IntVar start = model.intVar("start", 0, 57);
+        IntVar duration = model.intVar("duration", 6, 6);
+        IntVar end = start.getModel().offset(start, duration.getValue());
+        model.arithm(start, "+", duration, "=", end).post();
+        model.arithm(end.neg().intVar(), "+", duration, "=", start.neg().intVar()).post();
+        model.getSolver().findAllSolutions();
+        Assert.assertTrue(model.getSolver().getSolutionCount() > 0);
     }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
  *
- * Copyright (c) 2024, IMT Atlantique. All rights reserved.
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
  *
  * Licensed under the BSD 4-clause license.
  *
@@ -9,7 +9,6 @@
  */
 package org.chocosolver.solver;
 
-import org.chocosolver.solver.learn.ExplanationForSignedClause;
 import org.chocosolver.solver.variables.IntVar;
 
 import java.util.function.Consumer;
@@ -21,12 +20,14 @@ import java.util.function.Consumer;
  * @since 26/08/11
  */
 public enum Cause implements ICause {
-    Null{
+    Null {
         @Override
-        public void explain(int pivot, ExplanationForSignedClause explanation) {
+        public void forEachIntVar(Consumer<IntVar> action) {
 
         }
+    },
 
+    Sat {
         @Override
         public void forEachIntVar(Consumer<IntVar> action) {
 
