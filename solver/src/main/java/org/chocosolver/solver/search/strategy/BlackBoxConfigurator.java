@@ -368,8 +368,9 @@ public class BlackBoxConfigurator {
         return this;
     }
 
-    public void setRefinedPartialAssignmentGeneration(boolean rgpa) {
+    public BlackBoxConfigurator setRefinedPartialAssignmentGeneration(boolean rgpa) {
         this.generatePartialAssignment = rgpa;
+        return this;
     }
 
     public BlackBoxConfigurator setExcludeViews(boolean excludeViews) {
