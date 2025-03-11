@@ -33,11 +33,11 @@ public class PickOnFil<V extends Variable> extends AbstractCriterionBasedVariabl
     private final int variant;
 
     public PickOnFil(V[] vars) {
-        this(vars, 3, 32);
+        this(vars, 3, 32, 0L);
     }
 
-    public PickOnFil(V[] vars, int variant, int flushRate) {
-        super(vars, 0, flushRate);
+    public PickOnFil(V[] vars, int variant, int flushRate, long seed) {
+        super(vars, seed, flushRate);
         this.variant = variant;
     }
 

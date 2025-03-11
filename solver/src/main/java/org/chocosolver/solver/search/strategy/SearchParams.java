@@ -293,21 +293,21 @@ public interface SearchParams {
                 case INPUT:
                     return (vars, vsel) -> Search.intVarSearch(new InputOrder<>(vars[0].getModel()), vsel, vars);
                 case PICKONDOM0:
-                    return (vars, vsel) -> Search.intVarSearch(new PickOnDom<>(vars, 0, flushRate), vsel, vars);
+                    return (vars, vsel) -> Search.intVarSearch(new PickOnDom<>(vars, 0, flushRate, 0), vsel, vars);
                 case PICKONDOM1:
-                    return (vars, vsel) -> Search.intVarSearch(new PickOnDom<>(vars, 1, flushRate), vsel, vars);
+                    return (vars, vsel) -> Search.intVarSearch(new PickOnDom<>(vars, 1, flushRate, 0), vsel, vars);
                 case PICKONDOM2:
-                    return (vars, vsel) -> Search.intVarSearch(new PickOnDom<>(vars, 2, flushRate), vsel, vars);
+                    return (vars, vsel) -> Search.intVarSearch(new PickOnDom<>(vars, 2, flushRate, 0), vsel, vars);
                 case PICKONDOM3:
-                    return (vars, vsel) -> Search.intVarSearch(new PickOnDom<>(vars, 3, flushRate), vsel, vars);
+                    return (vars, vsel) -> Search.intVarSearch(new PickOnDom<>(vars, 3, flushRate, 0), vsel, vars);
                 case PICKONFIL0:
-                    return (vars, vsel) -> Search.intVarSearch(new PickOnFil<>(vars, 0, flushRate), vsel, vars);
+                    return (vars, vsel) -> Search.intVarSearch(new PickOnFil<>(vars, 0, flushRate, 0), vsel, vars);
                 case PICKONFIL1:
-                    return (vars, vsel) -> Search.intVarSearch(new PickOnFil<>(vars, 1, flushRate), vsel, vars);
+                    return (vars, vsel) -> Search.intVarSearch(new PickOnFil<>(vars, 1, flushRate, 0), vsel, vars);
                 case PICKONFIL2:
-                    return (vars, vsel) -> Search.intVarSearch(new PickOnFil<>(vars, 2, flushRate), vsel, vars);
+                    return (vars, vsel) -> Search.intVarSearch(new PickOnFil<>(vars, 2, flushRate, 0), vsel, vars);
                 case PICKONFIL3:
-                    return (vars, vsel) -> Search.intVarSearch(new PickOnFil<>(vars, 3, flushRate), vsel, vars);
+                    return (vars, vsel) -> Search.intVarSearch(new PickOnFil<>(vars, 3, flushRate, 0), vsel, vars);
                 case ROUND_ROBIN:
                     return (vars, vsel) -> Search.roundRobinSearch(vars);
                 case RAND:

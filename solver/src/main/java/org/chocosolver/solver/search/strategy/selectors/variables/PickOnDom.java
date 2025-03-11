@@ -33,11 +33,11 @@ public class PickOnDom<V extends Variable> extends AbstractCriterionBasedVariabl
     private final int variant;
 
     public PickOnDom(V[] vars) {
-        this(vars, 0, 32);
+        this(vars, 2, 32, 0);
     }
 
-    public PickOnDom(V[] vars, int variant, int flushRate) {
-        super(vars, 0, flushRate);
+    public PickOnDom(V[] vars, int variant, int flushRate, long seed) {
+        super(vars, seed, flushRate);
         this.variant = variant;
     }
 

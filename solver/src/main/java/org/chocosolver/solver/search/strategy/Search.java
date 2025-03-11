@@ -663,13 +663,14 @@ public class Search {
                 new VariableSelector[]{
                         new DomOverWDegRef<>(vars, seed),
                         new DomOverWDeg<>(vars, seed),
-                        new PickOnDom<>(vars, 2, 32),
-                        new FailureBased<>(vars, seed, 4)
+                        new PickOnDom<>(vars, 2, 32, 0L),
+                        new FailureBased<>(vars, seed, 4),
                 },
                 new IntValueSelector[]{
                         new IntDomainMin(),
                         new IntDomainMax(),
-                        new IntDomainRandom(seed)},
+                        new IntDomainRandom(seed)
+                },
                 true, false);
     }
 
