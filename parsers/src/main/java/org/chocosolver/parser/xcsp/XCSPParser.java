@@ -30,7 +30,6 @@ import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Task;
 import org.chocosolver.util.objects.graphs.MultivaluedDecisionDiagram;
 import org.chocosolver.util.objects.queues.CircularQueue;
-import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableRangeSet;
 import org.chocosolver.util.tools.ArrayUtils;
 import org.chocosolver.util.tools.MathUtils;
 import org.chocosolver.util.tools.VariableUtils;
@@ -77,6 +76,7 @@ public class XCSPParser implements XCallbacks2 {
     protected TIntObjectHashMap<String> intToSymbol;
     protected int unusedSymbol = 0;
     private ArrayList<IntVar> ovars;
+    private WeakHashMap<Object, Object> weakHashMap = new WeakHashMap<>();
     /**
      * The model to feed
      */
@@ -97,6 +97,7 @@ public class XCSPParser implements XCallbacks2 {
         } else {
             throw new RuntimeException("FILE DOES NOT EXIST");
         }
+        weakHashMap.clear();
     }
 
     @Override
@@ -426,15 +427,19 @@ public class XCSPParser implements XCallbacks2 {
         if (flags.contains(Types.TypeFlag.UNCLEAN_TUPLES)) {
             // do you have to clean the tuples, so as to remove those that cannot be built from variable domains ?
         }
-        Tuples mTuples = new Tuples(Arrays.stream(tuples)
-                .map(t -> Arrays.stream(t).mapToInt(e -> symbolToInt.get(e)).toArray())
-                .toArray(int[][]::new), positive);
-        if (flags.contains(Types.TypeFlag.STARRED_TUPLES)) {
-            if (!positive) {
-                // can you manage tables with symbol * ?
-                throw new ParserException("Negative tables with symbol * are not supported");
+        Tuples mTuples = (Tuples) weakHashMap.get(tuples);
+        if (mTuples == null) {
+            mTuples = new Tuples(Arrays.stream(tuples)
+                    .map(t -> Arrays.stream(t).mapToInt(e -> symbolToInt.get(e)).toArray())
+                    .toArray(int[][]::new), positive);
+            if (flags.contains(Types.TypeFlag.STARRED_TUPLES)) {
+                if (!positive) {
+                    // can you manage tables with symbol * ?
+                    throw new ParserException("Negative tables with symbol * are not supported");
+                }
+                mTuples.setUniversalValue(STAR_INT);
             }
-            mTuples.setUniversalValue(STAR_INT);
+            weakHashMap.put(tuples, mTuples);
         }
         model.table(vars(list), mTuples).post();
     }
@@ -443,15 +448,19 @@ public class XCSPParser implements XCallbacks2 {
     public void buildCtrExtension(String id, XVariables.XVarInteger[] list, int[][] tuples, boolean positive, Set<Types.TypeFlag> flags) {
         //noinspection StatementWithEmptyBody
         if (flags.contains(Types.TypeFlag.UNCLEAN_TUPLES)) {
-            // do you have to clean the tuples, so as to remove those that cannot be built from variable domains ?
+            // do you have to clean the tuples, to remove those that cannot be built from variable domains ?
         }
-        Tuples mTuples = new Tuples(tuples, positive);
-        if (flags.contains(Types.TypeFlag.STARRED_TUPLES)) {
-            if (!positive) {
-                // can you manage tables with symbol * ?
-                throw new ParserException("Negative tables with symbol * are not supported");
+        Tuples mTuples = (Tuples) weakHashMap.get(tuples);
+        if (mTuples == null) {
+            mTuples = new Tuples(tuples, positive);
+            if (flags.contains(Types.TypeFlag.STARRED_TUPLES)) {
+                if (!positive) {
+                    // can you manage tables with symbol * ?
+                    throw new ParserException("Negative tables with symbol * are not supported");
+                }
+                mTuples.setUniversalValue(STAR_INT);
+                weakHashMap.put(tuples, mTuples);
             }
-            mTuples.setUniversalValue(STAR_INT);
         }
         model.table(vars(list), mTuples).post();
     }
@@ -1720,9 +1729,13 @@ public class XCSPParser implements XCallbacks2 {
 
     @Override
     public void buildCtrInstantiation(String id, XVariables.XVarInteger[] list, int[] values) {
-        Tuples tuples = new Tuples(true);
-        tuples.add(values);
-        model.table(vars(list), tuples).post();
+        Tuples mTuples = (Tuples) weakHashMap.get(values);
+                if (mTuples == null) {
+                    mTuples = new Tuples(true);
+                    mTuples.add(values);
+                    weakHashMap.put(values, mTuples);
+                }
+        model.table(vars(list), mTuples).post();
     }
 
     /**
