@@ -45,7 +45,6 @@ public class PropTableStr2 extends Propagator<IntVar> {
     private final ArrayList<Str2_var> ssup;
     private final ArrayList<Str2_var> sval;
     private boolean firstProp = true;
-    private final Tuples tuplesObject;
     private final int star;
 
     //***********************************************************************************
@@ -55,7 +54,6 @@ public class PropTableStr2 extends Propagator<IntVar> {
     public PropTableStr2(IntVar[] vars_, Tuples tuplesObject) {
         super(vars_, PropagatorPriority.LINEAR, false);
         this.table = tuplesObject.toMatrix();
-        this.tuplesObject = tuplesObject;
 
         int size = 0;
         if (table.length > 0) {
@@ -71,6 +69,10 @@ public class PropTableStr2 extends Propagator<IntVar> {
         tuples = SetFactory.makeStoredSet(SetType.BIPARTITESET, 0, model);
         ssup = new ArrayList<>();
         sval = new ArrayList<>();
+        for (int t = 0; t < table.length; t++) {
+            tuples.add(t);
+        }
+        initializeSupports();
     }
 
     //***********************************************************************************
@@ -82,31 +84,29 @@ public class PropTableStr2 extends Propagator<IntVar> {
         if (firstProp) {
             firstProp = false;
             model.getEnvironment().save(() -> firstProp = true);
-            initialPropagate();
+            if (tuples.isEmpty()) {
+                this.fails();
+            }
         }
         Filter();
     }
 
     @Override
     public ESat isEntailed() {
-        if (firstProp) { // data structure not ready
-            return tuplesObject.check(vars);
-        } else {
-            boolean hasSupport = false;
-            for (int tuple : tuples) {
-                if (is_tuple_supported(tuple)) {
-                    hasSupport = true;
-                }
+        boolean hasSupport = false;
+        for (int tuple : tuples) {
+            if (is_tuple_supported(tuple)) {
+                hasSupport = true;
             }
-            if (hasSupport) {
-                if (isCompletelyInstantiated()) {
-                    return ESat.TRUE;
-                } else {
-                    return ESat.UNDEFINED;
-                }
+        }
+        if (hasSupport) {
+            if (isCompletelyInstantiated()) {
+                return ESat.TRUE;
             } else {
-                return ESat.FALSE;
+                return ESat.UNDEFINED;
             }
+        } else {
+            return ESat.FALSE;
         }
     }
 
@@ -130,18 +130,10 @@ public class PropTableStr2 extends Propagator<IntVar> {
         return true;
     }
 
-    private void initialPropagate() throws ContradictionException {
-        for (int t = 0; t < table.length; t++) {
-            tuples.add(t);
-        }
-        if (tuples.isEmpty()) {
-            this.fails();
-        }
-    }
-
-    private void Filter() throws ContradictionException {
-        ssup.clear();
-        sval.clear();
+    /**
+     * Initialize the supports of all values of all variables
+     */
+    private void initializeSupports() {
         for (int i = 0; i < str2vars.length; i++) {
             Str2_var tmp = str2vars[i];
             ssup.add(tmp);
@@ -174,6 +166,12 @@ public class PropTableStr2 extends Propagator<IntVar> {
                 tuples.remove(tuple);
             }
         }
+    }
+
+    private void Filter() throws ContradictionException {
+        ssup.clear();
+        sval.clear();
+        initializeSupports();
         for (int i = 0; i < ssup.size(); i++) {
             ssup.get(i).remove_unsupported_value(this);
         }
