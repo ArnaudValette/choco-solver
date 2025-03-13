@@ -150,7 +150,9 @@ public class XCSPParser implements XCallbacks2 {
 
         } else {
             ReExpression exp = buildRe(tree);
-            if (VariableUtils.domainCardinality(vars(scope)) < 100_000) {
+            long card = VariableUtils.domainCardinality(vars(scope));
+            if ((exp instanceof LoExpression && card <= 1_000)
+                    || (!(exp instanceof LoExpression) && card <= 100_000)) {
                 exp.extension().post();
             } else {
                 exp.decompose().post();
@@ -392,7 +394,9 @@ public class XCSPParser implements XCallbacks2 {
     @Override
     public void buildCtrIntension(String id, XVariables.XVarSymbolic[] scope, XNodeParent<XVariables.XVarSymbolic> syntaxTreeRoot) {
         ReExpression exp = buildRe(syntaxTreeRoot);
-        if (VariableUtils.domainCardinality(vars(scope)) < Integer.MAX_VALUE / 1000) {
+        long card = VariableUtils.domainCardinality(vars(scope));
+        if ((exp instanceof LoExpression && card <= 1_000)
+                || (!(exp instanceof LoExpression) && card <= 100_000)) {
             exp.extension().post();
         } else {
             exp.decompose().post();
