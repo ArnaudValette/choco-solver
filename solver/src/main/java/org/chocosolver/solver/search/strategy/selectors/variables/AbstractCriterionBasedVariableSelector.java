@@ -16,6 +16,7 @@ import org.chocosolver.memory.IEnvironment;
 import org.chocosolver.memory.IStateInt;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.constraints.Propagator;
+import org.chocosolver.solver.constraints.nary.sat.PropSat;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.search.loop.monitors.IMonitorContradiction;
 import org.chocosolver.solver.search.loop.monitors.IMonitorRestart;
@@ -176,6 +177,7 @@ public abstract class AbstractCriterionBasedVariableSelector<V extends Variable>
         if (cex.c instanceof Propagator) {
             Propagator<?> prop = (Propagator<?>) cex.c;
             if (prop.getNbVars() < 2 /*|| prop instanceof PropSat*/) return;
+            if(prop instanceof PropSat) return;
             // store the propagator if needed
             // then update its failure counter
             Element elt = failCount.get(prop);
