@@ -9,6 +9,7 @@
  */
 package org.chocosolver.solver.variables;
 
+import org.chocosolver.sat.Reason;
 import org.chocosolver.solver.Cause;
 import org.chocosolver.solver.ICause;
 import org.chocosolver.solver.Model;
@@ -350,6 +351,114 @@ public class OptionalTask extends Task {
                 return end.instantiateTo(t, cause);
             } else {
                 performed.updateUpperBound(0, cause);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean updateEst(int est, ICause cause, Reason reason) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (est <= start.getUB()) {
+                return start.updateLowerBound(est, cause, reason);
+            } else {
+                performed.updateUpperBound(0, cause, reason);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean updateLst(int lst, ICause cause, Reason reason) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (lst >= start.getLB()) {
+                return start.updateUpperBound(lst, cause, reason);
+            } else {
+                performed.updateUpperBound(0, cause, reason);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean updateEct(int ect, ICause cause, Reason reason) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (ect <= end.getUB()) {
+                return end.updateLowerBound(ect, cause, reason);
+            } else {
+                performed.updateUpperBound(0, cause, reason);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean updateLct(int lct, ICause cause, Reason reason) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (lct >= end.getLB()) {
+                return end.updateUpperBound(lct, cause, reason);
+            } else {
+                performed.updateUpperBound(0, cause, reason);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean updateMinDuration(int minDuration, ICause cause, Reason reason) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (minDuration <= duration.getUB()) {
+                return duration.updateLowerBound(minDuration, cause, reason);
+            } else {
+                performed.updateUpperBound(0, cause, reason);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean updateMaxDuration(int maxDuration, ICause cause, Reason reason) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (maxDuration >= duration.getLB()) {
+                return duration.updateUpperBound(maxDuration, cause, reason);
+            } else {
+                performed.updateUpperBound(0, cause, reason);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean updateDuration(int minDuration, int maxDuration, ICause cause, Reason reason) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (minDuration <= maxDuration && minDuration <= duration.getUB() && maxDuration >= duration.getLB()) {
+                return duration.updateBounds(minDuration, maxDuration, cause, reason);
+            } else {
+                performed.updateUpperBound(0, cause, reason);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean instantiateStartAt(int t, ICause cause, Reason reason) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (start.getLB() <= t && t <= start.getUB()) {
+                return start.instantiateTo(t, cause, reason);
+            } else {
+                performed.updateUpperBound(0, cause, reason);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean instantiateEndAt(int t, ICause cause, Reason reason) throws ContradictionException {
+        if (mayBePerformed()) {
+            if (end.getLB() <= t && t <= end.getUB()) {
+                return end.instantiateTo(t, cause, reason);
+            } else {
+                performed.updateUpperBound(0, cause, reason);
             }
         }
         return false;

@@ -18,7 +18,6 @@ import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.variables.view.integer.IntAffineView;
 import org.chocosolver.util.ESat;
-import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableRangeSet;
 
 import java.util.function.Consumer;
 
@@ -75,7 +74,7 @@ public class Task extends Propagator<IntVar> {
      * @param d duration value
      */
     public Task(IntVar s, int d) {
-        this(new IntVar[]{s, s.getModel().intVar(d), s.getModel().offset(s, d)});
+        this(s, s.getModel().intVar(d), s.getModel().offset(s, d));
     }
 
     /**
@@ -86,12 +85,12 @@ public class Task extends Propagator<IntVar> {
      * @param d duration value
      */
     public Task(IntVar s, IntVar d) {
-        this(new IntVar[]{
+        this(
                 s,
                 d,
                 d.isInstantiated() ? s.getModel().offset(s, d.getValue())
                                    : s.getModel().intVar(s.getLB() + d.getLB(), s.getUB() + d.getUB())
-        });
+        );
     }
 
     /**
@@ -258,6 +257,14 @@ public class Task extends Propagator<IntVar> {
 
     public boolean instantiateEndAt(int t, ICause cause) throws ContradictionException {
         return end.instantiateTo(t, cause);
+    }
+
+    public boolean instantiateStartAt(int t, ICause cause, Reason reason) throws ContradictionException {
+        return start.instantiateTo(t, cause, reason);
+    }
+
+    public boolean instantiateEndAt(int t, ICause cause, Reason reason) throws ContradictionException {
+        return end.instantiateTo(t, cause, reason);
     }
 
     public boolean mayBePerformed() {
