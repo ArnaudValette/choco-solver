@@ -218,12 +218,12 @@ public class RoundRobin extends AbstractStrategy<IntVar> implements IMonitorRest
         if (selectedVariable != null) {
             // 3. apply best value selection, if the condition is met
             OptionalInt opt = bestFirst.apply(selectedVariable);
-            if (opt.isEmpty()) {
+            if (!opt.isPresent()) {
                 //4. apply phase saving, if the condition is met
                 opt = solutionFirst.apply(selectedVariable);
             }
             //5. call the value selector
-            if (opt.isEmpty()) {
+            if (!opt.isPresent()) {
                 IntValueSelector valueSelector = valueSelectors[currentIndices[VALUE]];
                 opt = OptionalInt.of(valueSelector.selectValue(selectedVariable));
             }
