@@ -58,7 +58,7 @@ public class LastConflict<V extends Variable> extends MetaStrategy<V> implements
      */
     public LastConflict(Model model, AbstractStrategy<V> mainStrategy, int k) {
         super(model, mainStrategy);
-        assert k > 0 : "parameter K of last conflict must be strictly positive!";
+//        assert k > 0 : "parameter K of last conflict must be strictly positive!";
         this.scope = new HashSet<>(Arrays.asList(mainStrategy.vars));
         //noinspection unchecked
         conflictingVariables = (V[]) new Variable[k];
