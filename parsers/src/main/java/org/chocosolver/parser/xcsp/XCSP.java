@@ -137,7 +137,17 @@ public class XCSP extends RegParser {
     public void parse(Model target, XCSPParser parser) throws Exception {
         parser.model(target, instance);
         // and define a search strategy
-        freesearch(target.getSolver());
+        BlackBoxConfigurator bb = BlackBoxConfigurator.init();
+        // variable selection
+        bb.setIntVarStrategy(Search::roundRobinSearch)
+                .setRestartPolicy(s -> new Restarter(new InnerOuterCutoff(50, 1.01, 1.01),
+                        c -> s.getFailCount() >= c, 50_000, true))
+                .setNogoodOnRestart(true)
+                .setRestartOnSolution(false)
+                .setRefinedPartialAssignmentGeneration(false)
+                .setExcludeObjective(true)
+                .setExcludeViews(false);
+        bb.make(target);
     }
 
 
