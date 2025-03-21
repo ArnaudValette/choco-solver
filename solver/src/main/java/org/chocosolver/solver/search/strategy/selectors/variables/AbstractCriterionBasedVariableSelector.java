@@ -126,7 +126,7 @@ public abstract class AbstractCriterionBasedVariableSelector<V extends Variable>
     };
 
     public AbstractCriterionBasedVariableSelector(V[] vars, long seed, int flush) {
-        this.random = new java.util.Random(seed);
+        this.random = seed > -1 ? new java.util.Random(seed) : null;
         this.solver = vars[0].getModel().getSolver();
         this.environment = vars[0].getModel().getEnvironment();
         this.last = environment.makeInt(vars.length - 1);
@@ -163,7 +163,11 @@ public abstract class AbstractCriterionBasedVariableSelector<V extends Variable>
         last.set(to);
         if (!bests.isEmpty()) {
             //System.out.printf("%s%n", bests);
-            int currentVar = bests.get(random.nextInt(bests.size()));
+            int currentVar = 0;
+
+            if (random != null) {
+                currentVar = bests.get(random.nextInt(bests.size()));
+            }
             best = vars[currentVar];
         }
         return best;
