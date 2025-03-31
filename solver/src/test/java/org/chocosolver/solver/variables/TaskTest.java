@@ -109,7 +109,7 @@ public class TaskTest {
         task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
     }
 
-    @Test(groups = "1s", timeOut = 60000)
+    @Test(groups = "1s", timeOut = 60000, expectedExceptions = ContradictionException.class)
     public void testNegativeDuration() throws ContradictionException {
         IntVar start = model.intVar(0);
         IntVar end = model.intVar(-5);
