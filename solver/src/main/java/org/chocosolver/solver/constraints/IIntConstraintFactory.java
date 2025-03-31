@@ -44,8 +44,6 @@ import org.chocosolver.solver.constraints.nary.channeling.PropInverseChannelBC;
 import org.chocosolver.solver.constraints.nary.circuit.*;
 import org.chocosolver.solver.constraints.nary.count.PropCountVar;
 import org.chocosolver.solver.constraints.nary.count.PropCount_AC;
-import org.chocosolver.solver.constraints.nary.cumulative.CumulFilter;
-import org.chocosolver.solver.constraints.nary.cumulative.Cumulative;
 import org.chocosolver.solver.constraints.nary.element.PropElementV_fast;
 import org.chocosolver.solver.constraints.nary.globalcardinality.GlobalCardinality;
 import org.chocosolver.solver.constraints.nary.knapsack.PropKnapsack;

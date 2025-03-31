@@ -160,6 +160,7 @@ public class ConstraintsName {
     public static final String SATCONSTRAINT = "SATCONSTRAINT";
 
     public static final String CUMULATIVE = "CUMULATIVE";
+    public static final String DISJUNCTIVE = "DISJUNCTIVE";
 
     public static final String GCC = "GCC";
 

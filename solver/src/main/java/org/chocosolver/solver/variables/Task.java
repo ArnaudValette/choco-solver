@@ -16,6 +16,7 @@ import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.exception.ContradictionException;
+import org.chocosolver.solver.variables.events.PropagatorEventType;
 import org.chocosolver.solver.variables.view.integer.IntAffineView;
 import org.chocosolver.util.ESat;
 
@@ -294,6 +295,9 @@ public class Task extends Propagator<IntVar> {
 
     @Override
     public void propagate(int evtmask) throws ContradictionException {
+        if (model.getSolver().getNodeCount() == 0) { // Only at root node
+            updateMinDuration(0, this);
+        }
         boolean hasFiltered;
         final boolean lcg = getModel().getSolver().isLCG();
         do {
