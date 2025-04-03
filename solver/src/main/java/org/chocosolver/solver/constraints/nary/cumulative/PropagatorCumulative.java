@@ -51,11 +51,6 @@ public class PropagatorCumulative extends PropagatorResource {
     protected final TIntIntHashMap ttAfter;
     protected final List<Integer> tasksWithFreeParts;
 
-    ////////////////////////////////////////////////////////////////////
-    ////////////////        CUMULATIVE FILTERING        ////////////////
-    ////////////////////////////////////////////////////////////////////
-    private final int[] array = new int[2];
-
     public PropagatorCumulative(Task[] tasks, IntVar[] heights, IntVar capacity) {
         super(false, tasks, heights, capacity, PropagatorPriority.QUADRATIC, true);
         profile = new Profile(tasks.length);
@@ -77,31 +72,18 @@ public class PropagatorCumulative extends PropagatorResource {
             if (hasFiltered) {
                 enforceTaskVariablesRelation(performedAndOptionalTasks);
             }
-            updateHeights(performedAndOptionalTasks, tasksHeightsWithOptional);
         } while (hasFiltered);
     }
 
     protected void updateHeights(List<Task> tasks, List<IntVar> heights) throws ContradictionException {
         for (int i = 0; i < tasks.size(); i++) {
             final Task task = tasks.get(i);
-            if (task.mustBePerformed()) {
+            if (task.hasCompulsoryPart() && task.mustBePerformed()) {
                 final IntVar height = heights.get(i);
-                int j = profile.find(task.getEct() - task.getMinDuration());
-                int minRectangleHeight = capacity.getUB();
-                boolean shouldFilter = false;
-                while (j < profile.size() && profile.getStartRectangle(j) < task.getLst() + task.getMinDuration()) {
-                    if (task.hasCompulsoryPart()
-                        && task.getLst() < profile.getEndRectangle(j)
-                        && profile.getStartRectangle(j) < task.getEct()) {
-                        height.updateUpperBound(capacity.getUB() - (profile.getHeightRectangle(j) - height.getLB()), this);
-                    } else {
-                        minRectangleHeight = Math.min(profile.getHeightRectangle(j), minRectangleHeight);
-                        shouldFilter = true;
-                    }
+                int j = profile.find(task.getLst());
+                while (j < profile.size() && profile.getStartRectangle(j) < task.getEct()) {
+                    height.updateUpperBound(capacity.getUB() - (profile.getHeightRectangle(j) - height.getLB()), this);
                     j++;
-                }
-                if (shouldFilter) {
-                    height.updateUpperBound(capacity.getUB() - minRectangleHeight, this);
                 }
             }
         }
@@ -193,10 +175,6 @@ public class PropagatorCumulative extends PropagatorResource {
         tasksWithFreeParts.sort((i, j) -> compareTaskWithFreeParts(tasks, i, j));
     }
 
-    ////////////////////////////////////////////////////////////////////
-    ////////////////            PROPAGATION             ////////////////
-    ////////////////////////////////////////////////////////////////////
-
     protected void overloadChecking(List<Task> tasks, List<IntVar> heights) throws ContradictionException {
         // From PropCumulativeVilim2011
         computeTtAfter(tasks);
@@ -227,5 +205,6 @@ public class PropagatorCumulative extends PropagatorResource {
         computeMustBePerformedTasks();
         scalableTimeTable();
         overloadChecking(performedTasks, tasksHeights);
+        updateHeights(performedTasks, tasksHeights);
     }
 }
