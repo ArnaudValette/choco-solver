@@ -46,7 +46,7 @@ public class PropagatorDisjunctive extends PropagatorResource {
     private final AscendantSetSearchTree ascendantSetSearchTree2;
 
     public PropagatorDisjunctive(final Task[] tasks, final IntVar[] heights, final IntVar capacity) {
-        super(false, tasks, heights, capacity, PropagatorPriority.QUADRATIC, false);
+        super(true, tasks, heights, capacity, PropagatorPriority.QUADRATIC, false);
         // For Carlier1994
         l1 = new ArrayList<>(tasks.length);
         l2 = new ArrayList<>(tasks.length);
