@@ -74,10 +74,10 @@ public class PropagatorCumulative extends PropagatorResource {
             }
             capacity.updateLowerBound(maxHeight, this);
             hasFiltered = scalableTimeTable(performedAndOptionalTasks, tasksHeightsWithOptional);
-            updateHeights(performedAndOptionalTasks, tasksHeightsWithOptional);
             if (hasFiltered) {
                 enforceTaskVariablesRelation(performedAndOptionalTasks);
             }
+            updateHeights(performedAndOptionalTasks, tasksHeightsWithOptional);
         } while (hasFiltered);
     }
 
