@@ -188,6 +188,10 @@ public class Task extends Propagator<IntVar> {
         return duration.getUB();
     }
 
+    public boolean hasCompulsoryPart() {
+        return getLst() < getEct();
+    }
+
     public boolean isStartInstantiated() {
         return start.isInstantiated();
     }

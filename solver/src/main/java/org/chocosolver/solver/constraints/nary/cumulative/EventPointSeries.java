@@ -61,7 +61,7 @@ public class EventPointSeries {
                 }
             } else {
                 // a compulsory part exists
-                if (task.getLst() < task.getEct()) {
+                if (task.hasCompulsoryPart()) {
                     eventsArray[nbEvents++].set(Event.SCP, i, task.getLst());
                     eventsArray[nbEvents++].set(Event.ECP, i, task.getEct());
                 } else if (generateCCPEvents) { // conditional compulsory part

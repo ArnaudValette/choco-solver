@@ -9,10 +9,7 @@
  */
 package org.chocosolver.solver.constraints.nary;
 
-import org.chocosolver.solver.Model;
-import org.chocosolver.solver.Providers;
-import org.chocosolver.solver.Settings;
-import org.chocosolver.solver.Solver;
+import org.chocosolver.solver.*;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Task;
@@ -106,5 +103,56 @@ public class CumulativeTest {
         solver.findAllSolutions();
 
         Assert.assertEquals(solver.getSolutionCount(), 8);
+    }
+
+    @Test(groups = "1s", timeOut = 60000)
+    public void testFilterHeights() {
+        final Model model = new Model();
+        final int[][] s = new int[][]{{2, 5}, {0, 2}, {5, 7}};
+        final int[][] d = new int[][]{{3, 10}, {3, 5}, {8, 15}};
+        final int[][] e = new int[][]{{7, 15}, {5, 5}, {15, 20}};
+        final int[][] h = new int[][]{{2, 5}, {3, 7}, {3, 5}};
+
+        final Task[] tasks = IntStream.range(0, 3)
+                .mapToObj(i -> new Task(
+                        model.intVar("s" + i, s[i][0], s[i][1]),
+                        model.intVar("d" + i, d[i][0], d[i][1]),
+                        model.intVar("e" + i, e[i][0], e[i][1])))
+                .toArray(Task[]::new);
+
+        final IntVar[] height = IntStream.range(0, 3)
+                .mapToObj(i -> model.intVar("h" + i, h[i][0], h[i][1]))
+                .toArray(IntVar[]::new);
+
+        model.cumulative(tasks, height, model.intVar(5)).post();
+        try {
+            model.getSolver().propagate();
+        } catch (ContradictionException ex) {
+            Assert.fail();
+        }
+        int[] expectedHeightsUB = new int[]{2, 5, 5};
+        for (int i = 0; i < tasks.length; ++i) {
+            Assert.assertEquals(height[i].getUB(), expectedHeightsUB[i]);
+        }
+        try {
+            tasks[0].updateMinDuration(6, Cause.Null);
+            model.getSolver().propagate();
+        } catch (ContradictionException ex) {
+            Assert.fail();
+        }
+        expectedHeightsUB = new int[]{2, 5, 3};
+        for (int i = 0; i < tasks.length; ++i) {
+            Assert.assertEquals(height[i].getUB(), expectedHeightsUB[i]);
+        }
+        try {
+            tasks[0].updateLct(10, Cause.Null);
+            model.getSolver().propagate();
+        } catch (ContradictionException ex) {
+            Assert.fail();
+        }
+        expectedHeightsUB = new int[]{2, 3, 3};
+        for (int i = 0; i < tasks.length; ++i) {
+            Assert.assertEquals(height[i].getUB(), expectedHeightsUB[i]);
+        }
     }
 }

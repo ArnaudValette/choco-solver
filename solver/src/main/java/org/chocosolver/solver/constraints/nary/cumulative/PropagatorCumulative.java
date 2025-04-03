@@ -74,10 +74,37 @@ public class PropagatorCumulative extends PropagatorResource {
             }
             capacity.updateLowerBound(maxHeight, this);
             hasFiltered = scalableTimeTable(performedAndOptionalTasks, tasksHeightsWithOptional);
+            updateHeights(performedAndOptionalTasks, tasksHeightsWithOptional);
             if (hasFiltered) {
                 enforceTaskVariablesRelation(performedAndOptionalTasks);
             }
         } while (hasFiltered);
+    }
+
+    protected void updateHeights(List<Task> tasks, List<IntVar> heights) throws ContradictionException {
+        for (int i = 0; i < tasks.size(); i++) {
+            final Task task = tasks.get(i);
+            if (task.mustBePerformed()) {
+                final IntVar height = heights.get(i);
+                int j = profile.find(task.getEct() - task.getMinDuration());
+                int minRectangleHeight = capacity.getUB();
+                boolean shouldFilter = false;
+                while (j < profile.size() && profile.getStartRectangle(j) < task.getLst() + task.getMinDuration()) {
+                    if (task.hasCompulsoryPart()
+                        && task.getLst() < profile.getEndRectangle(j)
+                        && profile.getStartRectangle(j) < task.getEct()) {
+                        height.updateUpperBound(capacity.getUB() - (profile.getHeightRectangle(j) - height.getLB()), this);
+                    } else {
+                        minRectangleHeight = Math.min(profile.getHeightRectangle(j), minRectangleHeight);
+                        shouldFilter = true;
+                    }
+                    j++;
+                }
+                if (shouldFilter) {
+                    height.updateUpperBound(capacity.getUB() - minRectangleHeight, this);
+                }
+            }
+        }
     }
 
     protected boolean scalableTimeTable(List<Task> tasks, List<IntVar> heights) throws ContradictionException {
