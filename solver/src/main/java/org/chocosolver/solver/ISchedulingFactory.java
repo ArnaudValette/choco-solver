@@ -253,9 +253,10 @@ public interface ISchedulingFactory extends ISelf<Model> {
             keptTasks[i] = tasksToKeep.get(i);
             keptHeights[i] = heightsToKeep.get(i);
         }
-        if (keptTasks.length <= 1) {
+        if (keptTasks.length == 1) {
             return ref().arithm(keptHeights[0], "<=", capacity);
-        } else if (capacity.getUB() <= 1) {
+        } else if (capacity.getUB() <= 1
+                   && (heightsToKeep.stream().noneMatch(h -> h.getLB() == 0) || PropagatorDisjunctive.MANAGE_OPTIONALITY)) {
             return ref().disjunctive(keptTasks, keptHeights, capacity);
         } else {
             final List<Task> tasksInDisjunctive = new ArrayList<>();
@@ -305,7 +306,7 @@ public interface ISchedulingFactory extends ISelf<Model> {
                     propagators.add(propDisjunctive);
                 }
             }
-            if (tasksInDisjunctive.size() < keptTasks.length) {
+            if (tasksInDisjunctive.size() < keptTasks.length || !PropagatorDisjunctive.MANAGE_OPTIONALITY) {
                 propagators.add(new PropagatorCumulative(keptTasks, keptHeights, capacity));
             }
             return new Constraint(

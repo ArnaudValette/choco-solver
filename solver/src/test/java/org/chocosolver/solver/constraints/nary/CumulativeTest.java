@@ -14,6 +14,7 @@ import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Task;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
@@ -103,5 +104,43 @@ public class CumulativeTest {
         solver.findAllSolutions();
 
         Assert.assertEquals(solver.getSolutionCount(), 8);
+    }
+
+    @Test(groups = "1s", timeOut = 60000, dataProvider = "provideFilterHeight")
+    public void testFilterHeight(Integer hMax) {
+        final Model model = new Model();
+        final int[][] s = new int[][]{{0, 0}, {10, 10}, {0, 3}, {6, 8}, {3, 6}};
+        final int[][] d = new int[][]{{5, 5}, {10, 10}, {3, 6}, {5, 7}, {3, 6}};
+        final int[][] e = new int[][]{{5, 5}, {20, 20}, {4, 20}, {1, 20}, {1, 20}};
+        final int[][] h = new int[][]{{hMax, hMax}, {hMax, hMax}, {0, 1}, {0, 1}, {0, 1}};
+
+        Task[] tasks = IntStream.range(0, 5)
+                .mapToObj(i -> new Task(
+                        model.intVar("s" + i, s[i][0], s[i][1]),
+                        model.intVar("d" + i, d[i][0], d[i][1]),
+                        model.intVar("e" + i, e[i][0], e[i][1])))
+                .toArray(Task[]::new);
+
+        IntVar[] height = IntStream.range(0, 5)
+                .mapToObj(i -> model.intVar("h" + i, h[i][0], h[i][1]))
+                .toArray(IntVar[]::new);
+
+        model.cumulative(tasks, height, model.intVar(hMax)).post();
+
+        try {
+//            height[4].updateLowerBound(1, Cause.Null);
+            model.getSolver().propagate();
+        } catch (ContradictionException ex) {
+            Assert.fail();
+        }
+        Assert.assertEquals(height[2].getUB(), 0);
+        Assert.assertEquals(height[3].getUB(), 0);
+        Assert.assertEquals(height[4].getLB(), 0);
+        Assert.assertEquals(height[4].getUB(), 1);
+    }
+
+    @DataProvider(name = "provideFilterHeight")
+    private Object[][] provideFilterHeight() {
+        return new Integer[][]{{1}, {2}};
     }
 }

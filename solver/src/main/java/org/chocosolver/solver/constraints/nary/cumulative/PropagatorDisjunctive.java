@@ -31,6 +31,7 @@ import java.util.*;
  * @since 18/03/2025
  */
 public class PropagatorDisjunctive extends PropagatorResource {
+    public static final boolean MANAGE_OPTIONALITY = false;
     // For algorithms of Vilim2004
     private final List<Integer> queue;
     private final ThetaTree tree;

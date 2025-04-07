@@ -205,6 +205,6 @@ public class PropagatorCumulative extends PropagatorResource {
         computeMustBePerformedTasks();
         scalableTimeTable();
         overloadChecking(performedTasks, tasksHeights);
-        updateHeights(performedTasks, tasksHeights);
+        updateHeights(performedAndOptionalTasks, tasksHeightsWithOptional);
     }
 }
