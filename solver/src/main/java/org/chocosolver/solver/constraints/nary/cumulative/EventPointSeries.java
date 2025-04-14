@@ -48,24 +48,26 @@ public class EventPointSeries {
         timeIndex = 0;
         for (int i = 0; i < tasks.size(); i++) {
             Task task = tasks.get(i);
-            if (generatePREvents) {
-                // start min can be filtered
-                if (!task.getStart().isInstantiated()) {
-                    eventsArray[nbEvents++].set(Event.PR, i, task.getEst());
+            if (task.mustBePerformed()) {
+                if (generatePREvents) {
+                    // start min can be filtered
+                    if (!task.getStart().isInstantiated()) {
+                        eventsArray[nbEvents++].set(Event.PR, i, task.getEst());
+                    }
                 }
-            }
-            if (mergeScpAndCcpEvents) {
-                eventsArray[nbEvents++].set(Event.SCP, i, task.getLst());
-                if (task.getLst() < task.getEct()) {
-                    eventsArray[nbEvents++].set(Event.ECP, i, task.getEct());
-                }
-            } else {
-                // a compulsory part exists
-                if (task.hasCompulsoryPart()) {
+                if (mergeScpAndCcpEvents) {
                     eventsArray[nbEvents++].set(Event.SCP, i, task.getLst());
-                    eventsArray[nbEvents++].set(Event.ECP, i, task.getEct());
-                } else if (generateCCPEvents) { // conditional compulsory part
-                    eventsArray[nbEvents++].set(Event.CCP, i, task.getLst());
+                    if (task.getLst() < task.getEct()) {
+                        eventsArray[nbEvents++].set(Event.ECP, i, task.getEct());
+                    }
+                } else {
+                    // a compulsory part exists
+                    if (task.getLst() < task.getEct()) {
+                        eventsArray[nbEvents++].set(Event.SCP, i, task.getLst());
+                        eventsArray[nbEvents++].set(Event.ECP, i, task.getEct());
+                    } else if (generateCCPEvents) { // conditional compulsory part
+                        eventsArray[nbEvents++].set(Event.CCP, i, task.getLst());
+                    }
                 }
             }
         }

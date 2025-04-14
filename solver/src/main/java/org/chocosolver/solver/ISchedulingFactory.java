@@ -255,8 +255,7 @@ public interface ISchedulingFactory extends ISelf<Model> {
         }
         if (keptTasks.length == 1) {
             return ref().arithm(keptHeights[0], "<=", capacity);
-        } else if (capacity.getUB() <= 1
-                   && (heightsToKeep.stream().noneMatch(h -> h.getLB() == 0) || PropagatorDisjunctive.MANAGE_OPTIONALITY)) {
+        } else if (capacity.getUB() <= 1 && addDisjunctive(heightsToKeep)) {
             return ref().disjunctive(keptTasks, keptHeights, capacity);
         } else {
             final List<Task> tasksInDisjunctive = new ArrayList<>();
@@ -292,18 +291,16 @@ public interface ISchedulingFactory extends ISelf<Model> {
                         tasksDisjunctive[i] = tasksInDisjunctive.get(i);
                         heightsDisjunctive[i] = heightsInDisjunctive.get(i);
                     }
-                    final Propagator<IntVar> propDisjunctive;
                     if (tasksDisjunctive.length == 2) {
-                        propDisjunctive = new PropDisjunctiveTwoTasks(
+                        propagators.add(new PropDisjunctiveTwoTasks(
                                 tasksDisjunctive[0],
                                 heightsDisjunctive[0],
                                 tasksDisjunctive[1],
                                 heightsDisjunctive[1]
-                        );
-                    } else {
-                        propDisjunctive = new PropagatorDisjunctive(tasksDisjunctive, heightsDisjunctive, capacity);
+                        ));
+                    } else if (addDisjunctive(heightsInDisjunctive)) {
+                        propagators.add(new PropagatorDisjunctive(tasksDisjunctive, heightsDisjunctive, capacity));
                     }
-                    propagators.add(propDisjunctive);
                 }
             }
             if (tasksInDisjunctive.size() < keptTasks.length || !PropagatorDisjunctive.MANAGE_OPTIONALITY) {
@@ -314,6 +311,10 @@ public interface ISchedulingFactory extends ISelf<Model> {
                     propagators.toArray(new Propagator[0])
             );
         }
+    }
+
+    private static boolean addDisjunctive(final List<IntVar> heights) {
+        return heights.stream().noneMatch(h -> h.getLB() == 0) || PropagatorDisjunctive.MANAGE_OPTIONALITY;
     }
 
     /**

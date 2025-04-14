@@ -65,6 +65,9 @@ public class PropagatorDisjunctive extends PropagatorResource {
     }
 
     private boolean immediateSelections(final List<Task> tasks) throws ContradictionException {
+        if (tasks.isEmpty()) {
+            return false;
+        }
         l1.clear();
         l2.clear();
         for (int i = 0; i < tasks.size(); i++) {

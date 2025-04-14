@@ -13,6 +13,7 @@ import org.chocosolver.solver.ICause;
 import org.chocosolver.sat.Reason;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.Constraint;
+import org.chocosolver.solver.constraints.Explained;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.exception.ContradictionException;
@@ -29,6 +30,7 @@ import java.util.function.Consumer;
  * @author Jean-Guillaume Fages
  * @since 04/02/2013
  */
+@Explained
 public class Task extends Propagator<IntVar> {
 
     //***********************************************************************************
