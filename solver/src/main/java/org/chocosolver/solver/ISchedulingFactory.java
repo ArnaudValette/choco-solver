@@ -255,7 +255,8 @@ public interface ISchedulingFactory extends ISelf<Model> {
         }
         if (keptTasks.length == 1) {
             return ref().arithm(keptHeights[0], "<=", capacity);
-        } else if (capacity.getUB() <= 1 && addDisjunctive(heightsToKeep)) {
+        } else if (capacity.getUB() <= 1
+                   && (heightsToKeep.stream().noneMatch(h -> h.getLB() == 0) || PropagatorDisjunctive.MANAGE_OPTIONALITY)) {
             return ref().disjunctive(keptTasks, keptHeights, capacity);
         } else {
             final List<Task> tasksInDisjunctive = new ArrayList<>();
@@ -298,7 +299,8 @@ public interface ISchedulingFactory extends ISelf<Model> {
                                 tasksDisjunctive[1],
                                 heightsDisjunctive[1]
                         ));
-                    } else if (addDisjunctive(heightsInDisjunctive)) {
+                    } else if (heightsInDisjunctive.stream().noneMatch(h -> h.getLB() == 0)
+                               || PropagatorDisjunctive.MANAGE_OPTIONALITY) {
                         propagators.add(new PropagatorDisjunctive(tasksDisjunctive, heightsDisjunctive, capacity));
                     }
                 }
@@ -311,10 +313,6 @@ public interface ISchedulingFactory extends ISelf<Model> {
                     propagators.toArray(new Propagator[0])
             );
         }
-    }
-
-    private static boolean addDisjunctive(final List<IntVar> heights) {
-        return heights.stream().noneMatch(h -> h.getLB() == 0) || PropagatorDisjunctive.MANAGE_OPTIONALITY;
     }
 
     /**
