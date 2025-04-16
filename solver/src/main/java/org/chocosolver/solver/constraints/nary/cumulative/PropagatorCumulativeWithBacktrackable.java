@@ -9,7 +9,10 @@
  */
 package org.chocosolver.solver.constraints.nary.cumulative;
 
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.set.hash.TIntHashSet;
+import org.chocosolver.memory.IStateInt;
 import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.variables.IntVar;
@@ -33,7 +36,7 @@ import java.util.List;
  * @author Arthur Godet <arth.godet@gmail.com>
  * @since 19/10/2023
  */
-public class PropagatorCumulative extends PropagatorResource {
+public class PropagatorCumulativeWithBacktrackable extends PropagatorResource {
     private static int getFreeDuration(Task task) {
         int pTT = Math.max(0, task.getEct() - task.getLst());
         return task.getDuration().getLB() - pTT;
@@ -47,22 +50,42 @@ public class PropagatorCumulative extends PropagatorResource {
         return tasks.get(i).getEst() - tasks.get(j).getEst();
     }
 
-    protected final Profile profile;
+    protected final BacktrackableProfile profile;
     // Pour l'overloadChecking
-    protected final TIntIntHashMap ttAfter;
+    protected final TIntIntHashMap ttAfterMap;
     protected final List<Integer> tasksWithFreeParts;
+    protected final IStateInt sizeTtAfter;
+    protected final IStateInt[] timeValues;
+    protected final IStateInt[] ttAfter;
+    protected final TIntHashSet set;
+    protected final TIntArrayList list;
+    protected boolean shouldRecomputeTimeTable = false;
+    protected boolean hasRecomputedTimeTable = false;
 
-    public PropagatorCumulative(Task[] tasks, IntVar[] heights, IntVar capacity) {
-        super(false, tasks, heights, capacity, PropagatorPriority.QUADRATIC, true, false);
-        profile = new Profile(tasks.length);
+    public PropagatorCumulativeWithBacktrackable(Task[] tasks, IntVar[] heights, IntVar capacity) {
+        super(false, tasks, heights, capacity, PropagatorPriority.QUADRATIC, true, true);
+        profile = new BacktrackableProfile(tasks.length, getModel());
         tasksWithFreeParts = new ArrayList<>(tasks.length);
-        ttAfter = new TIntIntHashMap(2 * tasks.length);
+        ttAfterMap = new TIntIntHashMap(2 * tasks.length);
+        sizeTtAfter = getModel().getEnvironment().makeInt(0);
+        timeValues = new IStateInt[2 * tasks.length];
+        ttAfter = new IStateInt[2 * tasks.length];
+        for (int i = 0; i < ttAfter.length; ++i) {
+            timeValues[i] = getModel().getEnvironment().makeInt(0);
+            ttAfter[i] = getModel().getEnvironment().makeInt(0);
+        }
+        set = new TIntHashSet(2 * tasks.length);
+        list = new TIntArrayList(2 * tasks.length);
     }
 
     protected void scalableTimeTable(final List<Task> tasks, final List<IntVar> heights) throws ContradictionException {
         boolean hasFiltered;
         do {
-            buildProfile(tasks, heights);
+            if (shouldRecomputeTimeTable) {
+                buildProfile(tasks, heights);
+                shouldRecomputeTimeTable = false;
+                hasRecomputedTimeTable = true;
+            }
             hasFiltered = scalableTimeTableFilter(tasks, heights);
         } while (hasFiltered);
     }
@@ -98,10 +121,12 @@ public class PropagatorCumulative extends PropagatorResource {
             if (scalableTimeTableFilterEst(task, heights.get(i))) {
                 hasFiltered = true;
                 task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
+                shouldRecomputeTimeTable |= task.getLst() < task.getEct() && PropagatorResource.mustBePerformed(task, heights.get(i));
             }
             if (scalableTimeTableFilterLct(task, heights.get(i))) {
                 hasFiltered = true;
                 task.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
+                shouldRecomputeTimeTable |= task.getLst() < task.getEct() && PropagatorResource.mustBePerformed(task, heights.get(i));
             }
         }
         return hasFiltered;
@@ -114,7 +139,7 @@ public class PropagatorCumulative extends PropagatorResource {
             while (j < profile.size() && profile.getStartRectangle(j) < Math.min(task.getEct(), task.getLst())) {
                 if (capacity.getUB() - height.getLB() < profile.getHeightRectangle(j)) {
                     hasFiltered |= PropagatorResource.filterEst(task, height, Math.min(task.getLst(), profile.getEndRectangle(j)), this)
-                            && PropagatorResource.mustBePerformed(task, height);
+                                   && PropagatorResource.mustBePerformed(task, height);
                 }
                 j++;
             }
@@ -129,7 +154,7 @@ public class PropagatorCumulative extends PropagatorResource {
             while (j >= 1 && profile.getEndRectangle(j) > Math.max(task.getLst(), task.getEct())) {
                 if (capacity.getUB() - height.getLB() < profile.getHeightRectangle(j)) {
                     hasFiltered |= PropagatorResource.filterLct(task, height, Math.max(profile.getStartRectangle(j), task.getEct()), this)
-                            && PropagatorResource.mustBePerformed(task, height);
+                                   && PropagatorResource.mustBePerformed(task, height);
                 }
                 j--;
             }
@@ -138,36 +163,45 @@ public class PropagatorCumulative extends PropagatorResource {
     }
 
     protected void computeTtAfter(final List<Task> tasks) {
-        ttAfter.clear();
+        ttAfterMap.clear();
+        set.clear();
         for (int i = 0; i < tasks.size(); ++i) {
             final int est = tasks.get(i).getEst();
             final int lct = tasks.get(i).getLct();
-            if (!ttAfter.containsKey(est) || !ttAfter.containsKey(lct)) {
-                computeTtAfter(est, lct);
-            }
+            set.add(est);
+            set.add(lct);
         }
-    }
-
-    protected void computeTtAfter(final int est, final int lct) {
+        list.clear();
+        list.addAll(set);
+        list.sort();
         int ttAfterTime = 0;
         int idx = profile.size() - 1;
-        while (0 <= idx && lct <= profile.getStartRectangle(idx)) {
-            ttAfterTime += profile.getHeightRectangle(idx) * (profile.getEndRectangle(idx) - profile.getStartRectangle(idx));
-            idx--;
+        for (int k = 0; k < list.size(); ++k) {
+            final int time = list.getQuick(list.size() - 1 - k);
+            while (0 <= idx && time <= profile.getStartRectangle(idx)) {
+                ttAfterTime += profile.getHeightRectangle(idx) * (profile.getEndRectangle(idx) - profile.getStartRectangle(idx));
+                idx--;
+            }
+            final int value;
+            if (0 <= idx && time < profile.getEndRectangle(idx)) {
+                value = ttAfterTime + profile.getHeightRectangle(idx) * (profile.getEndRectangle(idx) - time);
+            } else {
+                value = ttAfterTime;
+            }
+            timeValues[list.size() - 1 - k].set(time);
+            ttAfter[list.size() - 1 - k].set(value);
         }
-        if (0 <= idx && lct < profile.getEndRectangle(idx)) {
-            ttAfter.put(lct, ttAfterTime + profile.getHeightRectangle(idx) * (profile.getEndRectangle(idx) - lct));
-        } else {
-            ttAfter.put(lct, ttAfterTime);
-        }
-        while (0 <= idx && est <= profile.getStartRectangle(idx)) {
-            ttAfterTime += profile.getHeightRectangle(idx) * (profile.getEndRectangle(idx) - profile.getStartRectangle(idx));
-            idx--;
-        }
-        if (0 <= idx && est < profile.getEndRectangle(idx)) {
-            ttAfter.put(est, ttAfterTime + profile.getHeightRectangle(idx) * (profile.getEndRectangle(idx) - est));
-        } else {
-            ttAfter.put(est, ttAfterTime);
+        sizeTtAfter.set(list.size());
+    }
+
+    protected int getTtAfter(final int time) {
+        return ttAfterMap.get(time);
+    }
+
+    protected void fillTtAfterMap() {
+        ttAfterMap.clear();
+        for (int i = 0; i < sizeTtAfter.get(); ++i) {
+            ttAfterMap.put(timeValues[i].get(), ttAfter[i].get());
         }
     }
 
@@ -184,7 +218,10 @@ public class PropagatorCumulative extends PropagatorResource {
 
     protected void overloadChecking(final List<Task> tasks, final List<IntVar> heights) throws ContradictionException {
         // From PropCumulativeVilim2011
-        computeTtAfter(tasks);
+        if (hasRecomputedTimeTable) {
+            computeTtAfter(tasks);
+        }
+        fillTtAfterMap();
         computeTasksWithFreeParts(tasks);
         int eEF;
         int a;
@@ -198,7 +235,7 @@ public class PropagatorCumulative extends PropagatorResource {
                 a = tasksWithFreeParts.get(k);
                 if (tasks.get(a).getLct() <= tasks.get(b).getLct() && PropagatorResource.mustBePerformed(tasks.get(a), heights.get(a))) {
                     eEF += getFreeDuration(tasks.get(a)) * heights.get(a).getLB();
-                    if (capacity.getUB() * (lctB - tasks.get(a).getEst()) < eEF + ttAfter.get(tasks.get(a).getEst()) - ttAfter.get(lctB)) {
+                    if (capacity.getUB() * (lctB - tasks.get(a).getEst()) < eEF + getTtAfter(tasks.get(a).getEst()) - getTtAfter(lctB)) {
                         PropagatorResource.filterOptionalTask(tasks.get(b), heights.get(b), this);
                         break;
                     }
@@ -214,7 +251,21 @@ public class PropagatorCumulative extends PropagatorResource {
     }
 
     @Override
+    public void propagate(int idxVarInProp, int mask) throws ContradictionException {
+        final int v = idxVarInProp / 4;
+        if (idxVarInProp >= 4 * tasks.length
+            || tasks[v].hasCompulsoryPart() && PropagatorResource.mustBePerformed(tasks[v], heights[v])) {
+            shouldRecomputeTimeTable = true;
+        }
+        forcePropagate(PropagatorEventType.CUSTOM_PROPAGATION);
+    }
+
+    @Override
     public void propagate(int evtmask) throws ContradictionException {
+        hasRecomputedTimeTable = false;
+        if (PropagatorEventType.isFullPropagation(evtmask)) {
+            shouldRecomputeTimeTable = true;
+        }
         computeMustBePerformedTasks();
         filter(performedAndOptionalTasks, tasksHeightsWithOptional);
     }
