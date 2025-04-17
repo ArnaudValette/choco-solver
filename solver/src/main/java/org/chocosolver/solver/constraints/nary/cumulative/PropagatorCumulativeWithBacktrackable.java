@@ -205,10 +205,10 @@ public class PropagatorCumulativeWithBacktrackable extends PropagatorResource {
         }
     }
 
-    protected void computeTasksWithFreeParts(List<Task> tasks) {
+    protected void computeTasksWithFreeParts(final List<Task> tasks, final List<IntVar> heights) {
         tasksWithFreeParts.clear();
         for (int i = 0; i < tasks.size(); i++) {
-            if (getFreeDuration(tasks.get(i)) > 0) {
+            if (PropagatorResource.mustBePerformed(tasks.get(i), heights.get(i)) && getFreeDuration(tasks.get(i)) > 0) {
                 tasksWithFreeParts.add(i);
             }
         }
@@ -222,7 +222,7 @@ public class PropagatorCumulativeWithBacktrackable extends PropagatorResource {
             computeTtAfter(tasks);
         }
         fillTtAfterMap();
-        computeTasksWithFreeParts(tasks);
+        computeTasksWithFreeParts(tasks, heights);
         int eEF;
         int a;
         int b;
