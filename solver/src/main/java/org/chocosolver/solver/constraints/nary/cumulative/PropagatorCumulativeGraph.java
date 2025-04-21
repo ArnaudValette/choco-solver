@@ -9,12 +9,17 @@
  */
 package org.chocosolver.solver.constraints.nary.cumulative;
 
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntIntHashMap;
 import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Task;
 import org.chocosolver.solver.variables.events.PropagatorEventType;
+import org.chocosolver.util.objects.graphs.UndirectedGraph;
+import org.chocosolver.util.objects.setDataStructures.ISetIterator;
+import org.chocosolver.util.objects.setDataStructures.SetType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +38,7 @@ import java.util.List;
  * @author Arthur Godet <arth.godet@gmail.com>
  * @since 19/10/2023
  */
-public class PropagatorCumulative extends PropagatorResource {
+public class PropagatorCumulativeGraph extends PropagatorResource {
     private static int getFreeDuration(Task task) {
         int pTT = Math.max(0, task.getEct() - task.getLst());
         return task.getDuration().getLB() - pTT;
@@ -48,15 +53,25 @@ public class PropagatorCumulative extends PropagatorResource {
     }
 
     protected final Profile profile;
+    protected final UndirectedGraph graph;
+    protected final TIntArrayList toCompute;
+    protected final List<Task> tasksToCompute;
+    protected final List<IntVar> heightsToCompute;
     // Pour l'overloadChecking
     protected final TIntIntHashMap ttAfter;
     protected final List<Integer> tasksWithFreeParts;
+    protected long timestamp;
+    protected boolean full;
 
-    public PropagatorCumulative(Task[] tasks, IntVar[] heights, IntVar capacity) {
-        super(false, tasks, heights, capacity, PropagatorPriority.QUADRATIC, true, false);
+    public PropagatorCumulativeGraph(Task[] tasks, IntVar[] heights, IntVar capacity) {
+        super(false, tasks, heights, capacity, PropagatorPriority.QUADRATIC, true, true);
         profile = new Profile(tasks.length);
         tasksWithFreeParts = new ArrayList<>(tasks.length);
         ttAfter = new TIntIntHashMap(2 * tasks.length);
+        graph = new UndirectedGraph(model, tasks.length, SetType.BITSET, true);
+        toCompute = new TIntArrayList(tasks.length);
+        tasksToCompute = new ArrayList<>(tasks.length);
+        heightsToCompute = new ArrayList<>(tasks.length);
     }
 
     protected void scalableTimeTable(final List<Task> tasks, final List<IntVar> heights) throws ContradictionException {
@@ -214,8 +229,95 @@ public class PropagatorCumulative extends PropagatorResource {
     }
 
     @Override
+    public void propagate(int idxVarInProp, int mask) throws ContradictionException {
+        if (timestamp != model.getEnvironment().getTimeStamp()) {
+            timestamp = model.getEnvironment().getTimeStamp();
+            toCompute.clear();
+            full = false;
+        }
+        final int n = tasks.length;
+        if (idxVarInProp < 4 * n) {
+            final int v = idxVarInProp / 4;
+            if (heights[v].getUB() == 0 || tasks[v].getMaxDuration() == 0) {
+                final ISetIterator gIt = graph.getNeighborsOf(v).iterator();
+                while (gIt.hasNext()) {
+                    graph.removeEdge(v, gIt.nextInt());
+                }
+            } else {
+                toCompute.add(v);
+            }
+        } else {
+            full = true;
+        }
+        forcePropagate(PropagatorEventType.CUSTOM_PROPAGATION);
+    }
+
+    @Override
     public void propagate(int evtmask) throws ContradictionException {
         computeMustBePerformedTasks();
-        filter(performedAndOptionalTasks, tasksHeightsWithOptional);
+        if (PropagatorEventType.isFullPropagation(evtmask)) {
+            filter(performedAndOptionalTasks, tasksHeightsWithOptional);
+            graphComputation();
+        } else {
+            if (full) {
+                filter(performedAndOptionalTasks, tasksHeightsWithOptional);
+            } else {
+                int count = 0;
+                TIntIterator tcIt = toCompute.iterator();
+                while (tcIt.hasNext()) {
+                    int i = tcIt.next();
+                    ISetIterator it = graph.getNeighborsOf(i).iterator();
+                    while (it.hasNext()) {
+                        int j = it.nextInt();
+                        if (disjoint(i, j) || heights[i].getUB() == 0 || tasks[i].getMaxDuration() == 0) {
+                            graph.removeEdge(i, j);
+                        }
+                    }
+                    count += graph.getNeighborsOf(i).size();
+                    if (count >= 2 * tasks.length) {
+                        break;
+                    }
+                }
+                if (count >= 2 * tasks.length) {
+                    filter(performedAndOptionalTasks, tasksHeightsWithOptional);
+                } else {
+                    TIntIterator iter = toCompute.iterator();
+                    while (iter.hasNext()) {
+                        filterAround(iter.next());
+                    }
+                }
+            }
+        }
+        toCompute.clear();
+        full = false;
+    }
+
+    protected void filterAround(final int taskIndex) throws ContradictionException {
+        tasksToCompute.clear();
+        heightsToCompute.clear();
+        tasksToCompute.add(tasks[taskIndex]);
+        heightsToCompute.add(heights[taskIndex]);
+        final ISetIterator env = graph.getNeighborsOf(taskIndex).iterator();
+        while (env.hasNext()) {
+            final int neighbourIndex = env.nextInt();
+            tasksToCompute.add(tasks[neighbourIndex]);
+            heightsToCompute.add(heights[neighbourIndex]);
+        }
+        filter(tasksToCompute, heightsToCompute);
+    }
+
+    private boolean disjoint(int i, int j) {
+        return tasks[i].getEst() >= tasks[j].getLct() || tasks[j].getEst() >= tasks[i].getLct();
+    }
+
+    private void graphComputation() {
+        for (int i = 0; i < tasks.length; ++i) {
+            graph.getNeighborsOf(i).clear();
+            for (int j = 0; j < tasks.length; ++j) {
+                if (i != j && !disjoint(i, j)) {
+                    graph.getNeighborsOf(i).add(j);
+                }
+            }
+        }
     }
 }
