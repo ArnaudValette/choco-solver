@@ -335,7 +335,7 @@ public class Task extends Propagator<IntVar> {
     @Override
     public ESat isEntailed() {
         if (start.isInstantiated() && duration.isInstantiated() && end.isInstantiated()) {
-            return ESat.eval(start.getValue() + duration.getValue() == end.getValue());
+            return ESat.eval(!mayBePerformed() || start.getValue() + duration.getValue() == end.getValue());
         } else {
             return ESat.UNDEFINED;
         }
