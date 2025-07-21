@@ -15,7 +15,7 @@ import org.chocosolver.solver.Identity;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.exception.ContradictionException;
-import org.chocosolver.solver.propagation.PropagationEngine;
+import org.chocosolver.solver.propagation.IPropagationEngine;
 import org.chocosolver.solver.variables.delta.IDelta;
 import org.chocosolver.solver.variables.events.IEventType;
 import org.chocosolver.solver.variables.view.IView;
@@ -336,7 +336,7 @@ public interface Variable extends Identity, Comparable<Variable> {
     /**
      * Schedule active propagators in the engine
      */
-    void schedulePropagators(PropagationEngine engine);
+    void schedulePropagators(IPropagationEngine engine);
 
     /**
      * @return this cast into an IntVar.

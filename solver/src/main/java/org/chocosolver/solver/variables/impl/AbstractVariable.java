@@ -14,7 +14,7 @@ import org.chocosolver.solver.ICause;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.exception.ContradictionException;
-import org.chocosolver.solver.propagation.PropagationEngine;
+import org.chocosolver.solver.propagation.IPropagationEngine;
 import org.chocosolver.solver.variables.*;
 import org.chocosolver.solver.variables.events.IEventType;
 import org.chocosolver.solver.variables.view.IView;
@@ -190,7 +190,7 @@ public abstract class AbstractVariable implements Variable {
     }
 
     @Override
-    public void schedulePropagators(PropagationEngine engine) {
+    public void schedulePropagators(IPropagationEngine engine) {
         if (mask > 0) {
             EvtScheduler<?> si = this.getEvtScheduler();
             si.init(mask);

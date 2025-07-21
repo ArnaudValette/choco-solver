@@ -21,10 +21,9 @@ import org.chocosolver.solver.variables.Variable;
 import org.chocosolver.solver.variables.events.IEventType;
 import org.chocosolver.solver.variables.events.PropagatorEventType;
 import org.chocosolver.util.objects.queues.CircularQueue;
-import org.chocosolver.util.tools.ArrayUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -41,7 +40,7 @@ import static org.chocosolver.sat.MiniSat.C_Undef;
  * @author Charles Prud'homme
  * @since 05/07/12
  */
-public class PropagationEngine {
+public class PropagationEngine extends AbstractEngine implements IPropagationEngine {
 
     @SuppressWarnings("WeakerAccess")
     public static boolean CHECK_SCOPE = false;
@@ -57,7 +56,7 @@ public class PropagationEngine {
     /**
      * The array of propagators to execute
      */
-    final List<Propagator<?>> propagators;
+    public List<Propagator<?>> propagators;
     /**
      * To deal with propagators added dynamically
      */
@@ -139,6 +138,7 @@ public class PropagationEngine {
         //0b10: var-ori
         this.hybrid = model.getSettings().enableHybridizationOfPropagationEngine();
         this.sat = sat;
+        this.parent = this;
     }
 
     /**
@@ -211,7 +211,7 @@ public class PropagationEngine {
 
     /**
      * Is the engine initialized?
-     * Important for dynamic addition of constraints
+     * Important for dynamic addition of constraint/s
      *
      * @return true if the engine has been initialized
      */
@@ -309,7 +309,7 @@ public class PropagationEngine {
             model.getSolver().getMeasures().incPropagationCount();
             propagateSat();
             while (!var_queue.isEmpty()) {
-                var_queue.pollFirst().schedulePropagators(this);
+                var_queue.pollFirst().schedulePropagators(this.parent);
             }
         }
     }
@@ -317,7 +317,7 @@ public class PropagationEngine {
     private void manageModifications() {
         if (!var_queue.isEmpty()) {
             do {
-                var_queue.pollFirst().schedulePropagators(this);
+                var_queue.pollFirst().schedulePropagators(this.parent);
             } while (hybrid < 2 && !var_queue.isEmpty());
         }
     }
@@ -393,7 +393,7 @@ public class PropagationEngine {
     /**
      * @return the propagator Event Type's mask for delayed propagation
      */
-    int getDelayedPropagation() {
+    public int getDelayedPropagation() {
         return delayedPropagationType;
     }
 
@@ -529,73 +529,4 @@ public class PropagationEngine {
         }
     }
 
-    private static class DynPropagators {
-
-        private Propagator<?>[] elements;
-        private int[] keys;
-        private int size;
-
-        DynPropagators() {
-            elements = new Propagator[16];
-            keys = new int[16];
-            size = 0;
-        }
-
-        public void clear() {
-            size = 0;
-        }
-
-        public void add(Propagator<?> e) {
-            ensureCapacity();
-            elements[size] = e;
-            keys[size++] = Integer.MAX_VALUE;
-        }
-
-        private void ensureCapacity() {
-            if (size >= elements.length - 1) {
-                int nsize = ArrayUtils.newBoundedSize(elements.length, 8);
-                elements = Arrays.copyOf(elements, nsize);
-                keys = Arrays.copyOf(keys, nsize);
-            }
-        }
-
-        void addOrUpdate(Propagator<?> e) {
-            remove(e);
-            add(e);
-        }
-
-        public void remove(Propagator<?> e) {
-            int p = indexOf(e);
-            if (p > -1) {
-                removeAt(p);
-            }
-        }
-
-        private void removeAt(int p) {
-            if (p < size - 1) {
-                System.arraycopy(elements, p + 1, elements, p, size - p);
-                System.arraycopy(keys, p + 1, keys, p, size - p);
-            }
-            elements[--size] = null;
-            keys[size] = 0;
-        }
-
-        private int indexOf(Propagator<?> e) {
-            for (int i = 0; i < size; i++) {
-                if (e.equals(elements[i])) {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        void descending(int w, Consumer<Propagator<?>> cons) {
-            int i = size - 1;
-            while (i >= 0 && keys[i] >= w) {
-                cons.accept(elements[i]);
-                keys[i] = w;
-                i--;
-            }
-        }
-    }
 }

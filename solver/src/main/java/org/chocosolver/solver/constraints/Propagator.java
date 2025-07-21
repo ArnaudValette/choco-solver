@@ -905,7 +905,6 @@ public abstract class Propagator<V extends Variable> implements ICause, Identity
         scheduled = true;
     }
 
-
     /**
      * Apply scheduling instruction
      *

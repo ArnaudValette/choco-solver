@@ -21,7 +21,7 @@ import org.chocosolver.solver.exception.SolverException;
 import org.chocosolver.solver.objective.IBoundsManager;
 import org.chocosolver.solver.objective.IObjectiveManager;
 import org.chocosolver.solver.objective.ObjectiveFactory;
-import org.chocosolver.solver.propagation.PropagationEngine;
+import org.chocosolver.solver.propagation.*;
 import org.chocosolver.solver.search.SearchState;
 import org.chocosolver.solver.search.limits.ICounter;
 import org.chocosolver.solver.search.loop.Reporting;
@@ -198,7 +198,7 @@ public final class Solver implements ISolver, IMeasures, IOutputFactory {
     /**
      * The propagation engine to use
      */
-    private PropagationEngine engine;
+    private IPropagationEngine engine;
     /**
      * Internal unique contradiction exception, used on propagation failures
      */
@@ -574,8 +574,8 @@ public final class Solver implements ISolver, IMeasures, IOutputFactory {
         if (mModel.getHook(Model.TASK_SET_HOOK_NAME) != null) {
             //noinspection unchecked
             ArrayList<Task> tset = (ArrayList<Task>) mModel.getHook(Model.TASK_SET_HOOK_NAME);
-            for (int i = 0; i < tset.size(); i++) {
-                tset.get(i).ensureBoundConsistency();
+            for (Task task : tset) {
+                task.ensureBoundConsistency();
             }
         }
     }
@@ -883,7 +883,7 @@ public final class Solver implements ISolver, IMeasures, IOutputFactory {
      * @throws ContradictionException inconsistency is detected, the problem has no solution with the current set of domains and constraints.
      * @implNote The propagation engine is ensured to be empty (no pending events) after this method.
      * Indeed, if no contradiction occurs, a fix point is reached.
-     * Otherwise, a call to {@link PropagationEngine#flush()} is made.
+     * Otherwise, a call to {@link IPropagationEngine#flush()} is made.
      */
     public void propagate() throws ContradictionException {
         if (!engine.isInitialized()) {
@@ -1273,7 +1273,7 @@ public final class Solver implements ISolver, IMeasures, IOutputFactory {
     /**
      * @return the propagation engine used in {@code this}.
      */
-    public PropagationEngine getEngine() {
+    public IPropagationEngine getEngine() {
         return engine;
     }
 
@@ -1461,7 +1461,7 @@ public final class Solver implements ISolver, IMeasures, IOutputFactory {
      * @param propagationEngine a propagation strategy
      * @throws SolverException is already initialized.
      */
-    public void setEngine(PropagationEngine propagationEngine) {
+    public void setEngine(IPropagationEngine propagationEngine) {
         if (!engine.isInitialized()
                 || getEnvironment().getWorldIndex() == rootWorldIndex) {
             this.engine = propagationEngine;

@@ -11,7 +11,7 @@ package org.chocosolver.solver.variables.impl;
 
 import org.chocosolver.solver.ICause;
 import org.chocosolver.solver.constraints.Propagator;
-import org.chocosolver.solver.propagation.PropagationEngine;
+import org.chocosolver.solver.propagation.IPropagationEngine;
 
 import java.util.stream.Stream;
 
@@ -60,7 +60,7 @@ interface IBipartiteList {
         }
 
         @Override
-        public void schedule(ICause cause, PropagationEngine engine, int mask) {
+        public void schedule(ICause cause, IPropagationEngine engine, int mask) {
         }
 
         @Override
@@ -131,7 +131,7 @@ interface IBipartiteList {
      * @param engine the propagation engine to add propagators to
      * @param mask   the modification due to cause
      */
-    void schedule(ICause cause, PropagationEngine engine, int mask);
+    void schedule(ICause cause, IPropagationEngine engine, int mask);
 
     Stream<Propagator<?>> stream();
 }

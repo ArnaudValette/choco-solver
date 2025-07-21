@@ -21,7 +21,7 @@ import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.exception.SolverException;
 import org.chocosolver.solver.objective.IObjectiveManager;
 import org.chocosolver.solver.objective.ObjectiveFactory;
-import org.chocosolver.solver.propagation.PropagationEngine;
+import org.chocosolver.solver.propagation.IPropagationEngine;
 import org.chocosolver.solver.variables.*;
 import org.chocosolver.util.tools.ArrayUtils;
 import org.chocosolver.util.tools.VariableUtils;
@@ -935,7 +935,7 @@ public final class Model implements IModel {
      * @throws SolverException if a constraint is posted twice, posted although reified or reified twice.
      */
     private void _post(boolean permanent, Constraint... cs) throws SolverException {
-        PropagationEngine engine = getSolver().getEngine();
+        IPropagationEngine engine = getSolver().getEngine();
         // check if the resolution already started -> if true, dynamic addition
         boolean dynAdd = engine.isInitialized();
         // then prepare storage of the constraints
@@ -1015,7 +1015,7 @@ public final class Model implements IModel {
                 }
                 cstrs[cIdx] = null;
                 // 3. check if the resolution already started -> if true, dynamic deletion
-                PropagationEngine engine = getSolver().getEngine();
+                IPropagationEngine engine = getSolver().getEngine();
                 if (engine.isInitialized()) {
                     engine.dynamicDeletion(c.getPropagators());
                 }
