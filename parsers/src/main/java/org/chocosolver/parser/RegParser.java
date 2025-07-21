@@ -177,6 +177,16 @@ public abstract class RegParser implements IParser {
     @Option(name = "--disable-shutdown-hook", usage = "Disable the shutdown hook.")
     protected boolean disableShutdownHook = false;
 
+
+    @Option(name = "-sc", aliases = {"--strong-consistency"}, usage = "Strong consistency to enforce:\n" +
+            "0: none (default), " +
+            "1: SAC3," +
+            "2: SAC," +
+            "3: RNSAC"+
+            "4: RNSQ")
+    private int sc = 0;
+
+
     /**
      * Default settings to apply
      */
@@ -317,6 +327,30 @@ public abstract class RegParser implements IParser {
                 portfolio.getModels().get(i).getSolver().limitRestart(limits.getRuns());
             }
             makeComplementarySearch(portfolio.getModels().get(i), i);
+            handleStrongConsistency(portfolio.getModels().get(i).getSolver());
+        }
+    }
+
+    private void handleStrongConsistency(Solver solver){
+        switch(sc){
+            case 1:
+                System.out.println("Using SAC3.");
+                solver.enforceSAC("SAC3");
+                break;
+            case 2:
+                System.out.println("Using SAC.");
+                solver.enforceSAC("SAC");
+                break;
+            case 3:
+                System.out.println("Using RNSAC");
+                solver.enforceSAC("RNSAC");
+                break;
+            case 4:
+                System.out.println("Using RNSQ");
+                solver.enforceSAC("RNSQ");
+                break;
+            default:
+                break;
         }
     }
 

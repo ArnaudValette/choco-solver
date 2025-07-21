@@ -1386,6 +1386,19 @@ public final class Solver implements ISolver, IMeasures, IOutputFactory {
         }
     }
 
+    public void enforceSAC(String type){
+        switch (type){
+            case "SAC3":
+                this.engine = (new SingletonConsistencyEngine(this.mModel)).enforceSAC3();
+                break;
+            case "RNSQ":
+                this.engine = (new SingletonConsistencyEngine(this.mModel)).enforceRNSQ();
+                break;
+            default:
+                this.engine = (new SingletonConsistencyEngine(this.mModel)).enforceSAC3();
+        }
+    }
+
     /**
      * @return the current declared restart policy or {@link AbstractRestart#NO_RESTART}
      */
