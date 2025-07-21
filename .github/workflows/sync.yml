@@ -1,9 +1,7 @@
 name: Sync to GitLab
 on:
   push:
-    branches:
-      - master
-
+    branches: [ "**" ]
 jobs:
   mirror:
     runs-on: ubuntu-latest
