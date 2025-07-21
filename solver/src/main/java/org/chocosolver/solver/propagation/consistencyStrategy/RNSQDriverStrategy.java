@@ -19,28 +19,28 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
         this.Q= Q;
     }
     private void ACenforce(SingletonConsistencyEngine E) throws ContradictionException {
-        E.setCheckSingleton(false);
-        E.setBlockLateScheduling(true);
+        E.setCheckSingleton(false); /* Don't check for singletons */
+        E.setBlockLateScheduling(true); /* Don't late schedule */
         E.doPropagate();
     }
 
     private void conditionFC(SingletonConsistencyEngine E) throws ContradictionException {
-        E.setBlockLateScheduling(false);
-        E.setSingleton(false);
-        E.setCheckSingleton(true);
+        E.setBlockLateScheduling(false); /* We need to store NSAC propagators in lateQ */
+        E.setSingleton(false); /* Init */
+        E.setCheckSingleton(true); /* Check for singleton */
         E.doPropagate();
     }
 
     private void neighborhoodAC(SingletonConsistencyEngine E) throws ContradictionException {
-        E.setBlockLateScheduling(true);
-        E.setCheckSingleton(false);
+        E.setBlockLateScheduling(true); /* Don't late schedule */
+        E.setCheckSingleton(false); /* Don't check for singletons */
         E.doPropagate();
     }
 
     public void propagate(SingletonConsistencyEngine E) throws ContradictionException {
-        E.setDoFilterScheduling(true);
+        E.setDoFilterScheduling(true); /* Do filter propagators */
         Q.reinit();
-        E.freeDirectPropsSchedulingBL();
+        E.freeDirectPropsSchedulingBL(); /* Don't blacklist anything for AC */
         ACenforce(E);
 
         while(!Q.isEmpty()){
@@ -48,9 +48,9 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
             boolean changed = false;
             IntVar v = Q.pop();
 
-            BitSet direct_only = E.getDirectOnlyBlacklist(v);
-            BitSet nsac_props = E.getNsacBlacklist(v);
-            Set<IntVar> nx = E.getNeighborhood(v);
+            BitSet direct_only = E.getDirectOnlyBlacklist(v); /* Blacklist of propagators not related directly to V*/
+            BitSet nsac_props = E.getNsacBlacklist(v); /* Blacklist of propagators not in neighborhood of V */
+            Set<IntVar> nx = E.getNeighborhood(v); /* Neighborhood of V */
 
             for(int val = v.getLB(); val<=v.getUB(); val=v.nextValue(val)) {
                 try {
@@ -62,20 +62,28 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
 
                     /* apply condition FC */
 
-                    E.initLatePropQ();
+                    E.initLatePropQ(); /* empty Q */
 
-                    E.setDirectPropsScheduling(direct_only);
-                    E.setLatePropsScheduling(nsac_props);
+                    E.setDirectPropsScheduling(direct_only); /* First filter : propagators directly related to V */
+                    E.setLatePropsScheduling(nsac_props); /* Second filter (late schedule) : propagators in neighborhood of V */
 
+                    /* Propagate AC on the sub-problem constituted with the direct neighbors of V;
+                     * Every time choco wants to schedule a propagator,
+                     * (a) propagator is directly related to V : scheduled
+                     * (b) propagator is in neighborhood of V : late scheduled [latePropQ.add(p)]
+                     * (c) none of the above : ignored
+                     * */
                     conditionFC(E);
 
                     if(E.foundSingletonDuringPropagation()){
-                        E.setDirectPropsScheduling(nsac_props);
+                        E.setDirectPropsScheduling(nsac_props); /* First filter : propagators in neighborhood of V */
 
+                        /* Now, do schedule all late scheduled propagators */
                         while(!E.lateQisEmpty()){
                             Triple<Propagator<?>, Integer, Integer> args = E.latePropsPop();
-                            E.imperativeSchedule(args.getFirst(), args.getSecond(), args.getThird());
+                            E.imperativeSchedule(args.getFirst(), args.getSecond(), args.getThird()); /* force scheduling */
                         }
+
                         /* apply AC to N(v) */
                         neighborhoodAC(E);
                     }

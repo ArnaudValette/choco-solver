@@ -16,7 +16,7 @@ public class SAC3DriverStrategy implements ISingletonConsistencyStrategy{
     }
 
     private void acEnforce(SingletonConsistencyEngine E) throws ContradictionException {
-        E.setCheckSingleton(false);
+        E.setCheckSingleton(false); /* Don't check for singletons */
         E.setDoFilterScheduling(false); /* We propagate on the full problem */
         E.setBlockLateScheduling(true); /* No late scheduling */
         E.doPropagate();

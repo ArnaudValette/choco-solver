@@ -270,6 +270,22 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
 
     @Override
     public void schedule(Propagator<?> prop, int pindice, int mask){
+        /** c.f. {@link RNSQDriverStrategy} && {@link SAC3DriverStrategy}
+         * - some consistency techniques require to avoid propagating specific propagators (non-neighbors, ...)
+         * - some consistency techniques require to late schedule specific propagators
+         * e.g. RNSQ:
+         * enforce AC on the whole network,
+         * for each (Xi,Vj)
+         * instantiate Xi to Vj
+         * apply condition FC (propagate only propagators directly related to Xi)
+         * if a neighbor of Xi has singleton domain
+         * enforce AC on the sub-problem N(Xi)
+         * (i.e. include some of the previously blacklisted propagators [i.e. the ones that concern at least two elements of N(Xi)])
+         *
+         * Here, we use two different blacklists (direct and late) for propagation
+         * late propagators are stored in a queue (the driver strategy is in charge of deciding what to do with them)
+         * (e.g. you may want to schedule them after having met some specific condition)
+        * */
         if(doesFilterPropagationScheduling) {
             if (!directPropsSchedulingBlacklist.get(prop.hashCode())) {
                 pe.schedule(prop, pindice, mask);
@@ -296,11 +312,6 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
      *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-    /* --------------------------------------------------
-                         QUEUES
-     */
-
-
     public Triple<Propagator<?>, Integer, Integer> latePropsPop(){
         return latePropagatorsQueue.pop();
     }
@@ -308,8 +319,6 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
     public void freeDirectPropsSchedulingBL(){
         directPropsSchedulingBlacklist = new BitSet();
     }
-
-    //--------------------------------------------------
 
     public BitSet getDirectOnlyBlacklist(Variable v){
         return SCHEDULE_DIRECT_ONLY.get(v);
@@ -366,6 +375,7 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
     }
 
     public void imperativeSchedule(Propagator<?> prop, int pindice, int mask){
+        /* You may need to escape filters/blacklists temporarily */
         pe.schedule(prop, pindice, mask);
     }
 
