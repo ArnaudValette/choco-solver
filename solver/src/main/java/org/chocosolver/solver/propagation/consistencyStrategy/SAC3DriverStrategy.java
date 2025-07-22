@@ -22,6 +22,7 @@ public class SAC3DriverStrategy implements ISingletonConsistencyStrategy{
         E.doPropagate();
     }
     public void propagate(SingletonConsistencyEngine E) throws ContradictionException {
+        E.setDoConsumePasses(false);
         acEnforce(E);
         boolean changed = false;
         /* TODO: track when no changes have been made to the problem since last propagate call

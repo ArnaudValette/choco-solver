@@ -14,7 +14,8 @@ import java.util.Set;
 
 public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
     ReinitialisableQueue<IntVar> Q;
-    boolean subNeighborhood;
+    boolean subNeighborhood=false;
+    boolean consumePasses=false;
 
     public RNSQDriverStrategy restrictToSubNeighborhood(SingletonConsistencyEngine E){
         subNeighborhood = true;
@@ -22,9 +23,19 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
         return this;
     }
 
+    public RNSQDriverStrategy consumePasses(){
+        consumePasses = true;
+        return this;
+    }
+
     public RNSQDriverStrategy unrestrictToSubNeighborhood(SingletonConsistencyEngine E){
         subNeighborhood = false;
         E.setCollectSingleton(false);
+        return this;
+    }
+
+    public RNSQDriverStrategy ignorePasses(){
+        consumePasses=false;
         return this;
     }
 
@@ -51,7 +62,9 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
         E.doPropagate();
     }
 
+
     public void propagate(SingletonConsistencyEngine E) throws ContradictionException {
+        E.setDoConsumePasses(false);
         E.setDoFilterScheduling(true); /* Do filter propagators */
         E.freeDirectPropsSchedulingBL(); /* Don't blacklist anything for AC */
         /* i.e. no filtering (cleared blacklist) */
@@ -70,12 +83,14 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
 
             for(int val = v.getLB(); val<=v.getUB(); val=v.nextValue(val)) {
                 try {
+                    E.setDoConsumePasses(false);
                     E.worldPush();
                     IntDecision d = E.decide(v, val);
                     d.buildNext();
                     d.apply();
 
 
+                    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
                     /* apply condition FC */
 
                     E.initLatePropQ(); /* empty latePropQ */
@@ -106,6 +121,7 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
                      * */
                     conditionFC(E);
 
+                    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
                     if(E.foundSingletonDuringPropagation()){
                         /* When the engine is in collectSingleton mode,
                         * this blacklist filters every propagator that doesn't concern
@@ -121,24 +137,56 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
                             E.setDirectPropsScheduling(nsac_props); /* First filter : propagators in neighborhood of V */
                         }
 
-                        /* Now, do schedule all late scheduled propagators (RNSAC)
-                         * otherwise (RsNSAC) filter late scheduled propagators
+                        /** Pass based algorithms :
+                         * if consumePasses is set to true,
+                         * then the engine will fill the list of passPropagators
+                         * scheduling exactly ONCE the propagators we want to schedule.
+                         * This list is then imperatively scheduled as many time we need (pass consumption)
+                         * after having called neighborhoodAC ONCE.
+                         * The passBlackList avoid propagators to be scheduled twice, and since we
+                         * are working with a restricted set of propagators (NSAC/sNSAC)
+                         * the side effects are controlled ({@link SingletonConsistencyEngine#schedule(Propagator, int, int)}
                          * */
-                        while(!E.lateQisEmpty()){
-                            Triple<Propagator<?>, Integer, Integer> args = E.latePropsPop(); /* Consume Q */
-                            if(subNeighborhood){
-                                /* Schedule only if propagator is not blacklisted */
-                                if(!subGraph.get(args.getFirst().hashCode())){
-                                    E.imperativeSchedule(args.getFirst(), args.getSecond(), args.getThird()); /* force scheduling */
+                        E.reinitPassBlacklist();
+                        E.passesInit();
+                        E.setDoConsumePasses(consumePasses);
+                        E.initPassPropList();
+
+                            /* Now, do schedule all late scheduled propagators (RNSAC)
+                             * otherwise (RsNSAC) filter late scheduled propagators
+                             * */
+                            while (!E.lateQisEmpty()) {
+                                Triple<Propagator<?>, Integer, Integer> args = E.latePropsPop(); /* Consume Q */
+                                if (subNeighborhood) {
+                                    if (!subGraph.get(args.getFirst().hashCode())) {
+                                        E.doSchedule(args.getFirst(), args.getSecond(), args.getThird()); /* force scheduling */
+                                    }
+                                } else {
+                                    E.doSchedule(args.getFirst(), args.getSecond(), args.getThird()); /* force scheduling */
                                 }
                             }
-                            else {
-                                E.imperativeSchedule(args.getFirst(), args.getSecond(), args.getThird()); /* force scheduling */
-                            }
-                        }
 
-                        /* apply AC to N(v) or SD(v) */
-                        neighborhoodAC(E);
+                            /* apply AC to N(v) or SD(v),
+                            * if consumePasses is true, this will perform a single pass AC */
+                            neighborhoodAC(E);
+                            if(consumePasses){
+                                /* Repeat the previous operation:
+                                * consumes all passes from the engine
+                                * by rescheduling the previously executed propagators */
+                                E.passesIncrement();
+                                while(E.hasPasses()){
+                                    for(int i =0; i<E.passPropagatorsSize(); i++){
+                                        Triple<Propagator<?>, Integer, Integer> args = E.passQueueAt(i);
+                                        E.imperativeSchedule(args.getFirst(), args.getSecond(), args.getThird());
+                                    }
+                                    neighborhoodAC(E);
+                                    E.passesIncrement();
+                                }
+                                E.reinitPassBlacklist();
+                                E.initPassPropList();
+                                E.passesInit();
+                                E.setDoConsumePasses(false);
+                            }
                     }
 
                     E.worldPopNFlush();

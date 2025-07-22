@@ -102,6 +102,7 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
      * */
     BitSet subNeighborhoodBlacklist = new BitSet();
 
+
     HashMap<IntVar, BitSet> BLOCK_SCHEDULING = new HashMap<>();
     HashMap<IntVar, BitSet> SCHEDULE_DIRECT_ONLY = new HashMap<>();
     HashMap<IntVar, BitSet> SCHEDULE_NSAC = new HashMap<>();
@@ -129,7 +130,12 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
 
     ISingletonConsistencyStrategy propagationStrategy;
 
-    int passes;
+
+    int passes=0;
+    int currentPass=0;
+    boolean doConsumePasses =false;
+    BitSet passBlacklist = new BitSet();
+    ArrayList<Triple<Propagator<?>, Integer, Integer>> passPropagatorsList = new ArrayList<>();
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *
@@ -172,8 +178,36 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
         return this;
     }
 
+
+    public SingletonConsistencyEngine enforceRNS1pQ(){
+        propagationStrategy = (new RNSQDriverStrategy(PL)).consumePasses();
+        passes=1;
+        return this;
+    }
+
+    public SingletonConsistencyEngine enforceRsNS1pQ(){
+        propagationStrategy = (new RNSQDriverStrategy(PL)).restrictToSubNeighborhood(this).consumePasses();
+        passes=1;
+        return this;
+    }
+
     public SingletonConsistencyEngine enforceSAC3(){
         propagationStrategy = new SAC3DriverStrategy(IL);
+        return this;
+    }
+
+    public SingletonConsistencyEngine onePass(){
+        passes = 1;
+        return this;
+    }
+
+    public SingletonConsistencyEngine twoPasses(){
+        passes = 2;
+        return this;
+    }
+
+    public SingletonConsistencyEngine threePasses(){
+        passes = 3;
         return this;
     }
 
@@ -185,6 +219,11 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
 
     public SingletonConsistencyEngine setPropagationStrategy(ISingletonConsistencyStrategy s){
         propagationStrategy = s;
+        return this;
+    }
+
+    public SingletonConsistencyEngine setPasses(int p){
+        passes = p;
         return this;
     }
 
@@ -201,6 +240,7 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
     public boolean inModel(IntVar v, int value){
         return v.contains(value);
     }
+
 
     @Override
     public void initialize() throws SolverException {
@@ -288,6 +328,8 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
 
     @Override
     public void propagate() throws ContradictionException{
+        /* The strategy is in charge of setting this */
+        doConsumePasses=false;
         propagationStrategy.propagate(this);
     }
 
@@ -325,9 +367,22 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
         * */
         if(doesFilterPropagationScheduling) {
             if (!directPropsSchedulingBlacklist.get(prop.hashCode())) {
-                pe.schedule(prop, pindice, mask);
+                doSchedule(prop, pindice, mask);
             } else if (!blockLateScheduling && !latePropsSchedulingBlacklist.get(prop.hashCode())) {
                 latePropagatorsQueue.add(new Triple<>(prop, pindice, mask));
+            }
+        }
+        else{
+            doSchedule(prop, pindice, mask);
+        }
+    }
+
+    public void doSchedule(Propagator<?> prop, int pindice, int mask){
+        if(doConsumePasses) {
+            if(!passBlacklist.get(prop.hashCode())) {
+                pe.schedule(prop, pindice, mask);
+                passBlacklist.set(prop.hashCode());
+                passPropagatorsList.add(new Triple<>(prop, pindice, mask));
             }
         }
         else{
@@ -356,6 +411,10 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
 
     public Triple<Propagator<?>, Integer, Integer> latePropsPop(){
         return latePropagatorsQueue.pop();
+    }
+
+    public Triple<Propagator<?>, Integer, Integer> passQueueAt(int index){
+        return passPropagatorsList.get(index);
     }
 
     public void freeDirectPropsSchedulingBL(){
@@ -398,6 +457,10 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
 
     public void initLatePropQ(){
         latePropagatorsQueue = new ArrayDeque<>();
+    }
+
+    public void initPassPropList(){
+        passPropagatorsList = new ArrayList<>();
     }
 
     public boolean lateQisEmpty(){
@@ -471,4 +534,26 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
         subNeighborhoodBlacklist.and(propList);
     }
 
+    public void setDoConsumePasses(boolean doConsumePasses) {
+        this.doConsumePasses = doConsumePasses;
+    }
+
+    public void reinitPassBlacklist(){
+        passBlacklist.clear();
+    }
+
+    public void passesInit(){
+        currentPass = 0;
+    }
+    public void passesIncrement(){
+        currentPass++;
+    }
+
+    public boolean hasPasses(){
+        return currentPass < passes;
+    }
+
+    public int passPropagatorsSize(){
+        return passPropagatorsList.size();
+    }
 }
