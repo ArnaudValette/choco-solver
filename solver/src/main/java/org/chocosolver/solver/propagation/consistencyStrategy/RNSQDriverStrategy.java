@@ -14,10 +14,24 @@ import java.util.Set;
 
 public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
     ReinitialisableQueue<IntVar> Q;
+    boolean subNeighborhood;
+
+    public RNSQDriverStrategy restrictToSubNeighborhood(SingletonConsistencyEngine E){
+        subNeighborhood = true;
+        E.setCollectSingleton(true);
+        return this;
+    }
+
+    public RNSQDriverStrategy unrestrictToSubNeighborhood(SingletonConsistencyEngine E){
+        subNeighborhood = false;
+        E.setCollectSingleton(false);
+        return this;
+    }
 
     public RNSQDriverStrategy(ReinitialisableQueue<IntVar> Q){
-        this.Q= Q;
+        this.Q=Q;
     }
+
     private void ACenforce(SingletonConsistencyEngine E) throws ContradictionException {
         E.setCheckSingleton(false); /* Don't check for singletons */
         E.setBlockLateScheduling(true); /* Don't late schedule */
@@ -25,7 +39,7 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
     }
 
     private void conditionFC(SingletonConsistencyEngine E) throws ContradictionException {
-        E.setBlockLateScheduling(false); /* We need to store NSAC propagators in lateQ */
+        E.setBlockLateScheduling(false); /* We need to store late propagators in lateQ */
         E.setSingleton(false); /* Init */
         E.setCheckSingleton(true); /* Check for singleton */
         E.doPropagate();
@@ -39,8 +53,10 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
 
     public void propagate(SingletonConsistencyEngine E) throws ContradictionException {
         E.setDoFilterScheduling(true); /* Do filter propagators */
-        Q.reinit();
         E.freeDirectPropsSchedulingBL(); /* Don't blacklist anything for AC */
+        /* i.e. no filtering (cleared blacklist) */
+
+        Q.reinit();
         ACenforce(E);
 
         while(!Q.isEmpty()){
@@ -62,29 +78,66 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
 
                     /* apply condition FC */
 
-                    E.initLatePropQ(); /* empty Q */
+                    E.initLatePropQ(); /* empty latePropQ */
 
                     E.setDirectPropsScheduling(direct_only); /* First filter : propagators directly related to V */
-                    E.setLatePropsScheduling(nsac_props); /* Second filter (late schedule) : propagators in neighborhood of V */
+
+                    if(subNeighborhood){
+                        /* In RsNSAC, we don't know -a priori- which propagators we want to keep,
+                         * while we don't know which D(Xi) are singleton, we may want to run ANY propagator
+                         * */
+                        E.freeLatePropsSchedulingBL(); /* new BitSet (clear) */
+                        E.reinitSubNeighborhoodBlacklist(); /* initialize */
+                    }
+                    else {
+                        /* RNSAC */
+                        E.setLatePropsScheduling(nsac_props); /* Second filter (late schedule) : propagators in neighborhood of V */
+                    }
 
                     /* Propagate AC on the sub-problem constituted with the direct neighbors of V;
                      * Every time choco wants to schedule a propagator,
+                     * RNSAC:
                      * (a) propagator is directly related to V : scheduled
                      * (b) propagator is in neighborhood of V : late scheduled [latePropQ.add(p)]
                      * (c) none of the above : ignored
+                     * RsNAC:
+                     * (a) propagator is directly related to V : scheduled
+                     * (b) propagator is none of the above : late -filtered- (more on that later)
                      * */
                     conditionFC(E);
 
                     if(E.foundSingletonDuringPropagation()){
-                        E.setDirectPropsScheduling(nsac_props); /* First filter : propagators in neighborhood of V */
+                        /* When the engine is in collectSingleton mode,
+                        * this blacklist filters every propagator that doesn't concern
+                        * variables that became singleton during the previous step */
+                        BitSet subGraph = E.getSubNeighborhoodBlacklist();
 
-                        /* Now, do schedule all late scheduled propagators */
-                        while(!E.lateQisEmpty()){
-                            Triple<Propagator<?>, Integer, Integer> args = E.latePropsPop();
-                            E.imperativeSchedule(args.getFirst(), args.getSecond(), args.getThird()); /* force scheduling */
+                        if(subNeighborhood){
+                            /* RsNSAC : restrict our problem to this sub-graph */
+                            E.setDirectPropsScheduling(subGraph);
+                        }
+                        else {
+                            /* RNSAC */
+                            E.setDirectPropsScheduling(nsac_props); /* First filter : propagators in neighborhood of V */
                         }
 
-                        /* apply AC to N(v) */
+                        /* Now, do schedule all late scheduled propagators (RNSAC)
+                         * otherwise (RsNSAC) filter late scheduled propagators
+                         * */
+                        while(!E.lateQisEmpty()){
+                            Triple<Propagator<?>, Integer, Integer> args = E.latePropsPop(); /* Consume Q */
+                            if(subNeighborhood){
+                                /* Schedule only if propagator is not blacklisted */
+                                if(!subGraph.get(args.getFirst().hashCode())){
+                                    E.imperativeSchedule(args.getFirst(), args.getSecond(), args.getThird()); /* force scheduling */
+                                }
+                            }
+                            else {
+                                E.imperativeSchedule(args.getFirst(), args.getSecond(), args.getThird()); /* force scheduling */
+                            }
+                        }
+
+                        /* apply AC to N(v) or SD(v) */
                         neighborhoodAC(E);
                     }
 

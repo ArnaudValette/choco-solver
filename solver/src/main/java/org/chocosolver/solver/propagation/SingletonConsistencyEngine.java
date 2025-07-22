@@ -49,36 +49,65 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
      *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+    /** @boolean
+     *  Indicates if this engine must filter the propagators scheduling operation,
+     *  this may be what you need when implementing specific algorithms (e.g. RNSAC, RsNSAC).
+     *  When set to true, the BitSets {@link SingletonConsistencyEngine#directPropsSchedulingBlacklist}
+     *  and {@link SingletonConsistencyEngine#latePropsSchedulingBlacklist}
+     *  are used as filters in {@link SingletonConsistencyEngine#schedule(Propagator, int, int)}
+     * */
     boolean doesFilterPropagationScheduling = false;
+
+    /** @boolean
+     * Indicates if this engine must monitor the domain of variables
+     * that are modified during propagation to spot singleton domains.
+     */
     boolean checkSingleton = false;
+
+    /** @boolean
+     * Indicates that the propagation has reduced some domains to singletons.
+     * */
     boolean singleton = false;
+
+    /** @boolean
+     * Indicates if this engine must stop filling the {@link SingletonConsistencyEngine#latePropagatorsQueue}
+     * during propagation.
+     * */
     boolean blockLateScheduling = true;
 
-    /* Blacklists,
-     * directPropsSchedulingBlacklist: lancés en priorité
-     * latePropsSchedulingBlacklist: planifiés "en retard" :
-     *   | stockés dans latePropagatorsQueue,
-     *   | la stratégie du moteur est en charge
-     *   | de décider ce qu'il faut en faire
-     *  */
+    /** @boolean
+     * Indicates if this engine must fill the {@link SingletonConsistencyEngine#subNeighborhoodBlacklist}
+     * during propagation. */
+    boolean collectSingleton = false;
+
+    /** @BitSet
+     * Every blacklisted propagators from this {@link BitSet}
+     * won't be directly scheduled by this engine if {@link SingletonConsistencyEngine#doesFilterPropagationScheduling}
+     * is true. */
     BitSet directPropsSchedulingBlacklist = new BitSet();
+
+    /** @BitSet
+     * Propagators that aren't blacklisted by this {@link BitSet}
+     * will be stored in {@link SingletonConsistencyEngine#latePropagatorsQueue} if
+     * they aren't whitelisted by {@link SingletonConsistencyEngine#directPropsSchedulingBlacklist},
+     * {@link SingletonConsistencyEngine#doesFilterPropagationScheduling} is true and
+     * {@link SingletonConsistencyEngine#blockLateScheduling} is false.*/
     BitSet latePropsSchedulingBlacklist = new BitSet();
 
-    /* Blacklists maps,
-     * 1. Pour empêcher tout propagateur d'être planifié.
-     * 2. Pour empêcher les propagateurs qui ne concernent pas directement Xi d'être planifiés.
-     * 3. Pour empêcher les propagateurs externes au NSAC de Xi d'être planifiés.
+    /** @BitSet
+     * Blacklist propagators that are not in the sub-neighborhood of Xi according to
+     * RsNSAC. (Available after a propagation where {@link SingletonConsistencyEngine#checkSingleton}
+     * and {@link SingletonConsistencyEngine#collectSingleton} were true before propagating and
+     * {@link SingletonConsistencyEngine#singleton} is true after the operation.
      * */
+    BitSet subNeighborhoodBlacklist = new BitSet();
+
     HashMap<IntVar, BitSet> BLOCK_SCHEDULING = new HashMap<>();
     HashMap<IntVar, BitSet> SCHEDULE_DIRECT_ONLY = new HashMap<>();
     HashMap<IntVar, BitSet> SCHEDULE_NSAC = new HashMap<>();
+    BitSet defaultSubNeighborhood = new BitSet();
 
-    /*
-     * voisinage de Xi
-     * */
     HashMap<IntVar, Set<IntVar>> neighborhood = new HashMap<>();
-
-    /* Tous les propagateurs */
     List<Propagator<? extends Variable>> props = new ArrayList<>();
 
     /*
@@ -135,6 +164,11 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
 
     public SingletonConsistencyEngine enforceRNSQ(){
         propagationStrategy = new RNSQDriverStrategy(PL);
+        return this;
+    }
+
+    public SingletonConsistencyEngine enforceRsNSQ(){
+        propagationStrategy = (new RNSQDriverStrategy(PL)).restrictToSubNeighborhood(this);
         return this;
     }
 
@@ -218,6 +252,9 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
                     }
                 }
             }
+            /* Initialiser subNeighborhood : all set */
+            defaultSubNeighborhood.set(p.hashCode());
+
             /*
              * \og P concerne Xi \fg n'est pas une condition suffisante pour trouver tous les propagateurs
              * qui sont dans le NSAC de N(Xi).
@@ -302,7 +339,12 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
     public void onSingleton(Variable v){
         if (v.getDomainSize() == 1) {
             singleton = true;
-            checkSingleton=false;
+            if(collectSingleton){
+                updateSubNeighborhoodBlacklist(v);
+            }
+            else {
+                checkSingleton = false;
+            }
         }
     }
 
@@ -318,6 +360,10 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
 
     public void freeDirectPropsSchedulingBL(){
         directPropsSchedulingBlacklist = new BitSet();
+    }
+
+    public void freeLatePropsSchedulingBL(){
+        latePropsSchedulingBlacklist = new BitSet();
     }
 
     public BitSet getDirectOnlyBlacklist(Variable v){
@@ -362,13 +408,17 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
         directPropsSchedulingBlacklist=b;
     }
 
+    public BitSet getSubNeighborhoodBlacklist(){
+        return subNeighborhoodBlacklist;
+    }
+
     public void setLatePropsScheduling(BitSet b){
         latePropsSchedulingBlacklist = b;
     }
 
     public boolean foundSingletonDuringPropagation(){
         if(singleton){
-            singleton=false;
+            singleton = false;
             return true;
         }
         return false;
@@ -393,4 +443,32 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
     public void setDoFilterScheduling(boolean b){
         doesFilterPropagationScheduling=b;
     }
+
+
+    public void setCollectSingleton(boolean collectSingleton) {
+        this.collectSingleton = collectSingleton;
+    }
+
+    public void reinitSubNeighborhoodBlacklist(){
+        this.subNeighborhoodBlacklist = (BitSet) defaultSubNeighborhood.clone();
+        /* All propagators are blacklisted */
+    }
+
+    public void updateSubNeighborhoodBlacklist(Variable v){
+        /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+         * (a) subNeighborhoodBlacklist is initialized with all propagators
+         * blacklisted.
+         * (b) We will call this method everytime we find a singleton restricted domain
+         * when a variable is updated.
+         * (c) Each variable comes with a precomputed _direct-only_ blacklist
+         * that informs us if a propagator is directly related to that variable (1: not related, 0: related | blacklist).
+         * (d) the subNeighborhood blacklist should informs us if a propagator is directly related
+         * to a singleton restricted variable (SRV) [1: not related with any SRV, 0: related with at least one SRV].
+         * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+         * (i.e.) the subNeighborhood blacklist is the AND or INTER of all SRV blacklists.
+         * */
+        BitSet propList = (BitSet) SCHEDULE_DIRECT_ONLY.get(v).clone();
+        subNeighborhoodBlacklist.and(propList);
+    }
+
 }
