@@ -4,15 +4,18 @@ import org.chocosolver.solver.Cause;
 import org.chocosolver.solver.constraints.graph.symmbreaking.Pair;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
+import org.chocosolver.solver.propagation.consistencyStrategy.types.PairBasedStrategy;
 import org.chocosolver.solver.search.strategy.decision.IntDecision;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.objects.queues.ReinitialisableQueue;
 
-public class SAC3DriverStrategy implements ISingletonConsistencyStrategy{
-    ReinitialisableQueue<Pair<IntVar,Integer>> Q;
+public class SAC3DriverStrategy extends PairBasedStrategy {
 
-    public SAC3DriverStrategy(ReinitialisableQueue<Pair<IntVar, Integer>> Q) {
-        this.Q = Q;
+    public SAC3DriverStrategy(){
+        super();
+    }
+    public SAC3DriverStrategy(ReinitialisableQueue<Pair<IntVar,Integer>> Q){
+        super(Q);
     }
 
     private void acEnforce(SingletonConsistencyEngine E) throws ContradictionException {
@@ -21,7 +24,10 @@ public class SAC3DriverStrategy implements ISingletonConsistencyStrategy{
         E.setBlockLateScheduling(true); /* No late scheduling */
         E.doPropagate();
     }
+
+    @Override
     public void propagate(SingletonConsistencyEngine E) throws ContradictionException {
+        super.propagate(E);
         E.setDoConsumePasses(false);
         acEnforce(E);
         boolean changed = false;
@@ -34,7 +40,7 @@ public class SAC3DriverStrategy implements ISingletonConsistencyStrategy{
             Integer val = p.getB();
             if (E.inModel(v, val)) {
                 if (!buildBranch(E.decide(v, val), E)) {
-                    v.removeValue(val, Cause.Null); // Throw means fail
+                    v.removeValue(val, E); // Throw means fail
                     acEnforce(E);
                     changed = true;
                 }

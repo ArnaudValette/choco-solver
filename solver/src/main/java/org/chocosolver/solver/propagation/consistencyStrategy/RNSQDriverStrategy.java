@@ -1,9 +1,9 @@
 package org.chocosolver.solver.propagation.consistencyStrategy;
 
-import org.chocosolver.solver.Cause;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
+import org.chocosolver.solver.propagation.consistencyStrategy.types.VariableBasedStrategy;
 import org.chocosolver.solver.search.strategy.decision.IntDecision;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.objects.queues.ReinitialisableQueue;
@@ -12,8 +12,7 @@ import org.jgrapht.alg.util.Triple;
 import java.util.BitSet;
 import java.util.Set;
 
-public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
-    ReinitialisableQueue<IntVar> Q;
+public class RNSQDriverStrategy extends VariableBasedStrategy {
     boolean subNeighborhood=false;
     boolean consumePasses=false;
 
@@ -39,8 +38,12 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
         return this;
     }
 
+    public RNSQDriverStrategy(){
+
+    }
+
     public RNSQDriverStrategy(ReinitialisableQueue<IntVar> Q){
-        this.Q=Q;
+        super(Q);
     }
 
     private void ACenforce(SingletonConsistencyEngine E) throws ContradictionException {
@@ -63,7 +66,9 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
     }
 
 
+    @Override
     public void propagate(SingletonConsistencyEngine E) throws ContradictionException {
+        super.propagate(E);
         E.setDoConsumePasses(false);
         E.setDoFilterScheduling(true); /* Do filter propagators */
         E.freeDirectPropsSchedulingBL(); /* Don't blacklist anything for AC */
@@ -193,7 +198,7 @@ public class RNSQDriverStrategy implements ISingletonConsistencyStrategy {
                 } catch (ContradictionException e) {
                     /* DOM-WIPEOUT */
                     E.worldPopNFlush();
-                    v.removeValue(val, Cause.Null);
+                    v.removeValue(val, E);
                     changed=true;
                 }
             }

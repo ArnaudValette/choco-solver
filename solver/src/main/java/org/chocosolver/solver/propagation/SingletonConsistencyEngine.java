@@ -19,6 +19,8 @@ import org.chocosolver.solver.exception.SolverException;
 import org.chocosolver.solver.propagation.consistencyStrategy.ISingletonConsistencyStrategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.RNSQDriverStrategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.SAC3DriverStrategy;
+import org.chocosolver.solver.propagation.consistencyStrategy.types.PairBasedStrategy;
+import org.chocosolver.solver.propagation.consistencyStrategy.types.VariableBasedStrategy;
 import org.chocosolver.solver.search.strategy.assignments.DecisionOperatorFactory;
 import org.chocosolver.solver.search.strategy.decision.IntDecision;
 import org.chocosolver.solver.variables.IntVar;
@@ -41,7 +43,7 @@ import java.util.stream.Collectors;
  *
  ******************************************************************************************************/
 
-public class SingletonConsistencyEngine extends EngineWrapper implements IPropagationEngine{
+public class SingletonConsistencyEngine extends EngineWrapper implements IPropagationEngine, ICause{
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *
@@ -222,9 +224,29 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
         return this;
     }
 
+    public SingletonConsistencyEngine setPropagationStrategy(PairBasedStrategy s){
+        propagationStrategy = s;
+        s.setQ(IL);
+        return this;
+    }
+
+    public SingletonConsistencyEngine setPropagationStrategy(VariableBasedStrategy s){
+        propagationStrategy = s;
+        s.setQ(PL);
+        return this;
+    }
+
     public SingletonConsistencyEngine setPasses(int p){
         passes = p;
         return this;
+    }
+
+    public void provideQ(VariableBasedStrategy s){
+        s.setQ(PL);
+    }
+
+    public void provideQ(PairBasedStrategy s){
+        s.setQ(IL);
     }
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
