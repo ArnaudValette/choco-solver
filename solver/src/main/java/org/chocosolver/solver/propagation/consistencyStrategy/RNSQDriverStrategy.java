@@ -3,6 +3,7 @@ package org.chocosolver.solver.propagation.consistencyStrategy;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
+import org.chocosolver.solver.propagation.consistencyStrategy.types.PassConsumer;
 import org.chocosolver.solver.propagation.consistencyStrategy.types.VariableBasedStrategy;
 import org.chocosolver.solver.search.strategy.decision.IntDecision;
 import org.chocosolver.solver.variables.IntVar;
@@ -12,7 +13,7 @@ import org.jgrapht.alg.util.Triple;
 import java.util.BitSet;
 import java.util.Set;
 
-public class RNSQDriverStrategy extends VariableBasedStrategy {
+public class RNSQDriverStrategy extends VariableBasedStrategy implements PassConsumer {
     boolean subNeighborhood=false;
     boolean consumePasses=false;
 
@@ -38,6 +39,11 @@ public class RNSQDriverStrategy extends VariableBasedStrategy {
         return this;
     }
 
+    @Override
+    public boolean willConsumePasses() {
+        return consumePasses;
+    }
+
     public RNSQDriverStrategy(){
 
     }
@@ -59,33 +65,33 @@ public class RNSQDriverStrategy extends VariableBasedStrategy {
         E.doPropagate();
     }
 
-    private void neighborhoodAC(SingletonConsistencyEngine E) throws ContradictionException {
+    public void centralRoutine(SingletonConsistencyEngine E) throws ContradictionException {
+        /* Neighborhood AC */
         E.setBlockLateScheduling(true); /* Don't late schedule */
         E.setCheckSingleton(false); /* Don't check for singletons */
         E.doPropagate();
+    }
+
+    private void initState(SingletonConsistencyEngine E){
+        E.setDoConsumePasses(false);
+        E.setDoFilterScheduling(true); /* Do filter propagators */
+        E.freeDirectPropsSchedulingBL(); /* Don't blacklist anything for AC */
+        /* i.e. no filtering (cleared blacklist) */
+        Q.reinit();
     }
 
 
     @Override
     public void propagate(SingletonConsistencyEngine E) throws ContradictionException {
         super.propagate(E);
-        E.setDoConsumePasses(false);
-        E.setDoFilterScheduling(true); /* Do filter propagators */
-        E.freeDirectPropsSchedulingBL(); /* Don't blacklist anything for AC */
-        /* i.e. no filtering (cleared blacklist) */
-
-        Q.reinit();
+        initState(E);
         ACenforce(E);
-
         while(!Q.isEmpty()){
-
             boolean changed = false;
             IntVar v = Q.pop();
-
             BitSet direct_only = E.getDirectOnlyBlacklist(v); /* Blacklist of propagators not related directly to V*/
             BitSet nsac_props = E.getNsacBlacklist(v); /* Blacklist of propagators not in neighborhood of V */
             Set<IntVar> nx = E.getNeighborhood(v); /* Neighborhood of V */
-
             for(int val = v.getLB(); val<=v.getUB(); val=v.nextValue(val)) {
                 try {
                     E.setDoConsumePasses(false);
@@ -93,15 +99,10 @@ public class RNSQDriverStrategy extends VariableBasedStrategy {
                     IntDecision d = E.decide(v, val);
                     d.buildNext();
                     d.apply();
-
-
                     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
                     /* apply condition FC */
-
                     E.initLatePropQ(); /* empty latePropQ */
-
                     E.setDirectPropsScheduling(direct_only); /* First filter : propagators directly related to V */
-
                     if(subNeighborhood){
                         /* In RsNSAC, we don't know -a priori- which propagators we want to keep,
                          * while we don't know which D(Xi) are singleton, we may want to run ANY propagator
@@ -113,7 +114,6 @@ public class RNSQDriverStrategy extends VariableBasedStrategy {
                         /* RNSAC */
                         E.setLatePropsScheduling(nsac_props); /* Second filter (late schedule) : propagators in neighborhood of V */
                     }
-
                     /* Propagate AC on the sub-problem constituted with the direct neighbors of V;
                      * Every time choco wants to schedule a propagator,
                      * RNSAC:
@@ -147,15 +147,12 @@ public class RNSQDriverStrategy extends VariableBasedStrategy {
                          * then the engine will fill the list of passPropagators
                          * scheduling exactly ONCE the propagators we want to schedule.
                          * This list is then imperatively scheduled as many time we need (pass consumption)
-                         * after having called neighborhoodAC ONCE.
+                         * after having called centralRoutine ONCE.
                          * The passBlackList avoid propagators to be scheduled twice, and since we
                          * are working with a restricted set of propagators (NSAC/sNSAC)
                          * the side effects are controlled ({@link SingletonConsistencyEngine#schedule(Propagator, int, int)}
                          * */
-                        E.reinitPassBlacklist();
-                        E.passesInit();
-                        E.setDoConsumePasses(consumePasses);
-                        E.initPassPropList();
+
 
                             /* Now, do schedule all late scheduled propagators (RNSAC)
                              * otherwise (RsNSAC) filter late scheduled propagators
@@ -173,31 +170,16 @@ public class RNSQDriverStrategy extends VariableBasedStrategy {
 
                             /* apply AC to N(v) or SD(v),
                             * if consumePasses is true, this will perform a single pass AC */
-                            neighborhoodAC(E);
-                            if(consumePasses){
-                                /* Repeat the previous operation:
-                                * consumes all passes from the engine
-                                * by rescheduling the previously executed propagators */
-                                E.passesIncrement();
-                                while(E.hasPasses()){
-                                    for(int i =0; i<E.passPropagatorsSize(); i++){
-                                        Triple<Propagator<?>, Integer, Integer> args = E.passQueueAt(i);
-                                        E.imperativeSchedule(args.getFirst(), args.getSecond(), args.getThird());
-                                    }
-                                    neighborhoodAC(E);
-                                    E.passesIncrement();
-                                }
-                                E.reinitPassBlacklist();
-                                E.initPassPropList();
-                                E.passesInit();
-                                E.setDoConsumePasses(false);
-                            }
+                            onBeforePasses(E);
+                            centralRoutine(E);
+                            doConsumePasses(E);
                     }
 
                     E.worldPopNFlush();
                 } catch (ContradictionException e) {
                     /* DOM-WIPEOUT */
                     E.worldPopNFlush();
+                    onAfterPasses(E);
                     v.removeValue(val, E);
                     changed=true;
                 }

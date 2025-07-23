@@ -463,6 +463,10 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
         env.worldPush();
     }
 
+    public void worldPop(){
+        env.worldPop();
+    }
+
     public void worldPopNFlush(){
         env.worldPop();
         flush();
