@@ -9,8 +9,11 @@ import org.chocosolver.solver.search.strategy.decision.IntDecision;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.objects.queues.ReinitialisableQueue;
 
+import java.util.BitSet;
+
 public class SACNaiveDriverStrategy extends PairBasedStrategy implements PassConsumer {
     public boolean consumePasses = false;
+    boolean isNSAC = false;
     public SACNaiveDriverStrategy(){
         super();
     }
@@ -31,6 +34,16 @@ public class SACNaiveDriverStrategy extends PairBasedStrategy implements PassCon
 
     public void centralRoutine(SingletonConsistencyEngine E) throws ContradictionException {
         E.doPropagate();
+    }
+
+    public SACNaiveDriverStrategy restrictToNeighborhood(){
+        isNSAC = true;
+        return this;
+    }
+
+    public SACNaiveDriverStrategy unrestrict(){
+        isNSAC = false;
+        return this;
     }
 
     @Override
@@ -66,9 +79,14 @@ public class SACNaiveDriverStrategy extends PairBasedStrategy implements PassCon
 
             try {
                 d.apply();
+
                 onBeforePasses(E);
+                onBeforeNSAC(E,v);
+
                 centralRoutine(E);
+
                 doConsumePasses(E);
+                onAfterNSAC(E);
 
                 E.worldPop();
             } catch (ContradictionException e) {
@@ -76,9 +94,25 @@ public class SACNaiveDriverStrategy extends PairBasedStrategy implements PassCon
                 v.removeValue(val, E);
 
                 onAfterPasses(E);
+                onAfterNSAC(E);
 
                 centralRoutine(E);
             }
+        }
+    }
+
+    private void onBeforeNSAC(SingletonConsistencyEngine E, IntVar v){
+        if(isNSAC){
+            BitSet nsac_props = E.getNsacBlacklist(v);
+            E.setDirectPropsScheduling(nsac_props);
+            E.setDoFilterScheduling(true);
+        }
+    }
+
+    private void onAfterNSAC(SingletonConsistencyEngine E){
+        if(isNSAC){
+            E.freeDirectPropsSchedulingBL();
+            E.setDoFilterScheduling(false);
         }
     }
 }
