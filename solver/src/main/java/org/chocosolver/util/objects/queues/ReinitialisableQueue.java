@@ -1,6 +1,8 @@
 package org.chocosolver.util.objects.queues;
 
 import java.util.ArrayDeque;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class ReinitialisableQueue<T> {
     /* TODO: this is restricted to Qset, it would be better to allow for several elements in q*/
@@ -8,6 +10,8 @@ public class ReinitialisableQueue<T> {
     ArrayDeque<T> queue = new ArrayDeque<>();
     ArrayDeque<T> defaultQ = new ArrayDeque<>();
     private boolean locked = false;
+    Function<Void, ArrayDeque<T>> supplier;
+    boolean hasSupplier= false;
 
     public ReinitialisableQueue(){}
 
@@ -17,13 +21,30 @@ public class ReinitialisableQueue<T> {
         }
     }
 
+    public void setSupplier(Function<Void, ArrayDeque<T>> s){
+        if(!locked) {
+            supplier = s;
+            hasSupplier = true;
+        }
+    }
+
     public void commitAndLock(){
         locked = true;
-        queue = defaultQ.clone();
+        if(hasSupplier){
+            queue = supplier.apply(null);
+        }
+        else {
+            queue = defaultQ.clone();
+        }
     }
 
     public void reinit(){
-        queue = defaultQ.clone();
+        if(hasSupplier){
+            queue = supplier.apply(null);
+        }
+        else {
+            queue = defaultQ.clone();
+        }
     }
 
     public boolean isEmpty(){

@@ -30,7 +30,9 @@ import org.chocosolver.util.objects.queues.ReinitialisableQueue;
 import org.jgrapht.alg.util.Triple;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /*****************************************************************************************************
  * TODO:
@@ -150,12 +152,18 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         propagationStrategy = new RNSQDriverStrategy(PL);
         IntVar[] vars = model.retrieveIntVars(true);
 
+
+        // for based
         for (IntVar v : vars) {
             PL.initAdd(v);
-            for (int val = v.getLB(); val <= v.getUB(); val = v.nextValue(val)) {
-                IL.initAdd(new Pair<>(v, val));
-            }
         }
+
+        IL.setSupplier((_void) ->
+                Arrays.stream(vars)
+                        .flatMap(v -> IntStream.iterate(v.getLB(), val -> val <= v.getUB(), v::nextValue)
+                        .mapToObj(val -> new Pair<>(v, val)))
+                        .collect(Collectors.toCollection(ArrayDeque::new)));
+
         PL.commitAndLock();
         IL.commitAndLock();
     }
