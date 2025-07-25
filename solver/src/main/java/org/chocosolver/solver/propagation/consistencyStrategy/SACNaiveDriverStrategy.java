@@ -60,6 +60,7 @@ public class SACNaiveDriverStrategy extends PairBasedStrategy implements PassCon
 
     @Override
     public void propagate(SingletonConsistencyEngine E) throws ContradictionException {
+        boolean changed = false;
         super.propagate(E);
         initState(E);
 
@@ -88,15 +89,20 @@ public class SACNaiveDriverStrategy extends PairBasedStrategy implements PassCon
                 doConsumePasses(E);
                 onAfterNSAC(E);
 
-                E.worldPop();
+                E.worldPopNFlush();
             } catch (ContradictionException e) {
                 E.worldPopNFlush();
                 v.removeValue(val, E);
+                changed=true;
 
                 onAfterPasses(E);
                 onAfterNSAC(E);
 
                 centralRoutine(E);
+            }
+            if(Q.isEmpty() && changed){
+                Q.reinit();
+                changed = false;
             }
         }
     }
