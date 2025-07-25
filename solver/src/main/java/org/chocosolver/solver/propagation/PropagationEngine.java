@@ -40,7 +40,7 @@ import static org.chocosolver.sat.MiniSat.C_Undef;
  * @author Charles Prud'homme
  * @since 05/07/12
  */
-public class PropagationEngine extends AbstractEngine implements IPropagationEngine {
+public class PropagationEngine extends AbstractEngine{
 
     @SuppressWarnings("WeakerAccess")
     public static boolean CHECK_SCOPE = false;
@@ -138,7 +138,6 @@ public class PropagationEngine extends AbstractEngine implements IPropagationEng
         //0b10: var-ori
         this.hybrid = model.getSettings().enableHybridizationOfPropagationEngine();
         this.sat = sat;
-        this.parent = this;
     }
 
     /**
@@ -309,7 +308,7 @@ public class PropagationEngine extends AbstractEngine implements IPropagationEng
             model.getSolver().getMeasures().incPropagationCount();
             propagateSat();
             while (!var_queue.isEmpty()) {
-                var_queue.pollFirst().schedulePropagators(this.parent);
+                var_queue.pollFirst().schedulePropagators(this);
             }
         }
     }
@@ -317,7 +316,7 @@ public class PropagationEngine extends AbstractEngine implements IPropagationEng
     private void manageModifications() {
         if (!var_queue.isEmpty()) {
             do {
-                var_queue.pollFirst().schedulePropagators(this.parent);
+                var_queue.pollFirst().schedulePropagators(this);
             } while (hybrid < 2 && !var_queue.isEmpty());
         }
     }

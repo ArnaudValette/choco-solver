@@ -13,7 +13,7 @@ import org.chocosolver.memory.IEnvironment;
 import org.chocosolver.memory.IStateInt;
 import org.chocosolver.solver.ICause;
 import org.chocosolver.solver.constraints.Propagator;
-import org.chocosolver.solver.propagation.IPropagationEngine;
+import org.chocosolver.solver.propagation.PropagationEngine;
 import org.chocosolver.util.tools.ArrayUtils;
 
 import java.util.Arrays;
@@ -167,7 +167,7 @@ final class BipartiteList implements IBipartiteList {
         }
     }
 
-    public void schedule(ICause cause, IPropagationEngine engine, int mask) {
+    public void schedule(ICause cause, PropagationEngine engine, int mask) {
         int s = splitter.get();
         if (first > 0) {
             if (s == 0) {

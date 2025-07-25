@@ -16,11 +16,6 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 
 public abstract class AbstractEngine {
-    public IPropagationEngine parent;
-
-    public void setParent(IPropagationEngine parent) {
-        this.parent=parent;
-    }
     protected static class DynPropagators {
 
         private Propagator<?>[] elements;

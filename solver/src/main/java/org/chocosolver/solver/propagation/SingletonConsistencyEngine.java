@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  *
  ******************************************************************************************************/
 
-public class SingletonConsistencyEngine extends EngineWrapper implements IPropagationEngine, ICause{
+public class SingletonConsistencyEngine extends PropagationEngine implements ICause{
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *
@@ -267,8 +267,8 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
     @Override
     public void initialize() throws SolverException {
         /* TODO: externalize this */
-        pe.initialize();
-        props = pe.propagators;
+        super.initialize();
+        props = propagators;
 
         /*
          * Pour chaque variable, blacklister tous les propagateurs (par défaut)
@@ -356,7 +356,7 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
     }
 
     public void doPropagate() throws ContradictionException{
-        pe.propagate();
+        super.propagate();
     }
 
 
@@ -365,7 +365,7 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
         if(checkSingleton) {
             onSingleton(variable);
         }
-        pe.onVariableUpdate(variable, type, cause);
+        super.onVariableUpdate(variable, type, cause);
     }
 
 
@@ -402,17 +402,16 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
     public void doSchedule(Propagator<?> prop, int pindice, int mask){
         if(doConsumePasses) {
             if(!passBlacklist.get(prop.hashCode())) {
-                pe.schedule(prop, pindice, mask);
+                super.schedule(prop, pindice, mask);
                 passBlacklist.set(prop.hashCode());
                 passPropagatorsList.add(new Triple<>(prop, pindice, mask));
             }
         }
         else{
-            pe.schedule(prop, pindice, mask);
+            super.schedule(prop, pindice, mask);
         }
     }
 
-    @Override
     public void onSingleton(Variable v){
         if (v.getDomainSize() == 1) {
             singleton = true;
@@ -460,24 +459,24 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
     }
 
     public void worldPush(){
-        env.worldPush();
+        model.getEnvironment().worldPush();
     }
 
     public void worldPop(){
-        env.worldPop();
+        model.getEnvironment().worldPop();
     }
 
     public void worldPopNFlush(){
-        env.worldPop();
+        model.getEnvironment().worldPop();
         flush();
     }
 
     public int getWorldIndex(){
-        return env.getWorldIndex();
+        return model.getEnvironment().getWorldIndex();
     }
 
     public void worldPopUntilNFlush(int id){
-        env.worldPopUntil(id);
+        model.getEnvironment().worldPopUntil(id);
         flush();
     }
 
@@ -515,7 +514,7 @@ public class SingletonConsistencyEngine extends EngineWrapper implements IPropag
 
     public void imperativeSchedule(Propagator<?> prop, int pindice, int mask){
         /* You may need to escape filters/blacklists temporarily */
-        pe.schedule(prop, pindice, mask);
+        super.schedule(prop, pindice, mask);
     }
 
 

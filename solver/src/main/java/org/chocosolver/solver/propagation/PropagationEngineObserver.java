@@ -18,7 +18,7 @@ import org.chocosolver.solver.variables.events.IEventType;
 import org.chocosolver.solver.variables.events.PropagatorEventType;
 
 /**
- * This class extends {@link IPropagationEngine} in order to collect
+ * This class extends {@link PropagationEngine} in order to collect
  * data relative to propagation.
  * <br/>
  *

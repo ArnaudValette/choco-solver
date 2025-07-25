@@ -14,7 +14,7 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import org.chocosolver.memory.IEnvironment;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.exception.SolverException;
-import org.chocosolver.solver.propagation.IPropagationEngine;
+import org.chocosolver.solver.propagation.PropagationEngine;
 import org.chocosolver.solver.variables.*;
 
 import java.util.ArrayList;
@@ -341,7 +341,7 @@ public class Solution implements ICause {
      * When instantiating all variables to their value in the solution, a propagation loop will be
      * achieved to ensure that the correctness and completeness of the model. If the propagation
      * detects a failure, a {@link ContradictionException} will be thrown. If so, the propagation
-     * engine is not flushed automatically, and a call to {@link IPropagationEngine#flush()} may be
+     * engine is not flushed automatically, and a call to {@link PropagationEngine#flush()} may be
      * needed.
      *
      * However, the satisfaction of the solution status is not check (see {@link

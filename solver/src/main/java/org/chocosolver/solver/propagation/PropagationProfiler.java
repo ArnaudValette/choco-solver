@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.stream.Stream;
 
 /**
- * This class observes a {@link IPropagationEngine} in order to collect
+ * This class observes a {@link PropagationEngine} in order to collect
  * data relative to propagation.
  * <br/>
  *
