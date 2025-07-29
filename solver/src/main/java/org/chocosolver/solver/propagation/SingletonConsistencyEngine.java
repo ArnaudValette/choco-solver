@@ -17,8 +17,6 @@ import org.chocosolver.solver.constraints.graph.symmbreaking.Pair;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.exception.SolverException;
 import org.chocosolver.solver.propagation.consistencyStrategy.ISingletonConsistencyStrategy;
-import org.chocosolver.solver.propagation.consistencyStrategy.RNSQDriverStrategy;
-import org.chocosolver.solver.propagation.consistencyStrategy.SAC3DriverStrategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.types.PairBasedStrategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.types.VariableBasedStrategy;
 import org.chocosolver.solver.search.strategy.assignments.DecisionOperatorFactory;
@@ -30,7 +28,6 @@ import org.chocosolver.util.objects.queues.ReinitialisableQueue;
 import org.jgrapht.alg.util.Triple;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -112,7 +109,8 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     HashMap<IntVar, BitSet> SCHEDULE_NSAC = new HashMap<>();
     BitSet defaultSubNeighborhood = new BitSet();
 
-    HashMap<IntVar, Set<IntVar>> neighborhood = new HashMap<>();
+    HashMap<IntVar, Set<Pair<IntVar, Integer>>> neighborhood = new HashMap<>();
+    private HashMap<IntVar, Set<IntVar>> _neighborhood = new HashMap<>();
     List<Propagator<? extends Variable>> props = new ArrayList<>();
 
     /*
@@ -141,6 +139,10 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     BitSet passBlacklist = new BitSet();
     ArrayList<Triple<Propagator<?>, Integer, Integer>> passPropagatorsList = new ArrayList<>();
 
+    public IntVar[] getVars(){
+        return model.retrieveIntVars(true);
+    }
+
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *
      *                  CONSTRUCTORS
@@ -149,17 +151,10 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
 
     public SingletonConsistencyEngine(Model model, MiniSat sat){
         super(model, sat);
-        propagationStrategy = new RNSQDriverStrategy(PL);
-        IntVar[] vars = model.retrieveIntVars(true);
 
-
-        // for based
-        for (IntVar v : vars) {
-            PL.initAdd(v);
-        }
-
+        PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)).collect(Collectors.toCollection(ArrayDeque::new)));
         IL.setSupplier((_void) ->
-                Arrays.stream(vars)
+                Arrays.stream(model.retrieveIntVars(true))
                         .flatMap(v -> IntStream.iterate(v.getLB(), val -> val <= v.getUB(), v::nextValue)
                         .mapToObj(val -> new Pair<>(v, val)))
                         .collect(Collectors.toCollection(ArrayDeque::new)));
@@ -178,33 +173,6 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
      *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-    public SingletonConsistencyEngine enforceRNSQ(){
-        propagationStrategy = new RNSQDriverStrategy(PL);
-        return this;
-    }
-
-    public SingletonConsistencyEngine enforceRsNSQ(){
-        propagationStrategy = (new RNSQDriverStrategy(PL)).restrictToSubNeighborhood(this);
-        return this;
-    }
-
-
-    public SingletonConsistencyEngine enforceRNS1pQ(){
-        propagationStrategy = (new RNSQDriverStrategy(PL)).consumePasses();
-        passes=1;
-        return this;
-    }
-
-    public SingletonConsistencyEngine enforceRsNS1pQ(){
-        propagationStrategy = (new RNSQDriverStrategy(PL)).restrictToSubNeighborhood(this).consumePasses();
-        passes=1;
-        return this;
-    }
-
-    public SingletonConsistencyEngine enforceSAC3(){
-        propagationStrategy = new SAC3DriverStrategy(IL);
-        return this;
-    }
 
     public SingletonConsistencyEngine onePass(){
         passes = 1;
@@ -290,7 +258,6 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
                 SCHEDULE_NSAC.get(v).set(prop.hashCode());
                 SCHEDULE_DIRECT_ONLY.get(v).set(prop.hashCode());
                 BLOCK_SCHEDULING.get(v).set(prop.hashCode());
-
             }
         }
 
@@ -309,6 +276,7 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
                 if (!neighborhood.containsKey(v)) {
                     /* HM init: V */
                     neighborhood.put((IntVar) v, new HashSet<>());
+                    _neighborhood.put((IntVar) v, new HashSet<>());
                     //RESTRICT_TO_NX.put((IntVar) v, new BitSet());
                 }
 
@@ -318,7 +286,11 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
                 for (Variable u : p.getVars()) {
                     /* U et V sont voisines par P */
                     if (!u.equals(v)) {
-                        neighborhood.get(v).add((IntVar) u);
+                        IntVar variable = (IntVar) u;
+                        for(int value = variable.getLB(); value <= variable.getUB(); value = variable.nextValue(value)) {
+                            neighborhood.get(v).add(new Pair<>(variable, value));
+                        }
+                        _neighborhood.get(v).add(variable);
                     }
                 }
             }
@@ -344,12 +316,19 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         }
 
         for (IntVar v : model.retrieveIntVars(true)) {
-            Set<IntVar> nv = neighborhood.get(v);
+            Set<IntVar> nv = _neighborhood.get(v);
             if (nv != null) {
                 for (Propagator<?> p : props) {
-                    Set<Variable> pv = Arrays.stream(p.getVars()).collect(Collectors.toSet());
-                    if (nv.stream().filter(pv::contains).count() >= 2) {
-                        SCHEDULE_NSAC.get(v).clear(p.hashCode());
+                    Set<Variable> propSet = Arrays.stream(p.getVars()).collect(Collectors.toSet());
+                    int matches = 0;
+                    for(Variable propVar : propSet){
+                        if(nv.contains(propVar)){
+                            matches++;
+                        }
+                        if(matches >= 2){
+                            SCHEDULE_NSAC.get(v).clear(p.hashCode());
+                            break;
+                        }
                     }
                 }
             }
@@ -462,8 +441,12 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         return SCHEDULE_NSAC.get(v);
     }
 
-    public Set<IntVar> getNeighborhood(Variable v){
+    public Set<Pair<IntVar, Integer>> getNeighborhoodAsPairs(Variable v){
         return neighborhood.get(v);
+    }
+
+    public Set<IntVar> getNeighborhood(Variable v){
+        return _neighborhood.get(v);
     }
 
     public void worldPush(){
@@ -475,8 +458,8 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     }
 
     public void worldPopNFlush(){
-        model.getEnvironment().worldPop();
         flush();
+        model.getEnvironment().worldPop();
     }
 
     public int getWorldIndex(){
@@ -484,8 +467,8 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     }
 
     public void worldPopUntilNFlush(int id){
-        model.getEnvironment().worldPopUntil(id);
         flush();
+        model.getEnvironment().worldPopUntil(id);
     }
 
     public void initLatePropQ(){

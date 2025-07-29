@@ -2,7 +2,6 @@ package org.chocosolver.util.objects.queues;
 
 import java.util.ArrayDeque;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 public class ReinitialisableQueue<T> {
     /* TODO: this is restricted to Qset, it would be better to allow for several elements in q*/

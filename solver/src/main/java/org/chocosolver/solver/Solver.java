@@ -1388,14 +1388,8 @@ public final class Solver implements ISolver, IMeasures, IOutputFactory {
 
     public void enforceSAC(String type){
         switch (type){
-            case "SAC3":
-                this.engine = (new SingletonConsistencyEngine(this.mModel)).enforceSAC3();
-                break;
-            case "RNSQ":
-                this.engine = (new SingletonConsistencyEngine(this.mModel)).enforceRNSQ();
-                break;
             default:
-                this.engine = (new SingletonConsistencyEngine(this.mModel)).enforceSAC3();
+                this.engine = (new SingletonConsistencyEngine(this.mModel));
         }
     }
 
@@ -1475,12 +1469,17 @@ public final class Solver implements ISolver, IMeasures, IOutputFactory {
      * @throws SolverException is already initialized.
      */
     public void setEngine(PropagationEngine propagationEngine) {
+        /*
         if (!engine.isInitialized()
                 || getEnvironment().getWorldIndex() == rootWorldIndex) {
+         */
             this.engine = propagationEngine;
+            /*
         } else {
             throw new SolverException("Illegal propagation engine modification.");
         }
+
+             */
     }
 
     /**
