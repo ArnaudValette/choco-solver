@@ -172,3 +172,5 @@ $RECYCLE.BIN/
 #####=== ANTLR4 ===#####
 *.interp
 *.tokens
+/solver/src/main/java/org/chocosolver/solver/propagation/consistencyStrategy/old/RNSQ
+/solver/src/main/java/org/chocosolver/solver/propagation/consistencyStrategy/old/
