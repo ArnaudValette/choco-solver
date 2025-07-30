@@ -125,7 +125,7 @@ public final class Model implements IModel {
     /**
      * Resolver of the model, controls propagation and search
      */
-    private final Solver solver;
+    private Solver solver;
 
     /**
      * Variable to optimize, possibly null.
@@ -288,6 +288,10 @@ public final class Model implements IModel {
      */
     public Solver getSolver() {
         return solver;
+    }
+
+    public void setSolver(Solver s){
+        solver= s;
     }
 
     /**

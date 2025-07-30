@@ -134,7 +134,7 @@ public class XCSP extends RegParser {
     public void parse(Model target, XCSPParser parser) throws Exception {
         parser.model(target, instance);
         // and define a search strategy
-        freesearch(target.getSolver());
+        //freesearch(target.getSolver());
     }
 
 
