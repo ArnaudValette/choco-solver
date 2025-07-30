@@ -13,12 +13,18 @@ public abstract class PairBasedStrategy extends AbstractSingletonStrategy<Pair<I
         Q=q;
     }
 
+
     @Override
-    public void propagate(SingletonConsistencyEngine E) throws ContradictionException {
+    public void propagate(SingletonConsistencyEngine engine) throws ContradictionException {
         if(Q == null){
-            E.provideQ(this);
+            engine.provideQ(this);
         }
-        super.propagate(E);
+        E=engine;
+        onBeforeAnything();
+        E.doPropagate();
+        changed = false;
+        Q.reinit();
+        loop();
     }
 
     public void loop() throws ContradictionException {

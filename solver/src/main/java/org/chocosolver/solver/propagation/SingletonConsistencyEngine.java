@@ -152,12 +152,21 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     public SingletonConsistencyEngine(Model model, MiniSat sat){
         super(model, sat);
 
-        PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)).collect(Collectors.toCollection(ArrayDeque::new)));
-        IL.setSupplier((_void) ->
+        PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)).collect(Collectors.toCollection(LinkedList::new)));
+        IL.setSupplier((_void) ->{
+            LinkedList<Pair<IntVar, Integer>> queue = new LinkedList<>();
+            for(IntVar v : model.retrieveIntVars(true)){
+                for(int value=v.getLB(); value <= v.getUB(); value=v.nextValue(value)){
+                    queue.add(new Pair<>(v, value));
+                }
+            }
+            return queue;});
+        /*
                 Arrays.stream(model.retrieveIntVars(true))
                         .flatMap(v -> IntStream.iterate(v.getLB(), val -> val <= v.getUB(), v::nextValue)
                         .mapToObj(val -> new Pair<>(v, val)))
                         .collect(Collectors.toCollection(ArrayDeque::new)));
+         */
 
         PL.commitAndLock();
         IL.commitAndLock();
@@ -340,10 +349,12 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         /* The strategy is in charge of setting this */
         doConsumePasses=false;
         propagationStrategy.propagate(this);
+        flush();
     }
 
     public void doPropagate() throws ContradictionException{
         super.propagate();
+        flush();
     }
 
 

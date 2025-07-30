@@ -16,20 +16,20 @@ public class SAC3Strategy extends PairBasedStrategy {
     }
 
     private void buildBranch(){
-        int t = Q.size();
         int i = 0;
+        int t = Q.size();
         while(i<t) {
-            i++;
             Pair<IntVar, Integer> p = Q.pop();
             IntVar Xn = p.getA();
             Integer Am = p.getB();
+            i++;
             if(!Xn.contains(Am)) {
                 Q.add(p);
                 continue;
             }
             try {
                 E.worldPush();
-                Xn.instantiateTo(Am, Cause.Null);
+                instantiate(Xn, Am);
                 E.doPropagate();
             } catch (ContradictionException ignore) {
                 Q.add(p);

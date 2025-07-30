@@ -1,15 +1,15 @@
 package org.chocosolver.util.objects.queues;
 
-import java.util.ArrayDeque;
+import java.util.LinkedList;
 import java.util.function.Function;
 
 public class ReinitialisableQueue<T> {
     /* TODO: this is restricted to Qset, it would be better to allow for several elements in q*/
 
-    ArrayDeque<T> queue = new ArrayDeque<>();
-    ArrayDeque<T> defaultQ = new ArrayDeque<>();
+    LinkedList<T> queue = new LinkedList<>();
+    LinkedList<T> defaultQ = new LinkedList<>();
     private boolean locked = false;
-    Function<Void, ArrayDeque<T>> supplier;
+    Function<Void, LinkedList<T>> supplier;
     boolean hasSupplier= false;
 
     public ReinitialisableQueue(){}
@@ -20,7 +20,7 @@ public class ReinitialisableQueue<T> {
         }
     }
 
-    public void setSupplier(Function<Void, ArrayDeque<T>> s){
+    public void setSupplier(Function<Void, LinkedList<T>> s){
         if(!locked) {
             supplier = s;
             hasSupplier = true;
@@ -33,7 +33,7 @@ public class ReinitialisableQueue<T> {
             queue = supplier.apply(null);
         }
         else {
-            queue = defaultQ.clone();
+            queue = (LinkedList<T>) defaultQ.clone();
         }
     }
 
@@ -42,7 +42,7 @@ public class ReinitialisableQueue<T> {
             queue = supplier.apply(null);
         }
         else {
-            queue = defaultQ.clone();
+            queue = (LinkedList<T>) defaultQ.clone();
         }
     }
 
@@ -55,7 +55,7 @@ public class ReinitialisableQueue<T> {
     }
 
     public void add(T t){
-        queue.add(t);
+        queue.addLast(t);
     }
 
     public boolean contains(T t){

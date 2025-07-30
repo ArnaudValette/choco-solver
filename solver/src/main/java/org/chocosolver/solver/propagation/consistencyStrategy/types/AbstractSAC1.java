@@ -7,14 +7,13 @@ import org.chocosolver.solver.variables.IntVar;
 public abstract class AbstractSAC1 extends VariableBasedStrategy{
     @Override
     public void propagate(SingletonConsistencyEngine engine) throws ContradictionException {
-        if(Q == null){
-            E.provideQ(this);
-        }
+        //if(Q == null){
+            //E.provideQ(this);
+        //}
         changed = false;
         E=engine;
         onBeforeAnything();
         E.doPropagate();
-        // Q.reinit(); reinitialised in loop()
         loop();
     }
     @Override
@@ -25,9 +24,9 @@ public abstract class AbstractSAC1 extends VariableBasedStrategy{
          * */
         do{
             changed = false;
-            Q.reinit();
-            while(!Q.isEmpty()){
-                IntVar v = Q.pop();
+            IntVar[] vars = E.getVars();
+            //Q.reinit();
+            for(IntVar v : vars){
                 rnsac=E.getDirectOnlyBlacklist(v);
                 nsac=E.getNsacBlacklist(v);
                 nx = E.getNeighborhood(v);

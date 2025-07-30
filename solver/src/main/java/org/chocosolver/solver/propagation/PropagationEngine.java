@@ -48,7 +48,7 @@ public class PropagationEngine extends AbstractEngine{
     /**
      * The model declaring this engine
      */
-    final Model model;
+    protected final Model model;
     /**
      * The SAT solver, required for LCG mode
      */

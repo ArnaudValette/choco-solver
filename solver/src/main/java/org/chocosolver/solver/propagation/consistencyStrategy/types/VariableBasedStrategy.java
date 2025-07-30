@@ -20,11 +20,16 @@ public abstract class VariableBasedStrategy extends AbstractSingletonStrategy<In
     }
 
     @Override
-    public void propagate(SingletonConsistencyEngine E) throws ContradictionException {
+    public void propagate(SingletonConsistencyEngine engine) throws ContradictionException {
         if(Q == null){
-            E.provideQ(this);
+            engine.provideQ(this);
         }
-        super.propagate(E);
+        changed = false;
+        E=engine;
+        onBeforeAnything();
+        E.doPropagate();
+        Q.reinit();
+        loop();
     }
 
     public void loop()throws ContradictionException {

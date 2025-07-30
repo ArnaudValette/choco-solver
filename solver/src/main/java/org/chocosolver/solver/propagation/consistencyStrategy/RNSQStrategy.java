@@ -35,12 +35,15 @@ public class RNSQStrategy extends VariableBasedStrategy {
             }
             E.doPropagate();
         }
+        E.worldPopUntilNFlush(lastId);
         baseState();
     }
 
 
     @Override
-    protected void onAfterRemoval() throws ContradictionException {}
+    protected void onAfterRemoval() throws ContradictionException {
+        changed=true;
+    }
 
     @Override
     protected boolean queueHandler(boolean changed){
