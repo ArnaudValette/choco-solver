@@ -73,8 +73,9 @@ public class Bug {
         pe.initialize();
 
         try {
-            pe.propagate();
-            pe.propagate();
+            pe.propagate(); // nb of pruned values : 593
+            pe.propagate(); // nb of pruned values : 593 (ok)
+            // pe.propagate(); // nb of pruned values : 596 (????!!!)
         } catch (Exception e) {
             e.printStackTrace();
         }
