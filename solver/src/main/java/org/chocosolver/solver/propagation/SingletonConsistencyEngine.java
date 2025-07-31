@@ -16,6 +16,7 @@ import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.constraints.graph.symmbreaking.Pair;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.exception.SolverException;
+import org.chocosolver.solver.propagation.consistencyStrategy.AbstractSingletonStrategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.ISingletonConsistencyStrategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.types.PairBasedStrategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.types.VariableBasedStrategy;
@@ -29,7 +30,6 @@ import org.jgrapht.alg.util.Triple;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /*****************************************************************************************************
  * TODO:
@@ -151,7 +151,7 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
 
     public SingletonConsistencyEngine(Model model, MiniSat sat){
         super(model, sat);
-
+        hybrid = 0b10;
         PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)).collect(Collectors.toCollection(LinkedList::new)));
         IL.setSupplier((_void) ->{
             LinkedList<Pair<IntVar, Integer>> queue = new LinkedList<>();
@@ -226,12 +226,16 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         return this;
     }
 
-    public void provideQ(VariableBasedStrategy s){
-        s.setQ(PL);
-    }
-
-    public void provideQ(PairBasedStrategy s){
-        s.setQ(IL);
+    public void provideQ(AbstractSingletonStrategy s) {
+        if(s instanceof VariableBasedStrategy){
+            s.setQ(PL);
+        }
+        else if(s instanceof  PairBasedStrategy){
+            s.setQ(IL);
+        }
+        else{
+            s.setQ(PL);
+        }
     }
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -398,6 +402,9 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     }
 
     public void doSchedule(Propagator<?> prop, int pindice, int mask){
+        /* You need this when applying e.g. "singleton k-passes AC"
+        * (!= "k-passes SAC")
+        * */
         if(doConsumePasses) {
             if(!passBlacklist.get(prop.hashCode())) {
                 super.schedule(prop, pindice, mask);
@@ -561,7 +568,7 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         subNeighborhoodBlacklist.and(propList);
     }
 
-    public void setDoConsumePasses(boolean doConsumePasses) {
+    public void __setDoConsumePasses(boolean doConsumePasses) {
         this.doConsumePasses = doConsumePasses;
     }
 

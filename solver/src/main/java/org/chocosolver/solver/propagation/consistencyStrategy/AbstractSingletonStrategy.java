@@ -1,11 +1,9 @@
 package org.chocosolver.solver.propagation.consistencyStrategy;
 
-import org.chocosolver.solver.Cause;
 import org.chocosolver.solver.ICause;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
-import org.chocosolver.solver.search.strategy.decision.IntDecision;
 import org.chocosolver.solver.variables.IntVar;
 import org.jgrapht.alg.util.Triple;
 
@@ -32,18 +30,31 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
      *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+    @Override
+    public void propagate(SingletonConsistencyEngine engine) throws ContradictionException {
+        if(Q == null){
+            engine.provideQ(this);
+        }
+        changed = false;
+        E=engine;
+        onBeforeAnything();
+        E.doPropagate();
+        Q.reinit();
+        loop();
+    }
+
     /** The general shape of SAC based algorithms */
     protected void task() throws ContradictionException {
         if(Xi.contains(Aj)) {
             lastId = E.getWorldIndex();
             E.worldPush();
             try {
-                onBeforeInstantiation();
+                onBeforeInstantiation(); /* e.g. set a blacklist to prevent non-neighborhood propagation (NSAC) */
                 instantiate(Xi, Aj);
-                onAfterInstantiation(); /* e.g. E.doPropagate() */
+                onAfterInstantiation(); /* e.g. E.doPropagate() (SAC) */
             } catch (ContradictionException ce) {
                 onBeforeRemoval();
-                Xi.removeValue(Aj, Cause.Null);
+                remove(Xi,Aj);
                 onAfterRemoval(); /* e.g. E.doPropagate() */
             }
         }
@@ -61,11 +72,10 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
 
     protected void instantiate(IntVar X, int a) throws ContradictionException{
         X.instantiateTo(a, this);
-        /*
-        IntDecision d = E.decide(X,a);
-        d.buildNext();
-        d.apply();
-         */
+    }
+
+    protected  void remove(IntVar X, int a) throws ContradictionException{
+        X.removeValue(a, this);
     }
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -101,7 +111,7 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
     protected void baseState(){
         E.setDoFilterScheduling(false);
         E.setCheckSingleton(false);
-        E.setDoConsumePasses(false);
+        E.setBlockLateScheduling(true);
     }
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -115,13 +125,26 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
         return this;
     }
 
+    /* These methods are for enforcing k-passes AC.
+    *  We must distinguish between a-pSAC and Sb-pAC
+    *  Where the first applies "a" passes singleton-arc-consistency
+    *  and the second applies "b" passes arc consistency after every singleton check.
+    * --------------------------------------------------
+    *  onBeforePasses, doConsumePasses and onAfterPasses should
+    *  handle the later case, while k-pSAC and variants are dealed in the loop() method.
+    *  */
+
     protected void doConsumePasses() throws ContradictionException {
         if(willConsumePasses) {
             E.passesIncrement();
             while (E.hasPasses()) {
                 for (int i = 0; i < E.passPropagatorsSize(); i++) {
                     Triple<Propagator<?>, Integer, Integer> args = E.passQueueAt(i);
-                    E.imperativeSchedule(args.getFirst(), args.getSecond(), args.getThird());
+                    Propagator<?>p = args.getFirst();
+                    /* TODO: is this what we want ? */
+                    if(!p.isPassive() && !p.isReified()) {
+                        E.imperativeSchedule(p, args.getSecond(), args.getThird());
+                    }
                 }
                 passConsumer();
                 E.passesIncrement();
@@ -133,7 +156,7 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
     protected void onBeforePasses(){
         if(willConsumePasses){
             E.reinitPassBlacklist();
-            E.setDoConsumePasses(true);
+            E.__setDoConsumePasses(true);
             E.passesInit();
             E.initPassPropList();
         }
@@ -142,7 +165,7 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
     protected void onAfterPasses(){
         if(willConsumePasses){
             E.reinitPassBlacklist();
-            E.setDoConsumePasses(false);
+            E.__setDoConsumePasses(false);
             E.passesInit();
             E.initPassPropList();
         }

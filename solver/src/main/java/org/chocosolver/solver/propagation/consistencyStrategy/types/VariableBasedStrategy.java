@@ -15,22 +15,7 @@ public abstract class VariableBasedStrategy extends AbstractSingletonStrategy<In
     protected Set<IntVar> nx;
 
 
-    public void setQ(ReinitialisableQueue<IntVar> q) {
-        Q=q;
-    }
-
-    @Override
-    public void propagate(SingletonConsistencyEngine engine) throws ContradictionException {
-        if(Q == null){
-            engine.provideQ(this);
-        }
-        changed = false;
-        E=engine;
-        onBeforeAnything();
-        E.doPropagate();
-        Q.reinit();
-        loop();
-    }
+    public void setQ(ReinitialisableQueue<IntVar> q) { Q=q; }
 
     public void loop()throws ContradictionException {
         while(!Q.isEmpty()){

@@ -60,16 +60,16 @@ public class PropagationEngine extends AbstractEngine{
     /**
      * To deal with propagators added dynamically
      */
-    private final DynPropagators dynPropagators;
+    protected final DynPropagators dynPropagators;
     /**
      * The main structure of this engine: seven circular queues,
      * each of them is dedicated to store propagator to execute wrt their priority.
      */
-    private final CircularQueue<Propagator<?>>[] pro_queue;
+    protected final CircularQueue<Propagator<?>>[] pro_queue;
 
-    private final CircularQueue<Variable> var_queue;
+    protected final CircularQueue<Variable> var_queue;
 
-    private final CircularQueue<Propagator<?>> awake_queue;
+    protected final CircularQueue<Propagator<?>> awake_queue;
     /**
      * The last propagator executed
      */
@@ -81,27 +81,27 @@ public class PropagationEngine extends AbstractEngine{
     /**
      * One bit per queue: true if the queue is not empty.
      */
-    private int notEmpty;
+    protected int notEmpty;
     /**
      * PropagatorEventType's mask for delayed propagation
      */
-    private int delayedPropagationType;
+    protected int delayedPropagationType;
     /**
      * Set to <tt>true</tt> once {@link #initialize()} has been called.
      */
-    private boolean init;
+    protected boolean init;
     /**
      * When set to '0b00', this works as a constraint-oriented propagation engine;
      * when set to '0b01', this works as a hybridization between variable and constraint oriented
      * propagation engine.
      * when set to '0b10', this works as a variable-oriented propagation engine.
      */
-    private byte hybrid;
+    protected byte hybrid;
     /**
      * For dynamic addition, avoid creating a new lambda at each call
      */
     @SuppressWarnings("Convert2Diamond")
-    private final Consumer<Propagator<?>> consumer = new Consumer<Propagator<?>>() {
+    protected final Consumer<Propagator<?>> consumer = new Consumer<Propagator<?>>() {
         @Override
         public void accept(Propagator propagator) {
             awake_queue.addLast(propagator);
@@ -111,7 +111,7 @@ public class PropagationEngine extends AbstractEngine{
     /**
      * A propagation insight to collect information about the propagation
      */
-    private PropagationInsight insight = PropagationInsight.VOID;
+    protected PropagationInsight insight = PropagationInsight.VOID;
 
     /**
      * A seven-queue propagation engine.
@@ -189,7 +189,7 @@ public class PropagationEngine extends AbstractEngine{
         }
     }
 
-    private Propagator<?> getPropagator(int i) {
+    protected Propagator<?> getPropagator(int i) {
         Propagator<?> propagator = propagators.get(i);
         if (propagator.getPriority().getValue() >= pro_queue.length) {
             throw new SolverException(
@@ -254,7 +254,7 @@ public class PropagationEngine extends AbstractEngine{
         } while (!var_queue.isEmpty());
     }
 
-    private void propagateSat() throws ContradictionException {
+    protected void propagateSat() throws ContradictionException {
         if (sat != null) {
             model.getSolver().getMeasures().incPropagationCount();
             sat.propagate();
@@ -283,7 +283,7 @@ public class PropagationEngine extends AbstractEngine{
      *
      * @throws ContradictionException if a propagation fails
      */
-    private void activatePropagators() throws ContradictionException {
+    protected void activatePropagators() throws ContradictionException {
         int cw = model.getEnvironment().getWorldIndex(); // get current index
         dynPropagators.descending(cw, consumer);
         while (!awake_queue.isEmpty()) {
@@ -313,7 +313,7 @@ public class PropagationEngine extends AbstractEngine{
         }
     }
 
-    private void manageModifications() {
+    protected void manageModifications() {
         if (!var_queue.isEmpty()) {
             do {
                 var_queue.pollFirst().schedulePropagators(this);
@@ -321,7 +321,7 @@ public class PropagationEngine extends AbstractEngine{
         }
     }
 
-    private int nextNotEmpty() {
+    protected int nextNotEmpty() {
         if (notEmpty == 0) return -1;
         return Integer.numberOfTrailingZeros(notEmpty);
     }
@@ -510,7 +510,7 @@ public class PropagationEngine extends AbstractEngine{
         }
     }
 
-    private void remove(Propagator<?> propagator) {
+    protected void remove(Propagator<?> propagator) {
         int idx = propagator.getPosition();
         if (idx > -1) {
             assert propagators.get(idx) == propagator : "Try to remove the wrong propagator";
@@ -521,7 +521,7 @@ public class PropagationEngine extends AbstractEngine{
         }
     }
 
-    private void shift(int from) {
+    protected void shift(int from) {
         for (int i = from; i < propagators.size() - 1; i++) {
             propagators.set(i, propagators.get(i + 1));
             propagators.get(i).setPosition(i);

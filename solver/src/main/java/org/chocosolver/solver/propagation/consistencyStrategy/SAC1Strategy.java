@@ -5,6 +5,13 @@ import org.chocosolver.solver.propagation.consistencyStrategy.types.AbstractSAC1
 
 public class SAC1Strategy extends AbstractSAC1 {
     @Override
+    protected void onAfterInstantiation() throws ContradictionException {
+        E.doPropagate();
+        E.worldPopUntilNFlush(lastId);
+        baseState();
+    }
+
+    @Override
     protected void passConsumer() throws ContradictionException {
         E.doPropagate();
     }
