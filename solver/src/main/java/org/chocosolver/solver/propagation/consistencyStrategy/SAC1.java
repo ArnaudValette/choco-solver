@@ -9,11 +9,9 @@ import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.propagation.PropagationEngine;
 import org.chocosolver.solver.variables.IntVar;
-import org.chocosolver.solver.variables.Variable;
-import org.chocosolver.solver.variables.events.IEventType;
 import org.chocosolver.util.iterators.DisposableValueIterator;
 
-public class SAC1 extends PropagationEngine {
+public class SAC1 extends PropagationEngine implements ICause {
     Solver solver;
     IEnvironment env;
     int nbPropagations=0;
@@ -22,13 +20,12 @@ public class SAC1 extends PropagationEngine {
         super(model, sat);
         solver = model.getSolver();
         env = solver.getEnvironment();
+        hybrid = 0b10;
     }
 
     @Override
     public void propagate() throws ContradictionException {
         nbPropagations++;
-        System.out.println("**************************************************");
-        System.out.println("Propagation number : " + nbPropagations);
         doPropagate();
         getDelayedPropagation();
         loop();
@@ -40,11 +37,11 @@ public class SAC1 extends PropagationEngine {
 
 
     public void instantiate(IntVar X, int a) throws ContradictionException {
-        X.instantiateTo(a, Cause.Null);
+        X.instantiateTo(a, this);
     }
 
     public void removeValue(IntVar X, int a) throws ContradictionException{
-        X.removeValue(a, Cause.Null);
+        X.removeValue(a, this);
     }
 
     public void loop() throws ContradictionException {
@@ -69,7 +66,6 @@ public class SAC1 extends PropagationEngine {
                             env.worldPopUntil(id);
                             flush();
                             removeValue(v, value);
-                            System.out.println("removed");
                             super.propagate();
                             changed = true;
                         }

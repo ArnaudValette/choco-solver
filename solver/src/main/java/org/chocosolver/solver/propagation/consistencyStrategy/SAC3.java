@@ -21,6 +21,7 @@ public class SAC3 extends SAC1 {
         super(model, sat);
         solver = model.getSolver();
         env = solver.getEnvironment();
+        hybrid = 0b10;
     }
 
     @Override

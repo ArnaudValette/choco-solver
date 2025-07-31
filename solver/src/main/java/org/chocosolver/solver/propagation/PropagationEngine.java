@@ -78,7 +78,7 @@ public class PropagationEngine extends AbstractEngine{
      */
     protected Variable lastVar;
     /**
-     * One bit per queue: true if the queue is not empty.
+     * One bit per queue: true if the queue is not empty
      */
     protected int notEmpty;
     /**
