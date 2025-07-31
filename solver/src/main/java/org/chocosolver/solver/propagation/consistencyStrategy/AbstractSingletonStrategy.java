@@ -16,16 +16,6 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *
-     *                                         Abstract Methods
-     *
-     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-    /** @void The method used to consume passes in k-pXXX variants of our consistencies (e.g. simply Engine.doPropagate()
-     * in the case of simpler algorithms such as 1-pSAC1). */
-    protected abstract void passConsumer() throws ContradictionException;
-
-    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-     *
      *                                         Core Method
      *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -119,6 +109,11 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
      *                                         Passes Management
      *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    /** @void The method used to consume passes in k-pXXX variants of our consistencies (e.g. simply Engine.doPropagate()
+     * in the case of simpler algorithms such as 1-pSAC1). */
+    protected abstract void passConsumer() throws ContradictionException;
+
 
     public AbstractSingletonStrategy<T> setWillConsumePasses(boolean b){
         willConsumePasses =b;

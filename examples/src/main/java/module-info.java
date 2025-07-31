@@ -19,6 +19,7 @@ module org.chocosolver.examples {
     requires args4j;
     requires java.desktop;
     requires trove4j;
+    requires org.jgrapht.core;
     opens org.chocosolver.examples.integer to args4j;
     opens org.chocosolver.examples.nqueen to args4j;
 }

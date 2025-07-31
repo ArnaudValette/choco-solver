@@ -104,14 +104,16 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     BitSet subNeighborhoodBlacklist = new BitSet();
 
 
-    HashMap<IntVar, BitSet> BLOCK_SCHEDULING = new HashMap<>();
-    HashMap<IntVar, BitSet> SCHEDULE_DIRECT_ONLY = new HashMap<>();
-    HashMap<IntVar, BitSet> SCHEDULE_NSAC = new HashMap<>();
+    HashMap<Integer, BitSet> BLOCK_SCHEDULING = new HashMap<>();
+    HashMap<Integer, BitSet> SCHEDULE_DIRECT_ONLY = new HashMap<>();
+    HashMap<Integer, BitSet> SCHEDULE_NSAC = new HashMap<>();
     BitSet defaultSubNeighborhood = new BitSet();
 
-    HashMap<IntVar, Set<Pair<IntVar, Integer>>> neighborhood = new HashMap<>();
-    private HashMap<IntVar, Set<IntVar>> _neighborhood = new HashMap<>();
+    HashMap<Integer, Set<Pair<IntVar, Integer>>> neighborhood = new HashMap<>();
+    private final HashMap<Integer, Set<IntVar>> _neighborhood = new HashMap<>();
     List<Propagator<? extends Variable>> props = new ArrayList<>();
+
+    HashMap<Integer, ArrayDeque<IntVar>> neighborhoodQueue= new HashMap<>();
 
     /*
     * PendingLists
@@ -152,15 +154,16 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     public SingletonConsistencyEngine(Model model, MiniSat sat){
         super(model, sat);
         hybrid = 0b10;
-        PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)).collect(Collectors.toCollection(LinkedList::new)));
+        PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)).collect(Collectors.toCollection(ArrayDeque::new)));
         IL.setSupplier((_void) ->{
-            LinkedList<Pair<IntVar, Integer>> queue = new LinkedList<>();
+            ArrayDeque<Pair<IntVar, Integer>> queue = new ArrayDeque<>();
             for(IntVar v : model.retrieveIntVars(true)){
                 for(int value=v.getLB(); value <= v.getUB(); value=v.nextValue(value)){
                     queue.add(new Pair<>(v, value));
                 }
             }
             return queue;});
+        PL.setOptimizedRefresher((v)->neighborhoodQueue.get(v.getId()));
         /*
                 Arrays.stream(model.retrieveIntVars(true))
                         .flatMap(v -> IntStream.iterate(v.getLB(), val -> val <= v.getUB(), v::nextValue)
@@ -174,6 +177,10 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
 
     public SingletonConsistencyEngine(Model model){
         this(model, null);
+    }
+
+    public ISingletonConsistencyStrategy getStrategy(){
+        return propagationStrategy;
     }
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -264,13 +271,13 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
          * */
 
         for (IntVar v : model.retrieveIntVars(true)) {
-            SCHEDULE_NSAC.put(v, new BitSet());
-            SCHEDULE_DIRECT_ONLY.put(v, new BitSet());
-            BLOCK_SCHEDULING.put(v, new BitSet());
+            SCHEDULE_NSAC.put(v.getId(), new BitSet());
+            SCHEDULE_DIRECT_ONLY.put(v.getId(), new BitSet());
+            BLOCK_SCHEDULING.put(v.getId(), new BitSet());
             for (Propagator<?> prop : props) {
-                SCHEDULE_NSAC.get(v).set(prop.hashCode());
-                SCHEDULE_DIRECT_ONLY.get(v).set(prop.hashCode());
-                BLOCK_SCHEDULING.get(v).set(prop.hashCode());
+                SCHEDULE_NSAC.get(v.getId()).set(prop.hashCode());
+                SCHEDULE_DIRECT_ONLY.get(v.getId()).set(prop.hashCode());
+                BLOCK_SCHEDULING.get(v.getId()).set(prop.hashCode());
             }
         }
 
@@ -282,14 +289,15 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
             for (Variable v : p.getVars()) {
 
                 /* P concerne Xi */
-                SCHEDULE_DIRECT_ONLY.get(v).clear(p.hashCode());
+                SCHEDULE_DIRECT_ONLY.get(v.getId()).clear(p.hashCode());
                 /* P est dans NSAC de N(Xi) */
-                SCHEDULE_NSAC.get(v).clear(p.hashCode());
+                SCHEDULE_NSAC.get(v.getId()).clear(p.hashCode());
 
-                if (!neighborhood.containsKey(v)) {
+                if (!neighborhood.containsKey(v.getId())) {
                     /* HM init: V */
-                    neighborhood.put((IntVar) v, new HashSet<>());
-                    _neighborhood.put((IntVar) v, new HashSet<>());
+                    neighborhoodQueue.put(v.getId(), new ArrayDeque<>());
+                    neighborhood.put(v.getId(), new HashSet<>());
+                    _neighborhood.put(v.getId(), new HashSet<>());
                     //RESTRICT_TO_NX.put((IntVar) v, new BitSet());
                 }
 
@@ -301,9 +309,10 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
                     if (!u.equals(v)) {
                         IntVar variable = (IntVar) u;
                         for(int value = variable.getLB(); value <= variable.getUB(); value = variable.nextValue(value)) {
-                            neighborhood.get(v).add(new Pair<>(variable, value));
+                            neighborhood.get(v.getId()).add(new Pair<>(variable, value));
                         }
-                        _neighborhood.get(v).add(variable);
+                        _neighborhood.get(v.getId()).add(variable);
+                        neighborhoodQueue.get(v.getId()).add(variable);
                     }
                 }
             }
@@ -329,17 +338,17 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         }
 
         for (IntVar v : model.retrieveIntVars(true)) {
-            Set<IntVar> nv = _neighborhood.get(v);
+            Set<IntVar> nv = _neighborhood.get(v.getId());
             if (nv != null) {
                 for (Propagator<?> p : props) {
                     Set<Variable> propSet = Arrays.stream(p.getVars()).collect(Collectors.toSet());
                     int matches = 0;
                     for(Variable propVar : propSet){
-                        if(nv.contains(propVar)){
+                        if(nv.contains((IntVar) propVar)){
                             matches++;
                         }
                         if(matches >= 2){
-                            SCHEDULE_NSAC.get(v).clear(p.hashCode());
+                            SCHEDULE_NSAC.get(v.getId()).clear(p.hashCode());
                             break;
                         }
                     }
@@ -435,6 +444,9 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
      *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+    public Variable getLastDecision(){
+        return model.getSolver().getDecisionPath().getLastDecision().getDecisionVariable();
+    }
     public Triple<Propagator<?>, Integer, Integer> latePropsPop(){
         return latePropagatorsQueue.pop();
     }
@@ -452,19 +464,19 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     }
 
     public BitSet getDirectOnlyBlacklist(Variable v){
-        return SCHEDULE_DIRECT_ONLY.get(v);
+        return SCHEDULE_DIRECT_ONLY.get(v.getId());
     }
 
     public BitSet getNsacBlacklist(Variable v){
-        return SCHEDULE_NSAC.get(v);
+        return SCHEDULE_NSAC.get(v.getId());
     }
 
     public Set<Pair<IntVar, Integer>> getNeighborhoodAsPairs(Variable v){
-        return neighborhood.get(v);
+        return neighborhood.get(v.getId());
     }
 
     public Set<IntVar> getNeighborhood(Variable v){
-        return _neighborhood.get(v);
+        return _neighborhood.get(v.getId());
     }
 
     public void worldPush(){
@@ -564,7 +576,7 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
          * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
          * (i.e.) the subNeighborhood blacklist is the AND or INTER of all SRV blacklists.
          * */
-        BitSet propList = (BitSet) SCHEDULE_DIRECT_ONLY.get(v).clone();
+        BitSet propList = (BitSet) SCHEDULE_DIRECT_ONLY.get(v.getId()).clone();
         subNeighborhoodBlacklist.and(propList);
     }
 
