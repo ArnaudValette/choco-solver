@@ -120,7 +120,7 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
      *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-    public AbstractSingletonStrategy setWillConsumePasses(boolean b){
+    public AbstractSingletonStrategy<T> setWillConsumePasses(boolean b){
         willConsumePasses =b;
         return this;
     }
