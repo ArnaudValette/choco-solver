@@ -22,9 +22,6 @@ import org.chocosolver.solver.objective.IBoundsManager;
 import org.chocosolver.solver.objective.IObjectiveManager;
 import org.chocosolver.solver.objective.ObjectiveFactory;
 import org.chocosolver.solver.propagation.*;
-import org.chocosolver.solver.propagation.consistencyStrategy.RNSQStrategy;
-import org.chocosolver.solver.propagation.consistencyStrategy.SAC1Strategy;
-import org.chocosolver.solver.propagation.consistencyStrategy.SAC3Strategy;
 import org.chocosolver.solver.search.SearchState;
 import org.chocosolver.solver.search.limits.ICounter;
 import org.chocosolver.solver.search.loop.Reporting;
@@ -1386,22 +1383,6 @@ public final class Solver implements ISolver, IMeasures, IOutputFactory {
         if (restarter != AbstractRestart.NO_RESTART) {
             restarter.setNext(this.restarter);
             this.restarter = restarter;
-        }
-    }
-
-    public void enforceSAC(String type){
-        switch (type){
-            case "SAC1":
-                engine = (new SingletonConsistencyEngine(mModel).setPropagationStrategy(new SAC1Strategy()));
-                break;
-            case "SAC3":
-                engine = (new SingletonConsistencyEngine(mModel).setPropagationStrategy(new SAC3Strategy()));
-                break;
-            case "RNSQ":
-                engine = (new SingletonConsistencyEngine(mModel).setPropagationStrategy(new RNSQStrategy()));
-                break;
-            default:
-                this.engine = (new SingletonConsistencyEngine(this.mModel));
         }
     }
 
