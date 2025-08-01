@@ -5,8 +5,8 @@ import java.util.BitSet;
 public class NSAC1Strategy extends SAC1Strategy{
 
     @Override
-    protected void onBeforeInstantiation(){
-        baseState();
+    public void onBeforeInstantiation(){
+        ref().baseState();
         E.setDirectPropsScheduling(nsac);
         E.setDoFilterScheduling(true);
     }

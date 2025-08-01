@@ -26,7 +26,7 @@ public abstract class VariableBasedStrategy extends AbstractSingletonStrategy<In
             nx = E.getNeighborhood(v);
             for(int value = v.getLB(); value <= v.getUB(); value=v.nextValue(value)){
                 Xi = v; Aj = value;
-                task();
+                ref().task();
             }
         }
     }

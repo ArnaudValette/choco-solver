@@ -9,13 +9,14 @@ import org.chocosolver.solver.variables.IntVar;
 public class SAC3Strategy extends PairBasedStrategy {
 
     @Override
-    protected void onAfterInstantiation() throws ContradictionException {
+    public void onAfterInstantiation() throws ContradictionException {
             E.doPropagate();
-            buildBranch();
-            baseState();
+            ref().buildBranch();
+            ref().baseState();
     }
 
-    private void buildBranch(){
+    @Override
+    public void buildBranch(){
         int i = 0;
         int t = Q.size();
         while(i<t) {
@@ -40,7 +41,7 @@ public class SAC3Strategy extends PairBasedStrategy {
     }
 
     @Override
-    protected void passConsumer() throws ContradictionException {
+    public void passConsumer() throws ContradictionException {
         /* TODO k-pSAC3 */
     }
 }

@@ -12,7 +12,6 @@ import java.util.ArrayList;
 
 public class RNSQStrategy extends VariableBasedStrategy {
     boolean initialized = false;
-    ArrayList<Long> runsData = new ArrayList<>();
 
     @Override
     public void propagate(SingletonConsistencyEngine engine) throws ContradictionException {
@@ -21,7 +20,7 @@ public class RNSQStrategy extends VariableBasedStrategy {
         }
         changed=false;
         E=engine;
-        onBeforeAnything();
+        ref().onBeforeAnything();
         E.doPropagate();
         if(!initialized){
             Q.reinit();
@@ -30,7 +29,7 @@ public class RNSQStrategy extends VariableBasedStrategy {
         else{
             Q.optimizedRefresh((IntVar) E.getLastDecision());
         }
-        loop();
+        ref().loop();
 
     }
 
@@ -45,7 +44,8 @@ public class RNSQStrategy extends VariableBasedStrategy {
         E.setCheckSingleton(true);
     }
 
-    protected void onAfterSingletonFound(){
+    @Override
+    public void onAfterSingletonFound(){
         E.setBlockLateScheduling(true);
         E.setCheckSingleton(false);
         E.setDirectPropsScheduling(nsac);
@@ -56,25 +56,29 @@ public class RNSQStrategy extends VariableBasedStrategy {
     }
 
     @Override
-    protected void onAfterInstantiation() throws ContradictionException {
-        E.doPropagate();
+    public void onAfterInstantiationPropagation() throws ContradictionException {
         if (E.foundSingletonDuringPropagation()) {
-            onAfterSingletonFound();
+            ref().onAfterSingletonFound();
             E.doPropagate();
         }
+    }
+
+    @Override
+    public void onAfterInstantiation() throws ContradictionException {
+        E.doPropagate();
+        ref().onAfterInstantiationPropagation();
         E.worldPopUntilNFlush(lastId);
-        baseState();
+        ref().baseState();
     }
 
 
     @Override
-    protected void onAfterRemoval() throws ContradictionException {
+    public void onAfterRemoval() throws ContradictionException {
         changed=true;
     }
 
     @Override
-    protected boolean queueHandler(boolean changed){
-        //long start = System.nanoTime();
+    public boolean queueHandler(boolean changed){
         if(changed){
             for(IntVar u : nx){
                 if(!Q.contains(u)) {
@@ -82,17 +86,12 @@ public class RNSQStrategy extends VariableBasedStrategy {
                 }
             }
         }
-        //long end = System.nanoTime();
-        //runsData.add(end - start);
         return changed;
     }
 
-    public Pair<ArrayList<Long>, Integer> profile(){
-        return new Pair<>(runsData, runsData.size());
-    }
 
     @Override
-    protected void passConsumer() throws ContradictionException {
+    public void passConsumer() throws ContradictionException {
         /* TODO: passes*/
     }
 

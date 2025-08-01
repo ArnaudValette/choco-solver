@@ -27,32 +27,34 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
         }
         changed = false;
         E=engine;
-        onBeforeAnything();
+        ref().onBeforeAnything();
         E.doPropagate();
         Q.reinit();
-        loop();
+        ref().loop();
     }
 
     /** The general shape of SAC based algorithms */
-    protected void task() throws ContradictionException {
+    @Override
+    public void task() throws ContradictionException {
         if(Xi.contains(Aj)) {
             lastId = E.getWorldIndex();
             E.worldPush();
             try {
-                onBeforeInstantiation(); /* e.g. set a blacklist to prevent non-neighborhood propagation (NSAC) */
+                ref().onBeforeInstantiation(); /* e.g. set a blacklist to prevent non-neighborhood propagation (NSAC) */
                 instantiate(Xi, Aj);
-                onAfterInstantiation(); /* e.g. E.doPropagate() (SAC) */
+                ref().onAfterInstantiation(); /* e.g. E.doPropagate() (SAC) */
             } catch (ContradictionException ce) {
-                onBeforeRemoval();
+                ref().onBeforeRemoval();
                 remove(Xi,Aj);
-                onAfterRemoval(); /* e.g. E.doPropagate() */
+                ref().onAfterRemoval(); /* e.g. E.doPropagate() */
             }
         }
         changed = queueHandler(changed);
     }
 
 
-    protected boolean queueHandler(boolean changed){
+    @Override
+    public boolean queueHandler(boolean changed){
         if(Q.isEmpty() && changed){
             Q.reinit();
             return false;
@@ -60,11 +62,11 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
         return changed;
     }
 
-    protected void instantiate(IntVar X, int a) throws ContradictionException{
+    public void instantiate(IntVar X, int a) throws ContradictionException{
         X.instantiateTo(a, this);
     }
 
-    protected  void remove(IntVar X, int a) throws ContradictionException{
+    public  void remove(IntVar X, int a) throws ContradictionException{
         X.removeValue(a, this);
     }
 
@@ -74,31 +76,37 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
      *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-    protected void onBeforeAnything(){ baseState(); };
+    @Override
+    public void onBeforeAnything(){ ref().baseState(); };
 
-    protected void onBeforeInstantiation(){ baseState(); };
+    @Override
+    public void onBeforeInstantiation(){ ref().baseState(); };
 
-    protected void onAfterInstantiation() throws ContradictionException {
+    @Override
+    public void onAfterInstantiation() throws ContradictionException {
         /* base case : just propagate*/
         E.doPropagate();
         E.worldPopUntilNFlush(lastId);
-        baseState();
+        ref().baseState();
     };
 
-    protected void onBeforeRemoval(){
+    @Override
+    public void onBeforeRemoval(){
         E.worldPopUntilNFlush(lastId);
-        baseState();
+        ref().baseState();
     };
 
-    protected void onAfterRemoval() throws ContradictionException {
+    @Override
+    public void onAfterRemoval() throws ContradictionException {
         /* base case : just propagate */
         E.doPropagate();
         changed = true;
         E.flush();
-        baseState();
+        ref().baseState();
     };
 
-    protected void baseState(){
+    @Override
+    public void baseState(){
         E.setDoFilterScheduling(false);
         E.setCheckSingleton(false);
         E.setBlockLateScheduling(true);
@@ -112,7 +120,7 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
 
     /** @void The method used to consume passes in k-pXXX variants of our consistencies (e.g. simply Engine.doPropagate()
      * in the case of simpler algorithms such as 1-pSAC1). */
-    protected abstract void passConsumer() throws ContradictionException;
+    public abstract void passConsumer() throws ContradictionException;
 
 
     public AbstractSingletonStrategy<T> setWillConsumePasses(boolean b){
@@ -129,7 +137,7 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
     *  handle the later case, while k-pSAC and variants are dealed in the loop() method.
     *  */
 
-    protected void doConsumePasses() throws ContradictionException {
+    public void doConsumePasses() throws ContradictionException {
         if(willConsumePasses) {
             E.passesIncrement();
             while (E.hasPasses()) {
@@ -148,7 +156,7 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
         }
     }
 
-    protected void onBeforePasses(){
+    public void onBeforePasses(){
         if(willConsumePasses){
             E.reinitPassBlacklist();
             E.__setDoConsumePasses(true);
@@ -157,7 +165,7 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
         }
     }
 
-    protected void onAfterPasses(){
+    public void onAfterPasses(){
         if(willConsumePasses){
             E.reinitPassBlacklist();
             E.__setDoConsumePasses(false);

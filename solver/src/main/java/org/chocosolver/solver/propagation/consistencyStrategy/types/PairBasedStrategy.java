@@ -17,7 +17,7 @@ public abstract class PairBasedStrategy extends AbstractSingletonStrategy<Pair<I
         while(!Q.isEmpty()){
             Pair<IntVar, Integer> p = Q.pop();
             Xi = p.getA(); Aj = p.getB();
-            task();
+            ref().task();
         }
     }
 }

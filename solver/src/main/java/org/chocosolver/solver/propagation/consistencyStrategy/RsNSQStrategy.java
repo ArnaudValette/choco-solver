@@ -15,7 +15,7 @@ public class RsNSQStrategy extends RNSQStrategy{
     }
 
     @Override
-    protected void onAfterSingletonFound() {
+    public void onAfterSingletonFound() {
         subGraph = E.getSubNeighborhoodBlacklist();
         E.setBlockLateScheduling(true);
         E.setCheckSingleton(false);

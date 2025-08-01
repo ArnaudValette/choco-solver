@@ -23,7 +23,7 @@ public abstract class AbstractSAC1 extends VariableBasedStrategy{
                 for (int value = v.getLB(); value <= v.getUB(); value = v.nextValue(value)) {
                     Xi = v;
                     Aj = value;
-                    task();
+                    ref().task();
                 }
             }
             if(willConsumePasses) {
@@ -35,7 +35,7 @@ public abstract class AbstractSAC1 extends VariableBasedStrategy{
     }
 
     @Override
-    protected boolean queueHandler(boolean changed){
+    public boolean queueHandler(boolean changed){
         /* Don't do anything fancy */
         return changed;
     }
