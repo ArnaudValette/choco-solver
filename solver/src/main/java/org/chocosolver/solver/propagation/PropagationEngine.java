@@ -66,7 +66,7 @@ public class PropagationEngine {
      * The main structure of this engine: seven circular queues,
      * each of them is dedicated to store propagator to execute wrt their priority.
      */
-    private final CircularQueue<Propagator<?>>[] pro_queue;
+    protected final CircularQueue<Propagator<?>>[] pro_queue;
 
     private final CircularQueue<Variable> var_queue;
 
@@ -82,7 +82,7 @@ public class PropagationEngine {
     /**
      * One bit per queue: true if the queue is not empty.
      */
-    private int notEmpty;
+    protected int notEmpty;
     /**
      * PropagatorEventType's mask for delayed propagation
      */
