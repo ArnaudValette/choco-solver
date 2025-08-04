@@ -153,6 +153,14 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
 
     public SingletonConsistencyEngine(Model model, MiniSat sat){
         super(model, sat);
+        /* With hybrid being < 2
+        * the singleton-consistency algorithms become inexact.
+        * I don't yet understand why this parameter affects the idempotency of SAC1/3...
+        * AFAIK, hybrid = 2 switches the engine to variable based and SACs become idempotent.
+        * Unfortunately, when switching the engine to variable based, the performances
+        * drop drastically (time to solve grows by a factor of ~10 !)
+        * Hybrid = 1 (hybrid between constraint and variable based)
+        * still behave in such a way SAC is not idempotent and is slightly less performant than hybrid = 0*/
         hybrid = 0b10;
         PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)).collect(Collectors.toCollection(ArrayDeque::new)));
         IL.setSupplier((_void) ->{

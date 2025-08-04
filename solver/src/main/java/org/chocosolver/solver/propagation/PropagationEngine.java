@@ -23,7 +23,6 @@ import org.chocosolver.solver.variables.events.PropagatorEventType;
 import org.chocosolver.util.objects.queues.CircularQueue;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;

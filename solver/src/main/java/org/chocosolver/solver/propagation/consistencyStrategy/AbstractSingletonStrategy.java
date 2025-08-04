@@ -20,6 +20,7 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
      *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+
     @Override
     public void propagate(SingletonConsistencyEngine engine) throws ContradictionException {
         if(Q == null){

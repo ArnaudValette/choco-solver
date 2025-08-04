@@ -5,10 +5,17 @@ import org.chocosolver.parser.xcsp.XCSP;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.propagation.PropagationEngine;
+import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
 import org.chocosolver.solver.propagation.consistencyStrategy.*;
 import org.chocosolver.solver.search.strategy.Search;
+import org.chocosolver.solver.search.strategy.selectors.values.IntDomainMin;
+import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDeg;
 import org.chocosolver.solver.variables.IntVar;
-import java.util.Arrays;
+import org.chocosolver.util.criteria.Criterion;
+import org.jgrapht.alg.util.Pair;
+
+import java.time.Duration;
+import java.util.*;
 
 public class Bug {
     public static void main(String[] args) {
@@ -28,6 +35,7 @@ public class Bug {
                 "/home/truite/lirmm/wip/instances/MiniCSP/WordSquare-hak-09-ogd2008_c24.xml.lzma",
                 "/home/truite/lirmm/wip/instances/MiniCSP/WordSquare-hak-10-ogd2008_c24.xml.lzma",
                 "/home/truite/lirmm/wip/instances/MiniCSP/WordSquare-hak-11-ogd2008_c24.xml.lzma",
+                // 11
                 "/home/truite/lirmm/wip/instances/MiniCSP/WordSquare-tab1-07-ogd2008_c24.xml.lzma",
                 "/home/truite/lirmm/wip/instances/MiniCSP/WordSquare-tab1-08-ogd2008_c24.xml.lzma",
                 "/home/truite/lirmm/wip/instances/MiniCSP/WordSquare-tab1-09-ogd2008_c24.xml.lzma",
@@ -37,7 +45,7 @@ public class Bug {
         try {
             XCSP x = new XCSP();
             String[] arg = {
-                    inst[1],
+                    inst[0],
                     "-pa", "0",
                     "-p", "1"};
             x.setUp(arg);
@@ -48,10 +56,13 @@ public class Bug {
 
 
             IntVar[] vars = model.retrieveIntVars(true);
-            s.setSearch(Search.inputOrderLBSearch(vars));
-
+            DomOverWDeg cacd = new DomOverWDeg(vars,0);
+            s.setSearch(
+                    Search.intVarSearch(cacd, new IntDomainMin(), vars)
+            );
             s.clearRestarter();
-            Test.test(model);
+            s.showStatisticsDuringResolution(1000L);
+            test(model);
         } catch (Exception e){
 
         }
@@ -59,33 +70,70 @@ public class Bug {
 
     public static void test(Model model) {
 
-        model.getSolver().setEngine(new TestSAC(model,null));
+        try {
+            //ISingletonConsistencyStrategy real = new NSAC1Strategy().setWillConsumePasses(true);
+            //ISingletonConsistencyStrategy real = new NSAC1Strategy();
+            //ISingletonConsistencyStrategy real = new SAC1Strategy().setWillConsumePasses(true);
+            ISingletonConsistencyStrategy real = new SAC1Strategy();
+            //ISingletonConsistencyStrategy real = new SAC3Strategy();
+            //ISingletonConsistencyStrategy real = new RNSQStrategy();
+            //ISingletonConsistencyStrategy real = new RsNSQStrategy();
+            //ISingletonConsistencyStrategy profiler = new EfficiencyObserver(real);
+            //real.setRef(profiler);
 
-        IntVar[] vars = model.retrieveIntVars(true);
-        int start = Arrays.stream(vars).reduce(0, (acc, next)-> acc + next.getDomainSize(), Integer::sum);
+            Solver s = model.getSolver();
+
+
+            model.getSolver().setEngine(new SingletonConsistencyEngine(model).setPropagationStrategy(real));
+            model.getSolver().reset();
+
 
 
         PropagationEngine pe = model.getSolver().getEngine();
 
-        int worldId= model.getEnvironment().getWorldIndex();
-        model.getEnvironment().worldPush();
-
-        pe.initialize();
+        /*
 
         try {
-            pe.propagate(); // nb of pruned values : 593
-            pe.propagate(); // nb of pruned values : 593 (ok)
-            // pe.propagate(); // nb of pruned values : 596 (????!!!)
+            pe.initialize();
+            pe.propagate();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        int end = Arrays.stream(vars).reduce(0, (acc,next)-> acc + next.getDomainSize(), Integer::sum);
+        int end = 0;
+        for(IntVar v : model.retrieveIntVars(true)){
+            for(int value = v.getLB(); value <= v.getUB(); value=v.nextValue(value)){
+                end++;
+            }
+        }
         int res1 = start-end;
 
         System.out.println("(nb of pruned values): " + res1);
+         */
+        long time = System.currentTimeMillis();
+        /*
+        s.addStopCriterion(new Criterion() {
+            @Override
+            public boolean isMet() {
+                return System.currentTimeMillis() - time > 10000;
+            }
+        });
 
-        model.getEnvironment().worldPopUntil(worldId);
+         */
+        try {
+            s.solve();
+        } catch (Exception e){
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+        //((EfficiencyObserver) profiler).printResults();
+
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+        }
     }
+
 }
 
