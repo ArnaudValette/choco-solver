@@ -222,7 +222,12 @@ public class PropagationEngine extends AbstractEngine{
      *
      * @throws ContradictionException if a contradiction occurs
      */
-    public void propagate() throws ContradictionException {
+
+    public void propagate() throws ContradictionException{
+        basePropagation();
+    }
+
+    public void basePropagation() throws ContradictionException {
         propagateSat();
         insight.clear();
         activatePropagators();
