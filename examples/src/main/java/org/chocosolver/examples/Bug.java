@@ -45,7 +45,7 @@ public class Bug {
         try {
             XCSP x = new XCSP();
             String[] arg = {
-                    inst[0],
+                    inst[1],
                     "-pa", "0",
                     "-p", "1"};
             x.setUp(arg);
@@ -74,17 +74,17 @@ public class Bug {
             //ISingletonConsistencyStrategy real = new NSAC1Strategy().setWillConsumePasses(true);
             //ISingletonConsistencyStrategy real = new NSAC1Strategy();
             //ISingletonConsistencyStrategy real = new SAC1Strategy().setWillConsumePasses(true);
-            ISingletonConsistencyStrategy real = new SAC1Strategy();
-            //ISingletonConsistencyStrategy real = new SAC3Strategy();
+            //ISingletonConsistencyStrategy real = new SAC1Strategy();
+            ISingletonConsistencyStrategy real = new SAC3Strategy();
             //ISingletonConsistencyStrategy real = new RNSQStrategy();
             //ISingletonConsistencyStrategy real = new RsNSQStrategy();
-            //ISingletonConsistencyStrategy profiler = new EfficiencyObserver(real);
-            //real.setRef(profiler);
+            ISingletonConsistencyStrategy profiler = new EfficiencyObserver(real);
+            real.setRef(profiler);
 
             Solver s = model.getSolver();
 
 
-            model.getSolver().setEngine(new SingletonConsistencyEngine(model).setPropagationStrategy(real));
+            model.getSolver().setEngine(new SingletonConsistencyEngine(model).setPropagationStrategy(profiler));
             model.getSolver().reset();
 
 
@@ -126,7 +126,7 @@ public class Bug {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-        //((EfficiencyObserver) profiler).printResults();
+        ((EfficiencyObserver) profiler).printResults();
 
         }
         catch (Exception e){

@@ -4,14 +4,11 @@ import org.chocosolver.parser.xcsp.XCSP;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.propagation.PropagationEngine;
-import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
 import org.chocosolver.solver.propagation.consistencyStrategy.*;
 import org.chocosolver.solver.search.strategy.Search;
-import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDeg;
 import org.chocosolver.solver.variables.IntVar;
 
 import java.util.Arrays;
-import java.util.function.Function;
 
 public class Test {
     public static void main(String[] args) {
@@ -59,74 +56,44 @@ public class Test {
             Solver s =model.getSolver();
 
             IntVar[] vars = model.retrieveIntVars(true);
-            DomOverWDeg<IntVar> cacd = new DomOverWDeg<>(vars, 0);
             s.setSearch(Search.inputOrderLBSearch(vars));
+
             s.clearRestarter();
-            //x.getModel().getSolver().showSolutions();
-            //x.getModel().getSolver().showStatisticsDuringResolution(1000L);
-            //x.solve();
             Test.test(model);
-           //x.getModel().getSolver().printStatistics();
         } catch (Exception e){
 
         }
     }
 
     public static void test(Model model) {
-        NSAC1Strategy nsac1 = new NSAC1Strategy();
-        SAC1Strategy sac1 = new SAC1Strategy();
-        RNSQStrategy rnsq = new RNSQStrategy();
-        SAC3Strategy sac3 = new SAC3Strategy();
-        @SuppressWarnings("unchecked")
-        Function<Model, Void>[] f = (Function<Model, Void>[]) new Function[]{
-                (Function<Model, Void>) (m) -> {
-                    m.getSolver().setEngine(new SingletonConsistencyEngine(m).setPropagationStrategy(sac3));
-                    return null;
-                },
-                (Function<Model, Void>) (m) -> {
-                    m.getSolver().setEngine(new SingletonConsistencyEngine(m).setPropagationStrategy(sac1));
-                    return null;
-                },
-                (Function<Model, Void>) (m) -> {
-                    m.getSolver().setEngine(new SingletonConsistencyEngine(m).setPropagationStrategy(nsac1));
-                    return null;
-                },
-                (Function<Model, Void>) (m) -> {
-                    m.getSolver().setEngine(new SingletonConsistencyEngine(m).setPropagationStrategy(rnsq));
-                    return null;
-                },
-                (Function<Model, Void>) (m) -> {
-                    m.getSolver().setEngine(new TestSAC(m, null));
-                    return null;
-                },
-        };
 
-            IntVar[] vars = model.retrieveIntVars(true);
-            int start = Arrays.stream(vars).reduce(0, (acc,next)-> acc + next.getDomainSize(), Integer::sum);
-            f[4].apply(model);
-            model.getSolver().showDecisions();
-            PropagationEngine pe = model.getSolver().getEngine();
-            int worldId= model.getEnvironment().getWorldIndex();
-            model.getEnvironment().worldPush();
-            pe.initialize();
-            try {
-                pe.propagate();
-                pe.propagate();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            //vars = model.retrieveIntVars(true);
-            int end = Arrays.stream(vars).reduce(0, (acc,next)-> acc + next.getDomainSize(), Integer::sum);
-            int res1 = start-end;
+        //model.getSolver().setEngine(new SAC1(model,null));
 
-            System.out.println("(nb of pruned values): " + res1);
+        IntVar[] vars = model.retrieveIntVars(true);
+        int start = Arrays.stream(vars).reduce(0, (acc,next)-> acc + next.getDomainSize(), Integer::sum);
 
-            model.getEnvironment().worldPopUntil(worldId);
+        PropagationEngine pe = model.getSolver().getEngine();
 
+        int worldId= model.getEnvironment().getWorldIndex();
+        model.getEnvironment().worldPush();
 
-            //model.getSolver().solve();
+        pe.initialize();
 
-        //}
+        try {
+            pe.propagate();
+            pe.propagate();
+            pe.propagate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        int end = Arrays.stream(vars).reduce(0, (acc,next)-> acc + next.getDomainSize(), Integer::sum);
+        int res1 = start-end;
+
+        System.out.println("(nb of pruned values): " + res1);
+
+        model.getEnvironment().worldPopUntil(worldId);
+        //model.getSolver().solve();
+
     }
 
 }
