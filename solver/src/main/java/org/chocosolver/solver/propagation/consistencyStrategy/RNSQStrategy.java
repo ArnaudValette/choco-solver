@@ -22,13 +22,8 @@ public class RNSQStrategy extends VariableBasedStrategy {
         E=engine;
         ref().onBeforeAnything();
         E.doPropagate();
-        if(!initialized){
-            Q.reinit();
-            initialized = true;
-        }
-        else{
-            Q.optimizedRefresh((IntVar) E.getLastDecision());
-        }
+        initialized = true;
+        Q.reinit();
         ref().loop();
 
     }
@@ -45,6 +40,23 @@ public class RNSQStrategy extends VariableBasedStrategy {
     }
 
     @Override
+    public void onAfterInstantiation() throws ContradictionException {
+        E.doPropagate();
+        ref().onAfterInstantiationPropagation();
+        E.worldPopUntilNFlush(lastId);
+        ref().baseState();
+    }
+
+    @Override
+    public void onAfterInstantiationPropagation() throws ContradictionException {
+        /* if a neighbor of xi has singleton domain then apply AC to N(xi) */
+        if (E.foundSingletonDuringPropagation()) {
+            ref().onAfterSingletonFound();
+            E.doPropagate();
+        }
+    }
+
+    @Override
     public void onAfterSingletonFound(){
         E.setBlockLateScheduling(true);
         E.setCheckSingleton(false);
@@ -55,21 +67,6 @@ public class RNSQStrategy extends VariableBasedStrategy {
         }
     }
 
-    @Override
-    public void onAfterInstantiationPropagation() throws ContradictionException {
-        if (E.foundSingletonDuringPropagation()) {
-            ref().onAfterSingletonFound();
-            E.doPropagate();
-        }
-    }
-
-    @Override
-    public void onAfterInstantiation() throws ContradictionException {
-        E.doPropagate();
-        ref().onAfterInstantiationPropagation();
-        E.worldPopUntilNFlush(lastId);
-        ref().baseState();
-    }
 
 
     @Override

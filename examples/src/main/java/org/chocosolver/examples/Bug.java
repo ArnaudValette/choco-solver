@@ -4,8 +4,7 @@ package org.chocosolver.examples;
 import org.chocosolver.parser.xcsp.XCSP;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
-import org.chocosolver.solver.propagation.PropagationEngine;
-import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
+import org.chocosolver.solver.propagation.*;
 import org.chocosolver.solver.propagation.consistencyStrategy.*;
 import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.selectors.values.IntDomainMin;
@@ -45,7 +44,7 @@ public class Bug {
         try {
             XCSP x = new XCSP();
             String[] arg = {
-                    inst[1],
+                    inst[0],
                     "-pa", "0",
                     "-p", "1"};
             x.setUp(arg);
@@ -75,42 +74,21 @@ public class Bug {
             //ISingletonConsistencyStrategy real = new NSAC1Strategy();
             //ISingletonConsistencyStrategy real = new SAC1Strategy().setWillConsumePasses(true);
             //ISingletonConsistencyStrategy real = new SAC1Strategy();
-            ISingletonConsistencyStrategy real = new SAC3Strategy();
+            //ISingletonConsistencyStrategy real = new SAC3Strategy();
             //ISingletonConsistencyStrategy real = new RNSQStrategy();
             //ISingletonConsistencyStrategy real = new RsNSQStrategy();
-            ISingletonConsistencyStrategy profiler = new EfficiencyObserver(real);
-            real.setRef(profiler);
+            //ISingletonConsistencyStrategy profiler = new EfficiencyObserver(real);
+            //real.setRef(profiler);
 
             Solver s = model.getSolver();
 
 
-            model.getSolver().setEngine(new SingletonConsistencyEngine(model).setPropagationStrategy(profiler));
+            //model.getSolver().setEngine(new SingletonConsistencyEngine(model).setPropagationStrategy(profiler));
+            model.getSolver().setEngine(new SingletonConsistencyEngine(model).setPropagationStrategy(new SAC1Strategy()));
             model.getSolver().reset();
 
 
 
-        PropagationEngine pe = model.getSolver().getEngine();
-
-        /*
-
-        try {
-            pe.initialize();
-            pe.propagate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        int end = 0;
-        for(IntVar v : model.retrieveIntVars(true)){
-            for(int value = v.getLB(); value <= v.getUB(); value=v.nextValue(value)){
-                end++;
-            }
-        }
-        int res1 = start-end;
-
-        System.out.println("(nb of pruned values): " + res1);
-         */
-        long time = System.currentTimeMillis();
         /*
         s.addStopCriterion(new Criterion() {
             @Override
@@ -120,19 +98,54 @@ public class Bug {
         });
 
          */
+            //solveTest(model.getSolver());
+            prune(model);
+        }
+        catch (Exception e){
+            System.out.println(e);
+        }
+
+        //((EfficiencyObserver) profiler).printResults();
+    }
+
+        public static void solveTest(Solver s){
         try {
             s.solve();
+            s.printStatistics();
         } catch (Exception e){
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-        ((EfficiencyObserver) profiler).printResults();
+    }
 
+    public static void prune(Model model) {
+        PropagationEngine pe = model.getSolver().getEngine();
+
+
+        int start = 0;
+        for (IntVar v : model.retrieveIntVars(true)) {
+            for (int value = v.getLB(); value <= v.getUB(); value = v.nextValue(value)) {
+                start++;
+            }
         }
-        catch (Exception e){
+
+        try {
+            pe.initialize();
+            pe.propagate();
+        } catch (Exception e) {
             e.printStackTrace();
-            System.out.println(e.getMessage());
         }
+
+        int end = 0;
+        for (IntVar v : model.retrieveIntVars(true)) {
+            for (int value = v.getLB(); value <= v.getUB(); value = v.nextValue(value)) {
+                end++;
+            }
+        }
+        int res1 = start - end;
+
+        System.out.println("(nb of pruned values): " + res1);
+        long time = System.currentTimeMillis();
     }
 
 }
