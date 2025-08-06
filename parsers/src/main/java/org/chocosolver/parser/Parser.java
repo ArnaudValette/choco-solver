@@ -13,6 +13,7 @@ import org.chocosolver.parser.dimacs.ChocoDIMACS;
 import org.chocosolver.parser.flatzinc.ChocoFZN;
 import org.chocosolver.parser.mps.ChocoMPS;
 import org.chocosolver.parser.xcsp.ChocoXCSP;
+import org.chocosolver.parser.xcsp.CustomXCSP;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -115,7 +116,7 @@ public class Parser {
                     ChocoMPS.main(args);
                     break;
                 case 5:
-                    ChocoMPS.main(args);
+                    CustomXCSP.main(args);
                     break;
             }
         }
