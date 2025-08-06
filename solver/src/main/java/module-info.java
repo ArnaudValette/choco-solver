@@ -193,4 +193,6 @@ module org.chocosolver.solver {
     exports org.chocosolver.solver.propagation.consistencyStrategy;
     opens org.chocosolver.solver.propagation.consistencyStrategy to sizeof;
     exports org.chocosolver.util.benchmark;
+    exports org.chocosolver.solver.propagation.consistencyStrategy.benchmark;
+    opens org.chocosolver.solver.propagation.consistencyStrategy.benchmark to sizeof;
 }

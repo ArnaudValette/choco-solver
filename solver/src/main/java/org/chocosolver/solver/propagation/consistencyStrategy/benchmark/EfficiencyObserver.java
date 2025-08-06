@@ -7,23 +7,28 @@
  *
  * See LICENSE file in the project root for full license information.
  */
-package org.chocosolver.solver.propagation.consistencyStrategy;
+package org.chocosolver.solver.propagation.consistencyStrategy.benchmark;
 
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
+import org.chocosolver.solver.propagation.consistencyStrategy.ISingletonConsistencyStrategy;
 import org.chocosolver.solver.variables.Variable;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class EfficiencyObserver implements ISingletonConsistencyStrategy{
+/* Computes the time each method of an ISingletonConsistencyStrategy takes to run */
+public class EfficiencyObserver implements ISingletonConsistencyStrategy {
     ISingletonConsistencyStrategy strategy;
-    HashMap<String, ArrayList<Long>> data;
-    HashMap<String, Long> starts;
-    ArrayList<Integer> pruning;
-    int removes;
-
+    public HashMap<String, ArrayList<Long>> data;
+    public HashMap<String, Long> starts;
+    public ArrayList<Long> pruning;
+    public ArrayList<Long> size;
+    public long removes=0L;
+    public long propagations=0L;
+    public boolean isFirstProp=true;
+    public long firstPropTimer=0L;
 
 
     public EfficiencyObserver(ISingletonConsistencyStrategy strategy) {
@@ -31,6 +36,7 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy{
         this.data = new HashMap<>();
         this.starts = new HashMap<>();
         this.pruning = new ArrayList<>();
+        this.size = new ArrayList<>();
     }
 
     protected void profile(String label, boolean isStarting){
@@ -56,18 +62,27 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy{
 
     @Override
     public void propagate(SingletonConsistencyEngine engine) throws ContradictionException {
-        int sumStart = 0;
+        if(isFirstProp){
+            isFirstProp=false;
+            firstPropTimer=System.nanoTime();
+            System.out.println(firstPropTimer);
+        }
+        long sumStart = 0L;
         for(Variable v : engine.getVars()){
             sumStart+=v.getDomainSize();
         }
         profile("propagate", true);
         strategy.propagate(engine);
         profile("propagate", false);
-        int sumEnd=0;
+        long sumEnd=0L;
+        long tempSize = 0L;
         for(Variable v : engine.getVars()){
             sumEnd+=v.getDomainSize();
+            tempSize+=v.getDomainSize();
         }
         pruning.add(sumStart-sumEnd);
+        size.add(tempSize);
+        propagations++;
     }
 
     @Override
@@ -202,8 +217,8 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy{
             printTime("runs", d.size());
             System.out.println();
         }
-        int sum = 0;
-        for(int datum : pruning){
+        long sum = 0;
+        for(long datum : pruning){
             sum+=datum;
         }
         long time = 0;

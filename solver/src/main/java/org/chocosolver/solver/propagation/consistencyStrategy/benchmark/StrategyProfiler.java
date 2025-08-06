@@ -7,10 +7,9 @@
  *
  * See LICENSE file in the project root for full license information.
  */
-package org.chocosolver.solver.propagation.consistencyStrategy;
+package org.chocosolver.solver.propagation.consistencyStrategy.benchmark;
 
-import org.chocosolver.solver.exception.ContradictionException;
-import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
+import org.chocosolver.solver.propagation.consistencyStrategy.ISingletonConsistencyStrategy;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -19,6 +18,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayDeque;
 import java.util.Map;
 
+/* Simple proxy to track running time of Object methods */
 public class StrategyProfiler {
     @SuppressWarnings("unchecked")
     public static <T> T create(T target, Map<String, ArrayDeque<Long>> timings){

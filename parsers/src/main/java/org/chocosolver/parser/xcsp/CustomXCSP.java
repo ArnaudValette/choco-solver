@@ -14,6 +14,8 @@ import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.propagation.PropagationEngine;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
 import org.chocosolver.solver.propagation.consistencyStrategy.*;
+import org.chocosolver.solver.propagation.consistencyStrategy.benchmark.BenchmarkResults;
+import org.chocosolver.solver.propagation.consistencyStrategy.benchmark.EfficiencyObserver;
 import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.selectors.values.IntDomainMin;
 import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDeg;
@@ -73,9 +75,21 @@ public class CustomXCSP {
                 strategy.setWillConsumePasses(true);
                 System.out.println("Restrict to " + xscp.passes + " passes");
             }
-            engine.setPropagationStrategy(strategy);
+
+            EfficiencyObserver obs = new EfficiencyObserver(strategy);
+            BenchmarkResults res = new BenchmarkResults(engine, obs);
+            if(xscp.monitor){
+                strategy.setRef(obs);
+                engine.setPropagationStrategy(obs);
+            }
+            else{
+                engine.setPropagationStrategy(strategy);
+            }
             s.setEngine(engine);
             xscp.solve();
+            if(xscp.monitor){
+                res.main();
+            }
         }
     }
 }

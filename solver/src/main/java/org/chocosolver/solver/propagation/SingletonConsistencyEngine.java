@@ -25,6 +25,7 @@ import org.chocosolver.solver.search.strategy.decision.IntDecision;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Variable;
 import org.chocosolver.solver.variables.events.IEventType;
+import org.chocosolver.util.objects.queues.RQ;
 import org.chocosolver.util.objects.queues.ReinitQueue2;
 import org.chocosolver.util.objects.queues.ReinitialisableQueue;
 import org.jgrapht.alg.util.Triple;
@@ -127,8 +128,8 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     * */
 
     //ReinitQueue2<IntVar> PL = new ReinitQueue2<>();
-    ReinitialisableQueue<IntVar> PL = new ReinitialisableQueue<>();
-    ReinitialisableQueue<Pair<IntVar, Integer>> IL = new ReinitialisableQueue<>();
+    RQ<IntVar> PL = new ReinitQueue2<>();
+    RQ<Pair<IntVar, Integer>> IL = new ReinitQueue2<>();
 
     /*
      * Late Propagators
@@ -617,5 +618,9 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
 
     public int passPropagatorsSize(){
         return passPropagatorsList.size();
+    }
+
+    public Model getModel(){
+        return model;
     }
 }

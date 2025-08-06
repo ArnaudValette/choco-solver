@@ -189,6 +189,10 @@ public abstract class RegParser implements IParser {
 
     @Option(name = "-passes", aliases = {"--passes"}, usage = "-passes <number>")
     public int passes = 0;
+
+    @Option(name = "-monitor", aliases = {"--monitor"}, usage = "Monitor mode")
+    public boolean monitor;
+
     /**
      * Default settings to apply
      */
