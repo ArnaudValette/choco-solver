@@ -44,16 +44,6 @@ public class Parser {
             "5: XCSP3 custom")
     private int pa = 0;
 
-    @Option(name = "-sc", aliases = {"--strong-consistency"}, usage = "Strong consistency to enforce:\n" +
-            "0: none (default), " +
-            "1: SAC3," +
-            "2: SAC1," +
-            "3: RsNSQ"+
-            "4: RNSQ" +
-            "5: NSAC" +
-            "6: AC" +
-            "7: 1pSAC")
-    protected int sc = 0;
 
     public static void main(String[] args) throws Exception {
         System.out.printf("%s\n", Arrays.toString(args));
@@ -81,6 +71,10 @@ public class Parser {
             }
         }
         assert instance != null;
+        if(pa == 5){
+            CustomXCSP.main(args);
+            return;
+        }
         if (pa == 0) {
             Optional<String> part = getExtension(instance);
             if(part.isPresent()){
@@ -114,9 +108,6 @@ public class Parser {
                     break;
                 case 4:
                     ChocoMPS.main(args);
-                    break;
-                case 5:
-                    CustomXCSP.main(args);
                     break;
             }
         }

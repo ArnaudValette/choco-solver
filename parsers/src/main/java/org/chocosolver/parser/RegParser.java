@@ -177,6 +177,18 @@ public abstract class RegParser implements IParser {
     @Option(name = "--disable-shutdown-hook", usage = "Disable the shutdown hook.")
     protected boolean disableShutdownHook = false;
 
+    @Option(name = "-sc", aliases = {"--strong-consistency"}, usage = "Strong consistency to enforce:\n" +
+            "0: none (default), " +
+            "1: SAC3," +
+            "2: SAC1," +
+            "3: RsNSQ"+
+            "4: RNSQ" +
+            "5: NSAC" +
+            "6: AC")
+    public int sc = 0;
+
+    @Option(name = "-passes", aliases = {"--passes"}, usage = "-passes <number>")
+    public int passes = 0;
     /**
      * Default settings to apply
      */

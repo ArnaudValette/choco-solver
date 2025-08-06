@@ -11,6 +11,9 @@ package org.chocosolver.parser.xcsp;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
+import org.chocosolver.solver.propagation.PropagationEngine;
+import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
+import org.chocosolver.solver.propagation.consistencyStrategy.*;
 import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.selectors.values.IntDomainMin;
 import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDeg;
@@ -19,9 +22,7 @@ import org.chocosolver.solver.variables.IntVar;
 public class CustomXCSP {
     public static void main(String[] args) throws Exception {
         XCSP xscp = new XCSP();
-        String path = args[0];
-        String[] arguments = {path, "-pa", "0", "-p", "1"};
-        if(xscp.setUp(arguments)){
+        if(xscp.setUp(args)){
             xscp.createSolver();
             xscp.buildModel();
             Model model = xscp.getModel();
@@ -32,6 +33,48 @@ public class CustomXCSP {
                     Search.intVarSearch(cacd, new IntDomainMin(), vars)
             );
             s.clearRestarter();
+            SingletonConsistencyEngine engine = new SingletonConsistencyEngine(model);
+            AbstractSingletonStrategy strategy;
+            switch(xscp.sc){
+                case 0:
+                    strategy = new NoStrategy().setDoPropagate(false);
+                    System.out.println("Using brute-force");
+                    break;
+                case 1:
+                    strategy = new SAC3Strategy();
+                    System.out.println("Using SAC3");
+                    break;
+                case 2:
+                    strategy = new SAC1Strategy();
+                    System.out.println("Using SAC1");
+                    break;
+                case 3:
+                    strategy = new RsNSQStrategy();
+                    System.out.println("Using RsNSQ");
+                    break;
+                case 4:
+                    strategy = new RNSQStrategy();
+                    System.out.println("Using RNSQ");
+                    break;
+                case 5:
+                    strategy = new NSAC1Strategy();
+                    System.out.println("Using NSAC1");
+                    break;
+                case 6:
+                    strategy = new NoStrategy().setDoPropagate(true);
+                    System.out.println("Using AC");
+                    break;
+                default:
+                    strategy = new NoStrategy().setDoPropagate(true);
+                    System.out.println("Using AC");
+            }
+            if(xscp.passes !=0){
+                engine.setPasses(xscp.passes);
+                strategy.setWillConsumePasses(true);
+                System.out.println("Restrict to " + xscp.passes + " passes");
+            }
+            engine.setPropagationStrategy(strategy);
+            s.setEngine(engine);
             xscp.solve();
         }
     }
