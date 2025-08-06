@@ -192,4 +192,5 @@ module org.chocosolver.solver {
     opens org.chocosolver.solver.search.loop to sizeof;
     exports org.chocosolver.solver.propagation.consistencyStrategy;
     opens org.chocosolver.solver.propagation.consistencyStrategy to sizeof;
+    exports org.chocosolver.util.benchmark;
 }

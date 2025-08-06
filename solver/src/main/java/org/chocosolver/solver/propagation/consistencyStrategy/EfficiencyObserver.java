@@ -1,3 +1,12 @@
+/*
+ * This file is part of choco-solver, http://choco-solver.org/
+ *
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
+ *
+ * Licensed under the BSD 4-clause license.
+ *
+ * See LICENSE file in the project root for full license information.
+ */
 package org.chocosolver.solver.propagation.consistencyStrategy;
 
 import org.chocosolver.solver.exception.ContradictionException;
@@ -14,6 +23,7 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy{
     HashMap<String, Long> starts;
     ArrayList<Integer> pruning;
     int removes;
+
 
 
     public EfficiencyObserver(ISingletonConsistencyStrategy strategy) {
@@ -36,6 +46,14 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy{
             data.get(label).add(duration);
         }
     }
+    @Override
+    public void basePropagation() throws ContradictionException{
+        profile("basePropagation", true);
+        strategy.basePropagation();
+        profile("basePropagation", false);
+
+    }
+
     @Override
     public void propagate(SingletonConsistencyEngine engine) throws ContradictionException {
         int sumStart = 0;
@@ -178,7 +196,7 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy{
                     max=datum;
                 }
             }
-            printTime("average", sum/d.size());
+            printTime("average", sum/Math.max(d.size(),1));
             printTime("max", max);
             printTime("full", sum);
             printTime("runs", d.size());
@@ -192,8 +210,8 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy{
         for(long x : data.get("propagate")){
             time+= x;
         }
-        printTime("Pruning (average per propagation)", sum/pruning.size());
+        printTime("Pruning (average per propagation)", sum/Math.max(pruning.size(), 1));
         printTime("Nb of removeValue calls", removes);
-        printTime("Average time to prune values", time/(sum/pruning.size()) );
+        printTime("Average time to prune values", time/Math.max(sum/Math.max(pruning.size(),1),1));
     }
 }

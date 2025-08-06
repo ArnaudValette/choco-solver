@@ -9,23 +9,19 @@
  */
 package org.chocosolver.util.objects.queues;
 
+
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ReinitialisableQueue<T> implements RQ<T> {
-    int pos;
-    int end;
-    ArrayList<T> queue;
-    ArrayList<T> addendum;
+public class ReinitQueue2<T> implements RQ<T> {
+    ArrayDeque<T> queue;
     private boolean locked = false;
     Function<Void, Stream<T>> supplier;
     boolean hasSupplier= false;
 
-    public ReinitialisableQueue(){}
+    public ReinitQueue2(){}
 
     public void setSupplier(Function<Void, Stream<T>> s){
         if(!locked) {
@@ -40,12 +36,7 @@ public class ReinitialisableQueue<T> implements RQ<T> {
 
     public void reinit(){
         if(hasSupplier){
-            if(queue==null) {
-                queue = supplier.apply(null).collect(Collectors.toCollection(ArrayList::new));
-            }
-            pos=0;
-            end=queue.size();
-            addendum = new ArrayList<>();
+            queue = supplier.apply(null).collect(Collectors.toCollection(ArrayDeque::new));
         }
         else{
             throw new RuntimeException("Trying to reinitialise a ReinitialisableQueue without a supplier");
@@ -53,28 +44,23 @@ public class ReinitialisableQueue<T> implements RQ<T> {
     }
 
     public boolean isEmpty(){
-        return (pos>=end) && addendum.isEmpty();
+        return queue.isEmpty();
     }
 
     public T pop(){
-        if(pos>=end){
-            return addendum.remove(0);
-        }
-        T elem = queue.get(pos);
-        pos++;
-        return elem;
+        return queue.pop();
     }
 
     public void add(T t){
-        addendum.add(t);
+        queue.addLast(t);
     }
 
     public boolean contains(T t){
-        return addendum.contains(t);
+        return queue.contains(t);
     }
 
     public int size(){
-        return queue.size() + addendum.size();
+        return queue.size();
     }
 
 }

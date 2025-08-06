@@ -25,11 +25,14 @@ import org.chocosolver.solver.search.strategy.decision.IntDecision;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Variable;
 import org.chocosolver.solver.variables.events.IEventType;
+import org.chocosolver.util.objects.queues.ReinitQueue2;
 import org.chocosolver.util.objects.queues.ReinitialisableQueue;
 import org.jgrapht.alg.util.Triple;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /*****************************************************************************************************
  * TODO:
@@ -123,6 +126,7 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     * TODO: custom reinitialisable weighted queue datastructure with fast contains(x) method
     * */
 
+    //ReinitQueue2<IntVar> PL = new ReinitQueue2<>();
     ReinitialisableQueue<IntVar> PL = new ReinitialisableQueue<>();
     ReinitialisableQueue<Pair<IntVar, Integer>> IL = new ReinitialisableQueue<>();
 
@@ -162,25 +166,29 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         * Hybrid = 1 (hybrid between constraint and variable based)
         * still behave in such a way SAC is not idempotent and is slightly less performant than hybrid = 0*/
         hybrid = 0b10;
-        PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)).collect(Collectors.toCollection(ArrayDeque::new)));
-        IL.setSupplier((_void) ->{
-            ArrayDeque<Pair<IntVar, Integer>> queue = new ArrayDeque<>();
-            for(IntVar v : model.retrieveIntVars(true)){
-                for(int value=v.getLB(); value <= v.getUB(); value=v.nextValue(value)){
-                    queue.add(new Pair<>(v, value));
-                }
-            }
-            return queue;});
-        PL.setOptimizedRefresher((v)->neighborhoodQueue.get(v.getId()));
+        PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)));
+        IL.setSupplier((_void) -> Arrays.stream(model.retrieveIntVars(true))
+                    .flatMap(v ->
+                            {
+                                List<Pair<IntVar,Integer>> x = new ArrayList<>();
+                                for(int value = v.getLB(); value<=v.getUB(); value=v.nextValue(value)){
+                                    x.add(new Pair<>(v, value));
+                                }
+                                return x.stream();
+                            }));
+
         /*
-                Arrays.stream(model.retrieveIntVars(true))
-                        .flatMap(v -> IntStream.iterate(v.getLB(), val -> val <= v.getUB(), v::nextValue)
-                        .mapToObj(val -> new Pair<>(v, val)))
-                        .collect(Collectors.toCollection(ArrayDeque::new)));
+            ArrayList<Pair<IntVar, Integer>> queue = new ArrayList<>();
+            for(IntVar v : model.retrieveIntVars(true))
+                for(int value=v.getLB(); value <= v.getUB(); value=v.nextValue(value))
+                    queue.add(new Pair<>(v, value));
+            return queue;});
          */
 
-        PL.commitAndLock();
-        IL.commitAndLock();
+        //PL.setOptimizedRefresher((v)->neighborhoodQueue.get(v.getId()));
+
+        PL.lock();
+        IL.lock();
     }
 
     public SingletonConsistencyEngine(Model model){

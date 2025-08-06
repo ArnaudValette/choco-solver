@@ -1,9 +1,19 @@
+/*
+ * This file is part of choco-solver, http://choco-solver.org/
+ *
+ * Copyright (c) 2025, IMT Atlantique. All rights reserved.
+ *
+ * Licensed under the BSD 4-clause license.
+ *
+ * See LICENSE file in the project root for full license information.
+ */
 package org.chocosolver.solver.propagation.consistencyStrategy.types;
 
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
 import org.chocosolver.solver.propagation.consistencyStrategy.AbstractSingletonStrategy;
 import org.chocosolver.solver.variables.IntVar;
+import org.chocosolver.util.objects.queues.RQ;
 import org.chocosolver.util.objects.queues.ReinitialisableQueue;
 
 import java.util.BitSet;
@@ -15,7 +25,7 @@ public abstract class VariableBasedStrategy extends AbstractSingletonStrategy<In
     protected Set<IntVar> nx;
 
 
-    public void setQ(ReinitialisableQueue<IntVar> q) { Q=q; }
+    public void setQ(RQ<IntVar> q) { Q=q; }
 
     public void loop()throws ContradictionException {
         while(!Q.isEmpty()){
