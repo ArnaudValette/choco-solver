@@ -45,31 +45,31 @@ public class CustomXCSP {
             SingletonConsistencyEngine engine = new SingletonConsistencyEngine(model);
             AbstractSingletonStrategy strategy;
             switch(xscp.sc){
-                case 0:
+                case NONE:
                     strategy = new NoStrategy().setDoPropagate(false);
                     System.out.println("Using brute-force");
                     break;
-                case 1:
+                case SAC3:
                     strategy = new SAC3Strategy();
                     System.out.println("Using SAC3");
                     break;
-                case 2:
+                case SAC1:
                     strategy = new SAC1Strategy();
                     System.out.println("Using SAC1");
                     break;
-                case 3:
+                case RsNSQ:
                     strategy = new RsNSQStrategy();
                     System.out.println("Using RsNSQ");
                     break;
-                case 4:
+                case RNSQ:
                     strategy = new RNSQStrategy();
                     System.out.println("Using RNSQ");
                     break;
-                case 5:
+                case NSAC:
                     strategy = new NSAC1Strategy();
                     System.out.println("Using NSAC1");
                     break;
-                case 6:
+                case AC:
                     strategy = new NoStrategy().setDoPropagate(true);
                     System.out.println("Using AC");
                     break;

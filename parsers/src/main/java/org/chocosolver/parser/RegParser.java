@@ -185,7 +185,7 @@ public abstract class RegParser implements IParser {
             "4: RNSQ" +
             "5: NSAC" +
             "6: AC")
-    public int sc = 0;
+    public SC sc =SC.NONE;
 
     @Option(name = "-passes", aliases = {"--passes"}, usage = "-passes <number>")
     public int passes = 0;
@@ -199,6 +199,15 @@ public abstract class RegParser implements IParser {
     @Option(name = "-url", aliases = {"--server-url"}, usage = "-url <string>")
     public String url;
 
+    public enum SC{
+        NONE,
+        SAC3,
+        SAC1,
+        RsNSQ,
+        RNSQ,
+        NSAC,
+        AC
+    }
     /**
      * Default settings to apply
      */
