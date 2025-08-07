@@ -190,8 +190,14 @@ public abstract class RegParser implements IParser {
     @Option(name = "-passes", aliases = {"--passes"}, usage = "-passes <number>")
     public int passes = 0;
 
+    @Option(name = "-to", aliases = {"--timeout"}, usage = "-to <long>")
+    public long timeout = 0;
+
     @Option(name = "-monitor", aliases = {"--monitor"}, usage = "Monitor mode")
     public boolean monitor;
+
+    @Option(name = "-url", aliases = {"--server-url"}, usage = "-url <string>")
+    public String url;
 
     /**
      * Default settings to apply

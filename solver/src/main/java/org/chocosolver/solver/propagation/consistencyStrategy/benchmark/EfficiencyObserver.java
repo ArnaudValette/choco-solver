@@ -52,6 +52,10 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
             data.get(label).add(duration);
         }
     }
+    public ArrayList<Long> getTimeToPropagate(){
+        return data.get("propagate");
+    }
+
     @Override
     public void basePropagation() throws ContradictionException{
         profile("basePropagation", true);
