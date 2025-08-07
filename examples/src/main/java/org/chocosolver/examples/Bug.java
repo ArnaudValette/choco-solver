@@ -15,6 +15,7 @@ import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.propagation.*;
 import org.chocosolver.solver.propagation.consistencyStrategy.*;
+import org.chocosolver.solver.propagation.consistencyStrategy.benchmark.EfficiencyObserver;
 import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.selectors.values.IntDomainMin;
 import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDeg;
@@ -90,6 +91,7 @@ public class Bug {
 
 
     public static void main(String[] args) {
+        /*
         HashMap<String, BenchResult> results = new HashMap<>();
         File dir = new File(System.getProperty("user.home") + "/MiniCSP");
         File[] files = dir.listFiles();
@@ -130,6 +132,7 @@ public class Bug {
             }
             sleep(60000L);
         }
+         */
     }
 
     public static void test(Model model) {
