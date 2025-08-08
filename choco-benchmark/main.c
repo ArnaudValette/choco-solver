@@ -9,7 +9,7 @@
 
 
 char* types[]={"SAC1", "SAC3", "RsNSQ", "RNSQ", "NSAC", "AC"};
-char* env[]={"-Xmx6g","-XX:+UseSerialGC", "-Xint"};
+char* env[]={"-Xmx6g","-XX:+UseSerialGC"};
 
 int main(int argc, char** argv){
   char* url ="http://localhost:3000/api";
