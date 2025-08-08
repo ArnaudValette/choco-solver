@@ -8,15 +8,15 @@
 #include <sys/wait.h>
 
 
-char* types[7]={"SAC1", "SAC3", "RsNSQ", "RNSQ", "NSAC", "AC", "NONE"};
-char* env[]={"-Xmx512m","-XX:+UseSerialGC", "-Xint"};
+char* types[]={"SAC1", "SAC3", "RsNSQ", "RNSQ", "NSAC", "AC"};
+char* env[]={"-Xmx6g","-XX:+UseSerialGC", "-Xint"};
 
 int main(int argc, char** argv){
   char* url ="http://localhost:3000/api";
   char** paths;
   char*** cmds;
-  int TYPES_LEN=7;
-  size_t MAX_PARALLEL=10;
+  int TYPES_LEN=6;
+  size_t MAX_PARALLEL=80;
 
   if(argc <2){
     printf("Usage: %s instances_directory server_endpoint max_processes\n", argv[0]);
@@ -40,7 +40,7 @@ int main(int argc, char** argv){
     return -1;
   }
 
-  int cmds_len = generate_commands(n, 7, &cmds, paths, types, url);
+  int cmds_len = generate_commands(n, TYPES_LEN, &cmds, paths, types, url);
 
   int i = 0;
   int active = 0;
@@ -69,6 +69,9 @@ int main(int argc, char** argv){
           pids[j] =pid;
           active++;
           i++;
+          printf("**************************************************\n\n");
+          printf("\t\tLaunching experiment: %d / %d\n\n", i, cmds_len);
+          printf("**************************************************\n\n");
         } else{
           perror("fork fail !?");
           exit(1);
