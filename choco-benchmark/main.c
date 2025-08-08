@@ -23,11 +23,12 @@ int main(int argc, char** argv){
     return -1;
   }
 
-  if(argc == 3){
+  if(argc >= 3){
     url = argv[2];
+    printf("url = %s\n", argv[2]);
   }
 
-  if(argc == 4){
+  if(argc >= 4){
     MAX_PARALLEL = atoi(argv[3]);
   }
 
