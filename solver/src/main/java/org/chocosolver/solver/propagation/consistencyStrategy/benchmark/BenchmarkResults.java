@@ -35,8 +35,9 @@ public class BenchmarkResults {
     boolean committed = false;
     SingletonConsistencyEngine E;
     EfficiencyObserver O;
-    String instance;
-    String consistency;
+    public String instance;
+    public String consistency;
+    public Date date = new Date();
     long timeToSolve;
     long nodes;
     long variables;
@@ -96,7 +97,7 @@ public class BenchmarkResults {
         return "{ " +
                 toJSON("instance", instance) + ", " +
                 toJSON("consistency", consistency) + ", " +
-                toJSON("date", new Date()) + ", " +
+                toJSON("date", date) + ", " +
                 toJSON("solved", solved) + ", " +
                 toJSON("constraints", constraints) + ", " +
                 toJSON("variables", variables) + ", " +

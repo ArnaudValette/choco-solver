@@ -21,12 +21,13 @@ import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDeg;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.criteria.Criterion;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class CustomXCSP {
     public static void main(String[] args) throws Exception {
@@ -112,12 +113,20 @@ public class CustomXCSP {
             }
         }
     }
-    private static void handleResults(BenchmarkResults r, String url){
+    private static void handleResults(BenchmarkResults r, String url) throws IOException {
         if(url != null){
             postToUrl(r,url);
         }
         else{
-            System.out.println(r.toJSON());
+            String js = r.toJSON();
+            Path dir = Paths.get(System.getProperty("user.home"), "log");
+            Files.createDirectories(dir);
+            String name = (r.instance.toString() + r.consistency + r.date)
+                    .replaceAll("[^a-zA-Z0-9._-]", "_");
+            File f = dir.resolve(name).toFile();
+            try (BufferedWriter w = Files.newBufferedWriter(f.toPath())) {
+                w.write(js);
+            }
         }
 
     }
