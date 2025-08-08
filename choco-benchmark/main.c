@@ -16,7 +16,7 @@ int main(int argc, char** argv){
   char** paths;
   char*** cmds;
   int TYPES_LEN=6;
-  size_t MAX_PARALLEL=80;
+  size_t MAX_PARALLEL=20;
 
   if(argc <2){
     printf("Usage: %s instances_directory server_endpoint max_processes\n", argv[0]);

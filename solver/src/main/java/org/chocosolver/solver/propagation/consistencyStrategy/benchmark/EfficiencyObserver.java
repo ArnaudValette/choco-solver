@@ -58,9 +58,9 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
 
     @Override
     public void basePropagation() throws ContradictionException{
-        profile("basePropagation", true);
+        //profile("basePropagation", true);
         strategy.basePropagation();
-        profile("basePropagation", false);
+        //profile("basePropagation", false);
 
     }
 
@@ -91,23 +91,23 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
 
     @Override
     public void loop() throws ContradictionException {
-        profile("loop", true);
+        //profile("loop", true);
         strategy.loop();
-        profile("loop", false);
+        //profile("loop", false);
     }
 
     @Override
     public void task() throws ContradictionException {
-        profile("task",true);
+        //profile("task",true);
         strategy.task();
-        profile("task", false);
+        //profile("task", false);
     }
 
     @Override
     public boolean queueHandler(boolean changed) {
-        profile("task",true);
+        //profile("queueHandler",true);
         boolean res = strategy.queueHandler(changed);
-        profile("queueHandler",false);
+        //profile("queueHandler",false);
         return res;
 
     }
@@ -119,73 +119,73 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
 
     @Override
     public void setRef(ISingletonConsistencyStrategy ref) {
-        profile("setRef",true);
+        //profile("setRef",true);
         strategy.setRef(ref);
-        profile("setRef",false);
+        //profile("setRef",false);
     }
 
     @Override
     public void onBeforeAnything() {
-        profile("onBeforeAnything",true);
+        //profile("onBeforeAnything",true);
         strategy.onBeforeAnything();
-        profile("onBeforeAnything",false);
+        //profile("onBeforeAnything",false);
     }
 
     @Override
     public void onBeforeInstantiation() {
-        profile("onBeforeInstantiation",true);
+        //profile("onBeforeInstantiation",true);
         strategy.onBeforeInstantiation();
-        profile("onBeforeInstantiation",false);
+        //profile("onBeforeInstantiation",false);
     }
 
     @Override
     public void onAfterInstantiation() throws ContradictionException {
-        profile("onAfterInstantiation",true);
+        //profile("onAfterInstantiation",true);
         strategy.onAfterInstantiation();
-        profile("onAfterInstantiation",false);
+        //profile("onAfterInstantiation",false);
     }
 
     @Override
     public void onBeforeRemoval() {
-        profile("onBeforeRemoval",true);
+        //profile("onBeforeRemoval",true);
         strategy.onBeforeRemoval();
-        profile("onBeforeRemoval",false);
+        //profile("onBeforeRemoval",false);
     }
 
     @Override
     public void onAfterRemoval() throws ContradictionException {
         removes++;
-        profile("onAfterRemoval",true);
+        //profile("onAfterRemoval",true);
         strategy.onAfterRemoval();
-        profile("onAfterRemoval",false);
+        //profile("onAfterRemoval",false);
     }
 
     @Override
     public void onAfterSingletonFound() {
-        profile("onAfterSingletonFound",true);
+        //profile("onAfterSingletonFound",true);
         strategy.onAfterSingletonFound();
-        profile("onAfterSingletonFound",false);
+        //profile("onAfterSingletonFound",false);
     }
 
     @Override
     public void onAfterInstantiationPropagation() throws ContradictionException {
-        profile("onAfterInstantiationPropagation",true);
+        //profile("onAfterInstantiationPropagation",true);
         strategy.onAfterInstantiationPropagation();
-        profile("onAfterInstantiationPropagation",false);
+        //profile("onAfterInstantiationPropagation",false);
     }
 
     @Override
     public void buildBranch() {
-        profile("buildBranch",true);
+        //profile("buildBranch",true);
         strategy.buildBranch();
-        profile("buildBranch",false);
+        //profile("buildBranch",false);
     }
 
     @Override
     public void baseState() {
-        profile("baseState",true);
+        //profile("baseState",true);
         strategy.baseState();
-        profile("baseState",false);
+        //profile("baseState",false);
     }
 
     private void printTime(String label, long value){
