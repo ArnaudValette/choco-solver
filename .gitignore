@@ -174,3 +174,5 @@ $RECYCLE.BIN/
 *.tokens
 /solver/src/main/java/org/chocosolver/solver/propagation/consistencyStrategy/old/RNSQ
 /solver/src/main/java/org/chocosolver/solver/propagation/consistencyStrategy/old/
+/choco-benchmark/benchmark
+/choco-benchmark/compile_commands.json
