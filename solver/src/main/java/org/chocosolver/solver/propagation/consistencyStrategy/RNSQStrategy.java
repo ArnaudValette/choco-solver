@@ -85,9 +85,7 @@ public class RNSQStrategy extends VariableBasedStrategy {
     public boolean queueHandler(boolean changed){
         if(changed){
             for(IntVar u : nx){
-                if(!Q.contains(u)) {
-                    Q.add(u);
-                }
+                Q.add(u);
             }
         }
         return changed;
@@ -99,4 +97,8 @@ public class RNSQStrategy extends VariableBasedStrategy {
         /* TODO: passes*/
     }
 
+    @Override
+    public boolean _isNeighborhoodAlgo() {
+        return true;
+    }
 }

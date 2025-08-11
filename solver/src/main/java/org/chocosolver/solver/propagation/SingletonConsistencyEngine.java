@@ -24,15 +24,11 @@ import org.chocosolver.solver.search.strategy.decision.IntDecision;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.solver.variables.Variable;
 import org.chocosolver.solver.variables.events.IEventType;
-import org.chocosolver.util.objects.queues.RQ;
-import org.chocosolver.util.objects.queues.ReinitQueue2;
-import org.chocosolver.util.objects.queues.ReinitialisableQueue;
+import org.chocosolver.util.objects.queues.EfficientQueue;
 import org.jgrapht.alg.util.Triple;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /*****************************************************************************************************
  * TODO:
@@ -127,8 +123,12 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     * */
 
     //ReinitQueue2<IntVar> PL = new ReinitQueue2<>();
-    RQ<IntVar> PL = new ReinitQueue2<>();
-    RQ<Pair<IntVar, Integer>> IL = new ReinitQueue2<>();
+    //RQ<IntVar> PL = new ReinitQueue2<>();
+    //RQ<Pair<IntVar, Integer>> IL = new ReinitQueue2<>();
+
+    EfficientQueue<IntVar> PL;
+
+    EfficientQueue<Pair<IntVar,Integer>> IL;
 
     /*
      * Late Propagators
@@ -166,6 +166,27 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         * Hybrid = 1 (hybrid between constraint and variable based)
         * still behave in such a way SAC is not idempotent and is slightly less performant than hybrid = 0*/
         hybrid = 0b10;
+        IntVar[] vars = getVars();
+
+        PL = new EfficientQueue<>(vars);
+
+        int size = vars.length;
+        int doms = 0;
+        for(int i = 0; i < size; i++){
+            doms += vars[i].getDomainSize();
+        }
+
+        Pair<IntVar, Integer>[] pairs = (Pair<IntVar, Integer>[]) new Pair[doms];
+        int i = 0;
+        for(IntVar v : vars){
+            for(int value = v.getLB(); value <= v.getUB(); value=v.nextValue(value)){
+                pairs[i] = new Pair<>(v, value);
+                i++;
+            }
+        }
+        IL = new EfficientQueue<>(pairs);
+
+        /*
         PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)));
         IL.setSupplier((_void) -> Arrays.stream(model.retrieveIntVars(true))
                     .flatMap(v ->
@@ -177,18 +198,17 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
                                 return x.stream();
                             }));
 
-        /*
             ArrayList<Pair<IntVar, Integer>> queue = new ArrayList<>();
             for(IntVar v : model.retrieveIntVars(true))
                 for(int value=v.getLB(); value <= v.getUB(); value=v.nextValue(value))
                     queue.add(new Pair<>(v, value));
             return queue;});
-         */
 
         //PL.setOptimizedRefresher((v)->neighborhoodQueue.get(v.getId()));
 
         PL.lock();
         IL.lock();
+        */
     }
 
     public SingletonConsistencyEngine(Model model){
@@ -280,12 +300,13 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     public void initialize() throws SolverException {
         /* TODO: externalize this */
         super.initialize();
+
         props = propagators;
 
         /*
          * Pour chaque variable, blacklister tous les propagateurs (par défaut)
          * */
-        if(propagationStrategy instanceof RNSQStrategy || propagationStrategy instanceof RsNSQStrategy || propagationStrategy instanceof NSAC1Strategy) {
+        if(propagationStrategy._isNeighborhoodAlgo()) {
             for (IntVar v : model.retrieveIntVars(true)) {
                 SCHEDULE_NSAC.put(v.getId(), new BitSet());
                 SCHEDULE_DIRECT_ONLY.put(v.getId(), new BitSet());

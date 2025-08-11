@@ -11,15 +11,13 @@ package org.chocosolver.solver.propagation.consistencyStrategy.types;
 
 import org.chocosolver.solver.constraints.graph.symmbreaking.Pair;
 import org.chocosolver.solver.exception.ContradictionException;
-import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
 import org.chocosolver.solver.propagation.consistencyStrategy.AbstractSingletonStrategy;
 import org.chocosolver.solver.variables.IntVar;
-import org.chocosolver.util.objects.queues.RQ;
-import org.chocosolver.util.objects.queues.ReinitialisableQueue;
+import org.chocosolver.util.objects.queues.EfficientQueue;
 
 public abstract class PairBasedStrategy extends AbstractSingletonStrategy<Pair<IntVar,Integer>> {
 
-    public void setQ(RQ<Pair<IntVar,Integer>> q) {
+    public void setQ(EfficientQueue<Pair<IntVar,Integer>> q) {
         Q=q;
     }
 

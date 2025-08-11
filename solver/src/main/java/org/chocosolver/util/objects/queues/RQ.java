@@ -17,6 +17,12 @@ public interface RQ<T> {
     void setSupplier(Function<Void, Stream<T>> s);
     void lock();
 
+    default T peek(){
+        throw new UnsupportedOperationException();
+    }
+    default void consumePeekedValue(){
+    }
+
     void reinit();
     boolean isEmpty();
     T pop();

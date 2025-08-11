@@ -179,4 +179,9 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
         }
         printTime("Nb of removeValue calls", removes);
     }
+
+    @Override
+    public boolean _isNeighborhoodAlgo() {
+        return strategy._isNeighborhoodAlgo();
+    }
 }

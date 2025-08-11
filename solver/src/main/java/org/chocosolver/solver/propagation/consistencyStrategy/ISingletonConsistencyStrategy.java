@@ -39,4 +39,7 @@ public interface ISingletonConsistencyStrategy {
     default void buildBranch(){}
 
     void baseState();
+    default boolean _isNeighborhoodAlgo(){
+      return false;
+    }
 }

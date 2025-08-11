@@ -66,7 +66,7 @@ public class Bug {
             s.showStatisticsDuringResolution(1000L);
             try {
                 model.getSolver().reset();
-                ISingletonConsistencyStrategy real = new SAC3Strategy();
+                ISingletonConsistencyStrategy real = new NSAC1Strategy();
 
                 EfficiencyObserver profiler = new EfficiencyObserver(real);
                 real.setRef(profiler);
@@ -77,6 +77,7 @@ public class Bug {
                 model.getSolver().solve();
                 res.commit();
                 System.out.println(res.toJSON());
+                model.getSolver().printStatistics();
             }
             catch (Exception e){
                 System.out.println(e);

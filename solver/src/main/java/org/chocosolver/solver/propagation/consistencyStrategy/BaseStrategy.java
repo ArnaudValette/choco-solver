@@ -12,6 +12,7 @@ package org.chocosolver.solver.propagation.consistencyStrategy;
 
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
+import org.chocosolver.util.objects.queues.EfficientQueue;
 import org.chocosolver.util.objects.queues.RQ;
 import org.chocosolver.util.objects.queues.ReinitialisableQueue;
 import org.jgrapht.alg.util.Pair;
@@ -19,7 +20,7 @@ import org.jgrapht.alg.util.Pair;
 import java.util.ArrayList;
 
 public abstract class BaseStrategy<T>  implements ISingletonConsistencyStrategy{
-    protected RQ<T> Q;
+    protected EfficientQueue<T> Q;
     protected boolean changed=false;
     public ISingletonConsistencyStrategy ref;
 
@@ -31,5 +32,5 @@ public abstract class BaseStrategy<T>  implements ISingletonConsistencyStrategy{
         this.ref = ref;
     }
 
-    public abstract void setQ(RQ<T> Q);
+    public abstract void setQ(EfficientQueue<T> Q);
 }

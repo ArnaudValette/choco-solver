@@ -19,4 +19,9 @@ public class NSAC1Strategy extends SAC1Strategy{
         E.setDirectPropsScheduling(nsac);
         E.setDoFilterScheduling(true);
     }
+
+    @Override
+    public boolean _isNeighborhoodAlgo() {
+        return true;
+    }
 }
