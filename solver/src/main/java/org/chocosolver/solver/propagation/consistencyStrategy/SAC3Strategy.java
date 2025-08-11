@@ -29,20 +29,21 @@ public class SAC3Strategy extends PairBasedStrategy {
         int i = 0;
         int t = Q.size();
         while(i<t) {
-            Pair<IntVar, Integer> p = Q.peek();
+            Pair<IntVar, Integer> p = Q.pop();
             IntVar Xn = p.getA();
             Integer Am = p.getB();
             i++;
-            if(Xn.contains(Am)) {
-                Q.pop();
-                try {
-                    E.worldPush();
-                    instantiate(Xn, Am);
-                    E.doPropagate();
-                } catch (ContradictionException ignore) {
-                    Q.add(p);
-                    break;
-                }
+            if(!Xn.contains(Am)){
+                Q.add(p);
+                continue;
+            }
+            try {
+                E.worldPush();
+                instantiate(Xn, Am);
+                E.doPropagate();
+            } catch (ContradictionException ignore) {
+                Q.add(p);
+                break;
             }
         }
         E.worldPopUntilNFlush(lastId);

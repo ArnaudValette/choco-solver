@@ -29,9 +29,11 @@ public abstract class VariableBasedStrategy extends AbstractSingletonStrategy<In
         while(!Q.isEmpty()){
             changed=false;
             IntVar v = Q.pop();
-            rnsac=E.getDirectOnlyBlacklist(v);
-            nsac=E.getNsacBlacklist(v);
-            nx = E.getNeighborhood(v);
+            if(_isNeighborhoodAlgo()) {
+                rnsac = E.getDirectOnlyBlacklist(v);
+                nsac = E.getNsacBlacklist(v);
+                nx = E.getNeighborhood(v);
+            }
             for(int value = v.getLB(); value <= v.getUB(); value=v.nextValue(value)){
                 Xi = v; Aj = value;
                 ref().task();
