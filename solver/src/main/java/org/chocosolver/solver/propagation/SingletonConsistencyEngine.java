@@ -16,8 +16,7 @@ import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.constraints.graph.symmbreaking.Pair;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.exception.SolverException;
-import org.chocosolver.solver.propagation.consistencyStrategy.AbstractSingletonStrategy;
-import org.chocosolver.solver.propagation.consistencyStrategy.ISingletonConsistencyStrategy;
+import org.chocosolver.solver.propagation.consistencyStrategy.*;
 import org.chocosolver.solver.propagation.consistencyStrategy.types.PairBasedStrategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.types.VariableBasedStrategy;
 import org.chocosolver.solver.search.strategy.assignments.DecisionOperatorFactory;
@@ -113,11 +112,11 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     HashMap<Integer, BitSet> SCHEDULE_NSAC = new HashMap<>();
     BitSet defaultSubNeighborhood = new BitSet();
 
-    HashMap<Integer, Set<Pair<IntVar, Integer>>> neighborhood = new HashMap<>();
+    //HashMap<Integer, Set<Pair<IntVar, Integer>>> neighborhood = new HashMap<>();
     private final HashMap<Integer, Set<IntVar>> _neighborhood = new HashMap<>();
     List<Propagator<? extends Variable>> props = new ArrayList<>();
 
-    HashMap<Integer, ArrayDeque<IntVar>> neighborhoodQueue= new HashMap<>();
+    //HashMap<Integer, ArrayDeque<IntVar>> neighborhoodQueue= new HashMap<>();
 
     /*
     * PendingLists
@@ -286,87 +285,80 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         /*
          * Pour chaque variable, blacklister tous les propagateurs (par défaut)
          * */
-
-        for (IntVar v : model.retrieveIntVars(true)) {
-            SCHEDULE_NSAC.put(v.getId(), new BitSet());
-            SCHEDULE_DIRECT_ONLY.put(v.getId(), new BitSet());
-            BLOCK_SCHEDULING.put(v.getId(), new BitSet());
-            for (Propagator<?> prop : props) {
-                SCHEDULE_NSAC.get(v.getId()).set(prop.hashCode());
-                SCHEDULE_DIRECT_ONLY.get(v.getId()).set(prop.hashCode());
-                BLOCK_SCHEDULING.get(v.getId()).set(prop.hashCode());
-            }
-        }
-
-        for (Propagator<?> p : props) {
-            /*
-             * Pour chaque propagateur,
-             * l'ôter de la blacklist des variables qu'il concerne
-             * */
-            for (Variable v : p.getVars()) {
-
-                /* P concerne Xi */
-                SCHEDULE_DIRECT_ONLY.get(v.getId()).clear(p.hashCode());
-                /* P est dans NSAC de N(Xi) */
-                SCHEDULE_NSAC.get(v.getId()).clear(p.hashCode());
-
-                if (!neighborhood.containsKey(v.getId())) {
-                    /* HM init: V */
-                    neighborhoodQueue.put(v.getId(), new ArrayDeque<>());
-                    neighborhood.put(v.getId(), new HashSet<>());
-                    _neighborhood.put(v.getId(), new HashSet<>());
-                    //RESTRICT_TO_NX.put((IntVar) v, new BitSet());
+        if(propagationStrategy instanceof RNSQStrategy || propagationStrategy instanceof RsNSQStrategy || propagationStrategy instanceof NSAC1Strategy) {
+            for (IntVar v : model.retrieveIntVars(true)) {
+                SCHEDULE_NSAC.put(v.getId(), new BitSet());
+                SCHEDULE_DIRECT_ONLY.put(v.getId(), new BitSet());
+                BLOCK_SCHEDULING.put(v.getId(), new BitSet());
+                for (Propagator<?> prop : props) {
+                    SCHEDULE_NSAC.get(v.getId()).set(prop.hashCode());
+                    SCHEDULE_DIRECT_ONLY.get(v.getId()).set(prop.hashCode());
+                    BLOCK_SCHEDULING.get(v.getId()).set(prop.hashCode());
                 }
+            }
 
+            for (Propagator<?> p : props) {
                 /*
-                 * Pour chaque variable, trouver ses voisines
+                 * Pour chaque propagateur,
+                 * l'ôter de la blacklist des variables qu'il concerne
                  * */
-                for (Variable u : p.getVars()) {
-                    /* U et V sont voisines par P */
-                    if (!u.equals(v)) {
-                        IntVar variable = (IntVar) u;
-                        for(int value = variable.getLB(); value <= variable.getUB(); value = variable.nextValue(value)) {
-                            neighborhood.get(v.getId()).add(new Pair<>(variable, value));
+                for (Variable v : p.getVars()) {
+
+                    /* P concerne Xi */
+                    SCHEDULE_DIRECT_ONLY.get(v.getId()).clear(p.hashCode());
+                    /* P est dans NSAC de N(Xi) */
+                    SCHEDULE_NSAC.get(v.getId()).clear(p.hashCode());
+
+                    if (!_neighborhood.containsKey(v.getId())) {
+                        _neighborhood.put(v.getId(), new HashSet<>());
+                    }
+
+                    /*
+                     * Pour chaque variable, trouver ses voisines
+                     * */
+                    for (Variable u : p.getVars()) {
+                        /* U et V sont voisines par P */
+                        if (!u.equals(v)) {
+                            IntVar variable = (IntVar) u;
+                            _neighborhood.get(v.getId()).add(variable);
                         }
-                        _neighborhood.get(v.getId()).add(variable);
-                        neighborhoodQueue.get(v.getId()).add(variable);
                     }
                 }
+                /* Initialiser subNeighborhood : all set */
+                defaultSubNeighborhood.set(p.hashCode());
+
+                /*
+                 * \og P concerne Xi \fg n'est pas une condition suffisante pour trouver tous les propagateurs
+                 * qui sont dans le NSAC de N(Xi).
+                 *
+                 * The problem PN = (XN U {Xi}, CN ) is arc consistent, where XN is the neighbour-
+                 * hood of Xi and CN is the set of all constraints whose scope
+                 * includes at least two members of the set XN U {Xi}.
+                 *
+                 * https://cdn.aaai.org/ocs/12807/12807-57630-1-PB.pdf
+                 *
+                 * Nous travaillons sur blacklistMapIndirect en vue d'autoriser ces contraintes dont le scope
+                 * concerne au moins deux membres de XN U {Xi} sans nécessairement concerner Xi (traité au dessus).
+                 *
+                 * Autrement dit, il nous faut rajouter les contraintes dont le scope concerne au moins deux membres
+                 * de XN \ {Xi}.
+                 * */
             }
-            /* Initialiser subNeighborhood : all set */
-            defaultSubNeighborhood.set(p.hashCode());
 
-            /*
-             * \og P concerne Xi \fg n'est pas une condition suffisante pour trouver tous les propagateurs
-             * qui sont dans le NSAC de N(Xi).
-             *
-             * The problem PN = (XN U {Xi}, CN ) is arc consistent, where XN is the neighbour-
-             * hood of Xi and CN is the set of all constraints whose scope
-             * includes at least two members of the set XN U {Xi}.
-             *
-             * https://cdn.aaai.org/ocs/12807/12807-57630-1-PB.pdf
-             *
-             * Nous travaillons sur blacklistMapIndirect en vue d'autoriser ces contraintes dont le scope
-             * concerne au moins deux membres de XN U {Xi} sans nécessairement concerner Xi (traité au dessus).
-             *
-             * Autrement dit, il nous faut rajouter les contraintes dont le scope concerne au moins deux membres
-             * de XN \ {Xi}.
-             * */
-        }
-
-        for (IntVar v : model.retrieveIntVars(true)) {
-            Set<IntVar> nv = _neighborhood.get(v.getId());
-            if (nv != null) {
-                for (Propagator<?> p : props) {
-                    Set<Variable> propSet = Arrays.stream(p.getVars()).collect(Collectors.toSet());
-                    int matches = 0;
-                    for(Variable propVar : propSet){
-                        if(nv.contains((IntVar) propVar)){
-                            matches++;
-                        }
-                        if(matches >= 2){
-                            SCHEDULE_NSAC.get(v.getId()).clear(p.hashCode());
-                            break;
+            for (IntVar v : model.retrieveIntVars(true)) {
+                Set<IntVar> nv = _neighborhood.get(v.getId());
+                if (nv != null) {
+                    for (Propagator<?> p : props) {
+                        Set<Variable> propSet = Arrays.stream(p.getVars()).collect(Collectors.toSet());
+                        int matches = 0;
+                        for (Variable propVar : propSet) {
+                            if (nv.contains((IntVar) propVar)) {
+                                matches++;
+                            }
+                            if (matches >= 2) {
+                                SCHEDULE_NSAC.get(v.getId()).clear(p.hashCode());
+                                break;
+                            }
                         }
                     }
                 }
@@ -488,9 +480,11 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         return SCHEDULE_NSAC.get(v.getId());
     }
 
+    /*
     public Set<Pair<IntVar, Integer>> getNeighborhoodAsPairs(Variable v){
         return neighborhood.get(v.getId());
     }
+     */
 
     public Set<IntVar> getNeighborhood(Variable v){
         return _neighborhood.get(v.getId());

@@ -23,8 +23,6 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
     ISingletonConsistencyStrategy strategy;
     public HashMap<String, ArrayList<Long>> data;
     public HashMap<String, Long> starts;
-    public ArrayList<Long> pruning;
-    public ArrayList<Long> size;
     public long removes=0L;
     public long propagations=0L;
     public boolean isFirstProp=true;
@@ -35,8 +33,6 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
         this.strategy = strategy;
         this.data = new HashMap<>();
         this.starts = new HashMap<>();
-        this.pruning = new ArrayList<>();
-        this.size = new ArrayList<>();
     }
 
     protected void profile(String label, boolean isStarting){
@@ -52,15 +48,14 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
             data.get(label).add(duration);
         }
     }
+
     public ArrayList<Long> getTimeToPropagate(){
         return data.get("propagate");
     }
 
     @Override
     public void basePropagation() throws ContradictionException{
-        //profile("basePropagation", true);
         strategy.basePropagation();
-        //profile("basePropagation", false);
 
     }
 
@@ -69,45 +64,26 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
         if(isFirstProp){
             isFirstProp=false;
             firstPropTimer=System.nanoTime();
-            System.out.println(firstPropTimer);
-        }
-        long sumStart = 0L;
-        for(Variable v : engine.getVars()){
-            sumStart+=v.getDomainSize();
         }
         profile("propagate", true);
         strategy.propagate(engine);
         profile("propagate", false);
-        long sumEnd=0L;
-        long tempSize = 0L;
-        for(Variable v : engine.getVars()){
-            sumEnd+=v.getDomainSize();
-            tempSize+=v.getDomainSize();
-        }
-        pruning.add(sumStart-sumEnd);
-        size.add(tempSize);
         propagations++;
     }
 
     @Override
     public void loop() throws ContradictionException {
-        //profile("loop", true);
         strategy.loop();
-        //profile("loop", false);
     }
 
     @Override
     public void task() throws ContradictionException {
-        //profile("task",true);
         strategy.task();
-        //profile("task", false);
     }
 
     @Override
     public boolean queueHandler(boolean changed) {
-        //profile("queueHandler",true);
         boolean res = strategy.queueHandler(changed);
-        //profile("queueHandler",false);
         return res;
 
     }
@@ -119,73 +95,53 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
 
     @Override
     public void setRef(ISingletonConsistencyStrategy ref) {
-        //profile("setRef",true);
         strategy.setRef(ref);
-        //profile("setRef",false);
     }
 
     @Override
     public void onBeforeAnything() {
-        //profile("onBeforeAnything",true);
         strategy.onBeforeAnything();
-        //profile("onBeforeAnything",false);
     }
 
     @Override
     public void onBeforeInstantiation() {
-        //profile("onBeforeInstantiation",true);
         strategy.onBeforeInstantiation();
-        //profile("onBeforeInstantiation",false);
     }
 
     @Override
     public void onAfterInstantiation() throws ContradictionException {
-        //profile("onAfterInstantiation",true);
         strategy.onAfterInstantiation();
-        //profile("onAfterInstantiation",false);
     }
 
     @Override
     public void onBeforeRemoval() {
-        //profile("onBeforeRemoval",true);
         strategy.onBeforeRemoval();
-        //profile("onBeforeRemoval",false);
     }
 
     @Override
     public void onAfterRemoval() throws ContradictionException {
-        removes++;
-        //profile("onAfterRemoval",true);
         strategy.onAfterRemoval();
-        //profile("onAfterRemoval",false);
+        removes++;
     }
 
     @Override
     public void onAfterSingletonFound() {
-        //profile("onAfterSingletonFound",true);
         strategy.onAfterSingletonFound();
-        //profile("onAfterSingletonFound",false);
     }
 
     @Override
     public void onAfterInstantiationPropagation() throws ContradictionException {
-        //profile("onAfterInstantiationPropagation",true);
         strategy.onAfterInstantiationPropagation();
-        //profile("onAfterInstantiationPropagation",false);
     }
 
     @Override
     public void buildBranch() {
-        //profile("buildBranch",true);
         strategy.buildBranch();
-        //profile("buildBranch",false);
     }
 
     @Override
     public void baseState() {
-        //profile("baseState",true);
         strategy.baseState();
-        //profile("baseState",false);
     }
 
     private void printTime(String label, long value){
@@ -221,16 +177,6 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
             printTime("runs", d.size());
             System.out.println();
         }
-        long sum = 0;
-        for(long datum : pruning){
-            sum+=datum;
-        }
-        long time = 0;
-        for(long x : data.get("propagate")){
-            time+= x;
-        }
-        printTime("Pruning (average per propagation)", sum/Math.max(pruning.size(), 1));
         printTime("Nb of removeValue calls", removes);
-        printTime("Average time to prune values", time/Math.max(sum/Math.max(pruning.size(),1),1));
     }
 }

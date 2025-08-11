@@ -10,27 +10,11 @@
 package org.chocosolver.solver.propagation.consistencyStrategy.benchmark;
 
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
-import org.chocosolver.solver.propagation.consistencyStrategy.ISingletonConsistencyStrategy;
-import org.chocosolver.solver.propagation.consistencyStrategy.SAC3Strategy;
 
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 
-/* Should provide:
-* time to solve
-* nodes
-* fails
-* number of propagations (PropagationEngine)
-* number of propagations (SingletonConsistencyEngine)
-* average number of pruned values per propagation
-* average number of pruned values per second
-*
-* time to propagate (Long[])
-*
-* would be nice to find a way to represent the size of the problem at each propagation,
-* we could then show the evolution of a problem during resolution
-* */
 public class BenchmarkResults {
     boolean committed = false;
     SingletonConsistencyEngine E;
@@ -47,11 +31,7 @@ public class BenchmarkResults {
     long _propagations;
     long propagations;
     double averagePropPerSeconds;
-    double averagePerProp;
-    double averagePerSeconds;
     List<Long> propData;
-    List<Long> sizeData;
-    List<Long> pruneData;
     boolean solved;
 
 
@@ -69,14 +49,9 @@ public class BenchmarkResults {
         backtracks = E.getModel().getSolver().getBackTrackCount();
         _propagations = E.getModel().getSolver().getPropagationCount();
         propagations = O.propagations;
-        Long tmp = O.pruning.stream().reduce(0L,(res,el)->res+el);
-        averagePerProp = (double)tmp/O.propagations;
         double timeToSolveSec = (double)timeToSolve/1_000_000_000.0;
-        averagePerSeconds = (double)tmp/timeToSolveSec;
         averagePropPerSeconds = (double)propagations/timeToSolveSec;
         propData = O.getTimeToPropagate();
-        sizeData = O.size;
-        pruneData = O.pruning;
         instance = E.getModel().getName();
         consistency = O.strategy.getClass().toString();
         solved = E.getModel().getSolver().getSolutionCount() > 0;
@@ -107,11 +82,7 @@ public class BenchmarkResults {
                 toJSON("innerPropagations", _propagations) + ", " +
                 toJSON("propagations", propagations) + ", " +
                 toJSON("averagePropPerSeconds", averagePropPerSeconds) + ", " +
-                toJSON("averagePruningPerProp", averagePerProp) + ", " +
-                toJSON("averagePruningPerSeconds", averagePerSeconds) + ", " +
                 toJSON("propData", propData) + ", " +
-                toJSON("sizeData", sizeData) + ", " +
-                toJSON("pruneData", pruneData) +
                 " \n}";
     }
 
