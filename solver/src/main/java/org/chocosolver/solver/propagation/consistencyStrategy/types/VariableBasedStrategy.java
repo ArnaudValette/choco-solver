@@ -10,11 +10,9 @@
 package org.chocosolver.solver.propagation.consistencyStrategy.types;
 
 import org.chocosolver.solver.exception.ContradictionException;
-import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
 import org.chocosolver.solver.propagation.consistencyStrategy.AbstractSingletonStrategy;
 import org.chocosolver.solver.variables.IntVar;
-import org.chocosolver.util.objects.queues.RQ;
-import org.chocosolver.util.objects.queues.ReinitialisableQueue;
+import org.chocosolver.util.objects.queues.EfficientQueue;
 
 import java.util.BitSet;
 import java.util.Set;
@@ -25,7 +23,7 @@ public abstract class VariableBasedStrategy extends AbstractSingletonStrategy<In
     protected Set<IntVar> nx;
 
 
-    public void setQ(RQ<IntVar> q) { Q=q; }
+    public void setQ(EfficientQueue<IntVar> q) { Q=q; }
 
     public void loop()throws ContradictionException {
         while(!Q.isEmpty()){
