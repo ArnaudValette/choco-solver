@@ -22,6 +22,7 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
     protected Integer Aj;
     protected boolean willConsumePasses = false;
     protected int lastId;
+    protected boolean solved=false;
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *
@@ -36,6 +37,9 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
 
     @Override
     public void propagate(SingletonConsistencyEngine engine) throws ContradictionException {
+        if(solved){
+            return;
+        }
         if(Q == null){
             engine.provideQ(this);
         }

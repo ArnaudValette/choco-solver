@@ -38,7 +38,6 @@ public class SAC3Strategy extends PairBasedStrategy {
                 continue;
             }
             try {
-                E.worldPush();
                 instantiate(Xn, Am);
                 E.doPropagate();
             } catch (ContradictionException ignore) {
@@ -47,7 +46,16 @@ public class SAC3Strategy extends PairBasedStrategy {
             }
         }
         if(i==t){
-            return; // Solved
+            boolean isSolved = true;
+            for(IntVar v : E.getModel().retrieveIntVars(true)){
+                if(!v.isInstantiated()){
+                    isSolved = false;
+                }
+            }
+            if(isSolved){
+                solved=true;
+                return;
+            }
         }
         E.worldPopUntilNFlush(lastId);
     }

@@ -392,7 +392,6 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         /* The strategy is in charge of setting this */
         doConsumePasses=false;
         propagationStrategy.propagate(this);
-        flush();
     }
 
     public void doPropagate() throws ContradictionException{
