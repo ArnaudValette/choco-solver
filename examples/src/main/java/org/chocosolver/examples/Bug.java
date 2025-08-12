@@ -23,15 +23,6 @@ import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDeg;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.benchmark.BenchResult;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 
 public class Bug {
     public static void sleep(long millis){
@@ -66,7 +57,19 @@ public class Bug {
             s.showStatisticsDuringResolution(1000L);
             try {
                 model.getSolver().reset();
+                //ISingletonConsistencyStrategy real = new NoStrategy().setDoPropagate(false);
+                //ISingletonConsistencyStrategy real = new RNSQStrategy();
                 ISingletonConsistencyStrategy real = new SAC3Strategy();
+                long time = System.currentTimeMillis();
+                /*
+                model.getSolver().addStopCriterion(new Criterion() {
+                    @Override
+                    public boolean isMet() {
+                        return System.currentTimeMillis() - time >= 5000;
+                    }
+                });
+
+                 */
 
                 EfficiencyObserver profiler = new EfficiencyObserver(real);
                 real.setRef(profiler);
@@ -76,8 +79,9 @@ public class Bug {
                 model.getSolver().setEngine(engine);
                 model.getSolver().solve();
                 res.commit();
-                System.out.println(res.toJSON());
+                //System.out.println(res.toJSON());
                 model.getSolver().printStatistics();
+
             }
             catch (Exception e){
                 System.out.println(e);
@@ -93,6 +97,7 @@ public class Bug {
 
     public static void main(String[] args) {
         //benchmark("/home/truite/MiniCSP/MisteryShopper-mini-8-12-1-6-0_c24.xml.lzma");
+        //benchmark("/home/truite/MiniCSP/AverageAvoiding-mini-45_c24.xml.lzma");
         benchmark("/home/truite/MiniCSP/AverageAvoiding-mini-20_c24.xml.lzma");
     }
 

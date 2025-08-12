@@ -55,7 +55,9 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
 
     @Override
     public void basePropagation() throws ContradictionException{
+        // profile("basePropagation",true);
         strategy.basePropagation();
+        // profile("basePropagation",false);
 
     }
 
@@ -73,17 +75,23 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
 
     @Override
     public void loop() throws ContradictionException {
+        // profile("loop",true);
         strategy.loop();
+        // profile("loop",false);
     }
 
     @Override
     public void task() throws ContradictionException {
+        // profile("task",true);
         strategy.task();
+        // profile("task",false);
     }
 
     @Override
     public boolean queueHandler(boolean changed) {
+        // profile("queueHandler",true);
         boolean res = strategy.queueHandler(changed);
+        // profile("queueHandler",false);
         return res;
 
     }
@@ -100,48 +108,66 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
 
     @Override
     public void onBeforeAnything() {
+        // profile("onBeforeAnything",true);
         strategy.onBeforeAnything();
+        // profile("onBeforeAnything",false);
     }
 
     @Override
     public void onBeforeInstantiation() {
+        // profile("onBeforeInstantiation",true);
         strategy.onBeforeInstantiation();
+        // profile("onBeforeInstantiation",false);
     }
 
     @Override
     public void onAfterInstantiation() throws ContradictionException {
+        // profile("onAfterInstantiation",true);
         strategy.onAfterInstantiation();
+        // profile("onAfterInstantiation",false);
     }
 
     @Override
     public void onBeforeRemoval() {
+        // profile("onBeforeRemoval",true);
         strategy.onBeforeRemoval();
+        // profile("onBeforeRemoval",false);
     }
 
     @Override
     public void onAfterRemoval() throws ContradictionException {
+        // profile("onAfterRemoval",true);
         strategy.onAfterRemoval();
+        // profile("onAfterRemoval",false);
         removes++;
     }
 
     @Override
     public void onAfterSingletonFound() {
+        // profile("onAfterSingletonFound",true);
         strategy.onAfterSingletonFound();
+        // profile("onAfterSingletonFound",false);
     }
 
     @Override
     public void onAfterInstantiationPropagation() throws ContradictionException {
+        // profile("onAfterInstantiationPropagation",true);
         strategy.onAfterInstantiationPropagation();
+        // profile("onAfterInstantiationPropagation",false);
     }
 
     @Override
     public void buildBranch() {
+        // profile("buildBranch",true);
         strategy.buildBranch();
+        // profile("buildBranch",false);
     }
 
     @Override
     public void baseState() {
+        // profile("baseState",true);
         strategy.baseState();
+        // profile("baseState",false);
     }
 
     private void printTime(String label, long value){
@@ -155,6 +181,10 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
     }
 
     private void printTime(String label, int value){
+        System.out.printf("\t%s: %d\n",label, value);
+    }
+
+    private void printN(String label, long value){
         System.out.printf("\t%s: %d\n",label, value);
     }
 
@@ -177,7 +207,6 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
             printTime("runs", d.size());
             System.out.println();
         }
-        printTime("Nb of removeValue calls", removes);
     }
 
     @Override

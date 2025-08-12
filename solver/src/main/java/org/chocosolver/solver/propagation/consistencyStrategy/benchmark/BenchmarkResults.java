@@ -30,6 +30,7 @@ public class BenchmarkResults {
     long fails;
     long _propagations;
     long propagations;
+    long removes;
     double averagePropPerSeconds;
     List<Long> propData;
     boolean solved;
@@ -56,6 +57,7 @@ public class BenchmarkResults {
         consistency = O.strategy.getClass().toString();
         solved = E.getModel().getSolver().getSolutionCount() > 0;
         committed=true;
+        removes = O.removes;
     }
 
     private void printTime(String label, long value){
@@ -83,6 +85,7 @@ public class BenchmarkResults {
                 toJSON("propagations", propagations) + ", " +
                 toJSON("averagePropPerSeconds", averagePropPerSeconds) + ", " +
                 toJSON("propData", propData) + ", " +
+                toJSON("removes", removes) +
                 " \n}";
     }
 
