@@ -46,6 +46,9 @@ public class SAC3Strategy extends PairBasedStrategy {
                 break;
             }
         }
+        if(i==t){
+            return; // Solved
+        }
         E.worldPopUntilNFlush(lastId);
     }
 
