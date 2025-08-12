@@ -732,24 +732,24 @@ public class XCSPParser implements XCallbacks2 {
 
     @Override
     public void buildCtrAllDifferent(String id, XVariables.XVarInteger[] list) {
-        model.allDifferent(vars(list)).post();
+        model.allDifferent(vars(list), "AC").post();
     }
 
     @Override
     public void buildCtrAllDifferentMatrix(String id, XVariables.XVarInteger[][] matrix) {
         for (XVariables.XVarInteger[] list : matrix) {
-            model.allDifferent(vars(list)).post();
+            model.allDifferent(vars(list), "AC").post();
         }
         XVariables.XVarInteger[][] tmatrix = ArrayUtils.transpose(matrix);
         for (XVariables.XVarInteger[] list : tmatrix) {
-            model.allDifferent(vars(list)).post();
+            model.allDifferent(vars(list), "AC").post();
         }
     }
 
     @Override
     public void buildCtrAllDifferentExcept(String id, XVariables.XVarInteger[] list, int[] except) {
         if (except.length == 0) {
-            model.allDifferent(vars(list)).post();
+            model.allDifferent(vars(list),"AC").post();
         } else if (except.length == 1) {
             model.allDifferentUnderCondition(vars(list), x -> !x.contains(except[0]), true).post();
         } else {
@@ -775,12 +775,12 @@ public class XCSPParser implements XCallbacks2 {
 
     @Override
     public void buildCtrAllDifferent(String id, XNode<XVariables.XVarInteger>[] trees) {
-        model.allDifferent(vars(trees)).post();
+        model.allDifferent(vars(trees),"AC").post();
     }
 
     @Override
     public void buildCtrAllDifferent(String id, XVariables.XVarSymbolic[] list) {
-        model.allDifferent(vars(list)).post();
+        model.allDifferent(vars(list),"AC").post();
     }
 
     private void buildDistinctVectors(IntVar[] t1, IntVar[] t2) {

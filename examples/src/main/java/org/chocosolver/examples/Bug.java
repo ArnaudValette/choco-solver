@@ -59,7 +59,7 @@ public class Bug {
                 model.getSolver().reset();
                 //ISingletonConsistencyStrategy real = new NoStrategy().setDoPropagate(false);
                 //ISingletonConsistencyStrategy real = new RNSQStrategy();
-                ISingletonConsistencyStrategy real = new SAC3Strategy();
+                ISingletonConsistencyStrategy real = new SAC1Strategy();
                 long time = System.currentTimeMillis();
                 /*
                 model.getSolver().addStopCriterion(new Criterion() {
@@ -77,10 +77,12 @@ public class Bug {
 
                 BenchmarkResults res = new BenchmarkResults(engine, profiler);
                 model.getSolver().setEngine(engine);
-                model.getSolver().solve();
-                res.commit();
+                model.getSolver().getEngine().initialize();
+                //model.getSolver().solve();
+                prune(model);
+                //res.commit();
                 //System.out.println(res.toJSON());
-                model.getSolver().printStatistics();
+                //model.getSolver().printStatistics();
 
             }
             catch (Exception e){
@@ -94,9 +96,9 @@ public class Bug {
         return new BenchResult();
     }
 
-
     public static void main(String[] args) {
         //benchmark("/home/truite/MiniCSP/MisteryShopper-mini-8-12-1-6-0_c24.xml.lzma");
+        //benchmark("/home/truite/MiniCSP/MisteryShopper-mini-8-12-3-6-0_c24.xml.lzma");
         //benchmark("/home/truite/MiniCSP/AverageAvoiding-mini-45_c24.xml.lzma");
         benchmark("/home/truite/MiniCSP/AverageAvoiding-mini-20_c24.xml.lzma");
     }

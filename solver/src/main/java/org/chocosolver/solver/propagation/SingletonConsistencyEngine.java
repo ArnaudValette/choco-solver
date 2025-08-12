@@ -157,15 +157,6 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
 
     public SingletonConsistencyEngine(Model model, MiniSat sat){
         super(model, sat);
-        /* With hybrid being < 2
-        * the singleton-consistency algorithms become inexact.
-        * I don't yet understand why this parameter affects the idempotency of SAC1/3...
-        * AFAIK, hybrid = 2 switches the engine to variable based and SACs become idempotent.
-        * Unfortunately, when switching the engine to variable based, the performances
-        * drop drastically (time to solve grows by a factor of ~10 !)
-        * Hybrid = 1 (hybrid between constraint and variable based)
-        * still behave in such a way SAC is not idempotent and is slightly less performant than hybrid = 0*/
-        hybrid = 0b10;
         IntVar[] vars = getVars();
 
         PL = new EfficientQueue<>(vars);
@@ -176,39 +167,22 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
             doms += vars[i].getDomainSize();
         }
 
-        Pair<IntVar, Integer>[] pairs = (Pair<IntVar, Integer>[]) new Pair[doms];
-        int i = 0;
+        List<Pair<IntVar, Integer>> p =  new ArrayList<>();
         for(IntVar v : vars){
             for(int value = v.getLB(); value <= v.getUB(); value=v.nextValue(value)){
-                pairs[i] = new Pair<>(v, value);
-                i++;
+                p.add(new Pair<>(v,value));
             }
         }
-        IL = new EfficientQueue<>(pairs);
+        Collections.shuffle(p, new Random(1234355));
 
-        /*
-        PL.setSupplier((_void)-> Arrays.stream(model.retrieveIntVars(true)));
-        IL.setSupplier((_void) -> Arrays.stream(model.retrieveIntVars(true))
-                    .flatMap(v ->
-                            {
-                                List<Pair<IntVar,Integer>> x = new ArrayList<>();
-                                for(int value = v.getLB(); value<=v.getUB(); value=v.nextValue(value)){
-                                    x.add(new Pair<>(v, value));
-                                }
-                                return x.stream();
-                            }));
+        Pair<IntVar, Integer>[] shuffled = (Pair<IntVar, Integer>[]) new Pair[doms];
+        int i = 0;
+        for(Pair<IntVar,Integer> pair : p){
+            shuffled[i] = pair;
+            i++;
+        }
 
-            ArrayList<Pair<IntVar, Integer>> queue = new ArrayList<>();
-            for(IntVar v : model.retrieveIntVars(true))
-                for(int value=v.getLB(); value <= v.getUB(); value=v.nextValue(value))
-                    queue.add(new Pair<>(v, value));
-            return queue;});
-
-        //PL.setOptimizedRefresher((v)->neighborhoodQueue.get(v.getId()));
-
-        PL.lock();
-        IL.lock();
-        */
+        IL = new EfficientQueue<>(shuffled);
     }
 
     public SingletonConsistencyEngine(Model model){
