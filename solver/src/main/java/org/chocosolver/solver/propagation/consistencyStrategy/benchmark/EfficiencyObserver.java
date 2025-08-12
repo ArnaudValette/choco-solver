@@ -27,6 +27,7 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
     public long propagations=0L;
     public boolean isFirstProp=true;
     public long firstPropTimer=0L;
+    public boolean doMonitorPropagations=true;
 
 
     public EfficiencyObserver(ISingletonConsistencyStrategy strategy) {
@@ -67,9 +68,13 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
             isFirstProp=false;
             firstPropTimer=System.nanoTime();
         }
-        profile("propagate", true);
+        if(doMonitorPropagations) {
+            profile("propagate", true);
+        }
         strategy.propagate(engine);
-        profile("propagate", false);
+        if(doMonitorPropagations) {
+            profile("propagate", false);
+        }
         propagations++;
     }
 

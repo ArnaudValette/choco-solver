@@ -9,6 +9,7 @@
  */
 package org.chocosolver.parser.xcsp;
 
+import org.chocosolver.parser.RegParser;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
@@ -88,6 +89,10 @@ public class CustomXCSP {
             BenchmarkResults res = new BenchmarkResults(engine, obs);
 
             if(xscp.monitor){
+                if(xscp.sc == RegParser.SC.AC || xscp.sc == RegParser.SC.NONE){
+                    // avoiding mem overflow
+                    obs.doMonitorPropagations=false;
+                }
                 strategy.setRef(obs);
                 engine.setPropagationStrategy(obs);
             }
