@@ -77,19 +77,19 @@ public class CustomXCSP {
                     break;
                 case onepSAC1:
                     strategy = new SAC1Strategy().setWillConsumePasses(true);
-                    System.out.println("Using AC");
+                    engine.setPasses(1);
                     break;
                 case RsNS1pQ:
                     strategy = new RsNSQStrategy().setWillConsumePasses(true);
-                    System.out.println("Using AC");
+                    engine.setPasses(1);
                     break;
                 case RNS1pQ:
                     strategy = new RNSQStrategy().setWillConsumePasses(true);
-                    System.out.println("Using AC");
+                    engine.setPasses(1);
                     break;
                 case N1pSAC:
                     strategy = new NSAC1Strategy().setWillConsumePasses(true);
-                    System.out.println("Using AC");
+                    engine.setPasses(1);
                     break;
                 default:
                     strategy = new NoStrategy().setDoPropagate(true);
