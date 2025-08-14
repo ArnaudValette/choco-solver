@@ -134,11 +134,11 @@ public class CustomXCSP {
                 throw new RuntimeException(e.getCause());
             }
             finally {
-                ex.shutdownNow();
-                ex.awaitTermination(5, TimeUnit.SECONDS);
                 if(timedOut){
                     xscp.getModel().getSolver().addStopCriterion(()->true);
                 }
+                ex.shutdownNow();
+                ex.awaitTermination(5, TimeUnit.SECONDS);
 
             }
 

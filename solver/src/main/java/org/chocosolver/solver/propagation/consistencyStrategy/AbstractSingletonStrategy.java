@@ -24,6 +24,11 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
     protected int lastId;
     protected boolean solved=false;
 
+    @Override
+    public boolean isPassBased() {
+        return willConsumePasses;
+    }
+
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *
      *                                         Core Method

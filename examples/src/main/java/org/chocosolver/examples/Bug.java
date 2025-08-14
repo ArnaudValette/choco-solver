@@ -62,14 +62,14 @@ public class Bug {
                 model.getSolver().reset();
                 //ISingletonConsistencyStrategy real = new NoStrategy().setDoPropagate(false);
                 //ISingletonConsistencyStrategy real = new RsNSQStrategy().setWillConsumePasses(true);
-                ISingletonConsistencyStrategy real = new SAC3Strategy();
+                ISingletonConsistencyStrategy real = new NSAC1Strategy().setWillConsumePasses(false);
                 ;
                 long time = System.currentTimeMillis();
 
 
                 EfficiencyObserver profiler = new EfficiencyObserver(real);
                 real.setRef(profiler);
-                SingletonConsistencyEngine engine = new SingletonConsistencyEngine(model).setPropagationStrategy(profiler);
+                SingletonConsistencyEngine engine = new SingletonConsistencyEngine(model).setPropagationStrategy(profiler).setPasses(1);
 
                 BenchmarkResults res = new BenchmarkResults(engine, profiler);
                 model.getSolver().setEngine(engine);
@@ -95,17 +95,17 @@ public class Bug {
                     throw new RuntimeException(e.getCause());
                 }
                 finally {
-                    ex.shutdownNow();
-                    ex.awaitTermination(5, TimeUnit.SECONDS);
                     if(timedOut){
                         model.getSolver().addStopCriterion(()->true);
                     }
+                    ex.shutdownNow();
+                    ex.awaitTermination(5, TimeUnit.SECONDS);
 
                 }
 
                 //prune(model);
-                //res.commit(false);
-                //System.out.println(res.toJSON());
+                res.commit(timedOut);
+                System.out.println(res.toJSON());
                 //model.getSolver().printStatistics();
 
             }
@@ -122,9 +122,9 @@ public class Bug {
 
     public static void main(String[] args) {
         //benchmark("/home/truite/MiniCSP/MisteryShopper-mini-8-12-1-6-0_c24.xml.lzma");
-        benchmark("/home/truite/MiniCSP/MisteryShopper-mini-8-12-3-6-0_c24.xml.lzma");
+        //benchmark("/home/truite/MiniCSP/MisteryShopper-mini-8-12-3-6-0_c24.xml.lzma");
         //benchmark("/home/truite/MiniCSP/AverageAvoiding-mini-45_c24.xml.lzma");
-        //benchmark("/home/truite/MiniCSP/AverageAvoiding-mini-20_c24.xml.lzma");
+        benchmark("/home/truite/MiniCSP/AverageAvoiding-mini-20_c24.xml.lzma");
     }
 
     public static void test(Model model) {

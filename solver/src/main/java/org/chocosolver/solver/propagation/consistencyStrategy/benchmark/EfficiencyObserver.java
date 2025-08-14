@@ -134,6 +134,11 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
     }
 
     @Override
+    public boolean isPassBased() {
+        return strategy.isPassBased();
+    }
+
+    @Override
     public void onBeforeRemoval() {
         // profile("onBeforeRemoval",true);
         strategy.onBeforeRemoval();

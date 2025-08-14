@@ -55,7 +55,10 @@ public class BenchmarkResults {
         averagePropPerSeconds = (double)propagations/timeToSolveSec;
         propData = O.getTimeToPropagate();
         instance = E.getModel().getName();
-        consistency = O.strategy.getClass().toString();
+        String[] clazz = O.strategy.getClass().toString().split("\\.");
+        boolean passBased = E.getStrategy().isPassBased();
+        int passes = E.getPasses();
+        consistency = clazz[clazz.length - 1] + (passBased ? "("+passes+"-p version)" : "");
         solved = E.getModel().getSolver().getSolutionCount() > 0;
         committed=true;
         timedOut=t;

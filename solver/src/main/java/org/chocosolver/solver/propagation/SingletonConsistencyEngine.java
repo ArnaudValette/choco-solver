@@ -604,6 +604,10 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
         return currentPass < passes;
     }
 
+    public int getPasses(){
+        return passes;
+    }
+
     public int passPropagatorsSize(){
         return passPropagatorsList.size();
     }

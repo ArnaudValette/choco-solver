@@ -31,6 +31,7 @@ public interface ISingletonConsistencyStrategy {
     void onBeforeInstantiation();
     void onAfterInstantiation() throws ContradictionException;
 
+    boolean isPassBased();
     void onBeforeRemoval();
     void onAfterRemoval() throws ContradictionException ;
     default void onAfterSingletonFound(){
