@@ -9,9 +9,11 @@
  */
 package org.chocosolver.solver.propagation.consistencyStrategy;
 
+import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
 import org.chocosolver.util.objects.queues.ReinitialisableQueue;
+import org.jgrapht.alg.util.Triple;
 
 public interface ISingletonConsistencyStrategy {
 
@@ -42,4 +44,10 @@ public interface ISingletonConsistencyStrategy {
     default boolean _isNeighborhoodAlgo(){
       return false;
     }
+
+  void passConsumer() throws ContradictionException;
+ AbstractSingletonStrategy<?> setWillConsumePasses(boolean b);
+ void doConsumePasses() throws ContradictionException ;
+ void onBeforePasses();
+ void onAfterPasses();
 }

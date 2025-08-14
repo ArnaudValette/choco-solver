@@ -22,7 +22,7 @@ public abstract class PairBasedStrategy extends AbstractSingletonStrategy<Pair<I
     }
 
     public void loop() throws ContradictionException {
-        while(!Q.isEmpty()){
+        while(!Q.isEmpty() && !E.shouldStop()){
             Pair<IntVar, Integer> p = Q.pop();
             Xi = p.getA(); Aj = p.getB();
             ref().task();

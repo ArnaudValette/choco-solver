@@ -184,7 +184,7 @@ public abstract class RegParser implements IParser {
             "3: RsNSQ"+
             "4: RNSQ" +
             "5: NSAC" +
-            "6: AC")
+            "6: AC" )
     public SC sc =SC.NONE;
 
     @Option(name = "-passes", aliases = {"--passes"}, usage = "-passes <number>")
@@ -206,7 +206,11 @@ public abstract class RegParser implements IParser {
         RsNSQ,
         RNSQ,
         NSAC,
-        AC
+        AC,
+        onepSAC1,
+        RsNS1pQ,
+        RNS1pQ,
+        N1pSAC
     }
     /**
      * Default settings to apply

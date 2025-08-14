@@ -125,6 +125,8 @@ public abstract class AbstractSingletonStrategy<T> extends BaseStrategy<T> imple
 
     @Override
     public void baseState(){
+        E.initLatePropQ();
+        E.setSingleton(false);
         E.setDoFilterScheduling(false);
         E.setCheckSingleton(false);
         E.setBlockLateScheduling(true);

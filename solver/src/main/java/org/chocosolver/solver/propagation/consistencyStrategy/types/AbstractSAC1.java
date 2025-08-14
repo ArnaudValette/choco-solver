@@ -25,11 +25,14 @@ public abstract class AbstractSAC1 extends VariableBasedStrategy{
         do{
             Q.reinit();
             changed = false;
-            while (!Q.isEmpty()) {
+            while (!Q.isEmpty() && !E.shouldStop()) {
                 IntVar v = Q.pop();
                 nsac = E.getNsacBlacklist(v);
                 nx = E.getNeighborhood(v);
                 for (int value = v.getLB(); value <= v.getUB(); value = v.nextValue(value)) {
+                    if(E.shouldStop()){
+                        break;
+                    }
                     Xi = v;
                     Aj = value;
                     ref().task();
@@ -40,7 +43,7 @@ public abstract class AbstractSAC1 extends VariableBasedStrategy{
                 boolean reachedPassesEnd = !E.hasPasses();
                 shouldStop = willConsumePasses && reachedPassesEnd;
             }
-        } while (changed && !shouldStop);
+        } while (changed && !shouldStop && !E.shouldStop());
     }
 
     @Override

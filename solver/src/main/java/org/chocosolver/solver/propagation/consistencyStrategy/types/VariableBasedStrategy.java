@@ -26,7 +26,7 @@ public abstract class VariableBasedStrategy extends AbstractSingletonStrategy<In
     public void setQ(EfficientQueue<IntVar> q) { Q=q; }
 
     public void loop()throws ContradictionException {
-        while(!Q.isEmpty()){
+        while(!Q.isEmpty() && !E.shouldStop()){
             changed=false;
             IntVar v = Q.pop();
             if(_isNeighborhoodAlgo()) {

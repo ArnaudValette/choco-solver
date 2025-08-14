@@ -11,6 +11,7 @@ package org.chocosolver.solver.propagation.consistencyStrategy.benchmark;
 
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
+import org.chocosolver.solver.propagation.consistencyStrategy.AbstractSingletonStrategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.ISingletonConsistencyStrategy;
 import org.chocosolver.solver.variables.Variable;
 
@@ -217,5 +218,30 @@ public class EfficiencyObserver implements ISingletonConsistencyStrategy {
     @Override
     public boolean _isNeighborhoodAlgo() {
         return strategy._isNeighborhoodAlgo();
+    }
+
+    @Override
+    public void passConsumer() throws ContradictionException {
+        strategy.passConsumer();
+    }
+
+    @Override
+    public AbstractSingletonStrategy<?> setWillConsumePasses(boolean b) {
+        return strategy.setWillConsumePasses(b);
+    }
+
+    @Override
+    public void doConsumePasses() throws ContradictionException {
+        strategy.doConsumePasses();
+    }
+
+    @Override
+    public void onBeforePasses() {
+        strategy.onBeforePasses();
+    }
+
+    @Override
+    public void onAfterPasses() {
+        strategy.onAfterPasses();
     }
 }

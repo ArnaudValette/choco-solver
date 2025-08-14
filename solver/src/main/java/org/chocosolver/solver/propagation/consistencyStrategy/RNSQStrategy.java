@@ -48,7 +48,6 @@ public class RNSQStrategy extends VariableBasedStrategy {
 
     @Override
     public void onAfterInstantiation() throws ContradictionException {
-        ref().basePropagation();
         ref().onAfterInstantiationPropagation();
         E.worldPopUntilNFlush(lastId);
         ref().baseState();
@@ -59,7 +58,9 @@ public class RNSQStrategy extends VariableBasedStrategy {
         /* if a neighbor of xi has singleton domain then apply AC to N(xi) */
         if (E.foundSingletonDuringPropagation()) {
             ref().onAfterSingletonFound();
+            ref().onBeforePasses();
             ref().basePropagation();
+            ref().doConsumePasses();
         }
     }
 
@@ -94,7 +95,7 @@ public class RNSQStrategy extends VariableBasedStrategy {
 
     @Override
     public void passConsumer() throws ContradictionException {
-        /* TODO: passes*/
+        ref().basePropagation();
     }
 
     @Override

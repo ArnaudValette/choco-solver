@@ -104,7 +104,7 @@ public class Test {
             });
 
             s.solve();
-            res.commit();
+            res.commit(false);
             String r = res.toJSON();
             System.out.println(r);
 

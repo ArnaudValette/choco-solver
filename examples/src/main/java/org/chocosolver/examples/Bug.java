@@ -23,6 +23,8 @@ import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDeg;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.benchmark.BenchResult;
 
+import java.util.concurrent.*;
+
 
 public class Bug {
     public static void sleep(long millis){
@@ -53,23 +55,17 @@ public class Bug {
             s.setSearch(
                     Search.intVarSearch(cacd, new IntDomainMin(), vars)
             );
+
             s.clearRestarter();
             s.showStatisticsDuringResolution(1000L);
             try {
                 model.getSolver().reset();
                 //ISingletonConsistencyStrategy real = new NoStrategy().setDoPropagate(false);
-                //ISingletonConsistencyStrategy real = new RNSQStrategy();
-                ISingletonConsistencyStrategy real = new SAC1Strategy();
+                //ISingletonConsistencyStrategy real = new RsNSQStrategy().setWillConsumePasses(true);
+                ISingletonConsistencyStrategy real = new SAC3Strategy();
+                ;
                 long time = System.currentTimeMillis();
-                /*
-                model.getSolver().addStopCriterion(new Criterion() {
-                    @Override
-                    public boolean isMet() {
-                        return System.currentTimeMillis() - time >= 5000;
-                    }
-                });
 
-                 */
 
                 EfficiencyObserver profiler = new EfficiencyObserver(real);
                 real.setRef(profiler);
@@ -77,10 +73,38 @@ public class Bug {
 
                 BenchmarkResults res = new BenchmarkResults(engine, profiler);
                 model.getSolver().setEngine(engine);
-                model.getSolver().getEngine().initialize();
-                //model.getSolver().solve();
-                prune(model);
-                //res.commit();
+
+                ExecutorService ex = Executors.newSingleThreadExecutor();
+                Future<?> f = ex.submit(()-> {
+                            model.getSolver().getEngine().initialize();
+                            model.getSolver().solve();
+                        });
+                boolean timedOut = false;
+                try{
+                    f.get(10, TimeUnit.SECONDS);
+                }
+                catch(TimeoutException e){
+                    System.out.println("TimedOUT");
+                    timedOut = true;
+                    f.cancel(true);
+                }
+                catch (InterruptedException e){
+                    Thread.currentThread().interrupt();
+                }
+                catch (ExecutionException e){
+                    throw new RuntimeException(e.getCause());
+                }
+                finally {
+                    ex.shutdownNow();
+                    ex.awaitTermination(5, TimeUnit.SECONDS);
+                    if(timedOut){
+                        model.getSolver().addStopCriterion(()->true);
+                    }
+
+                }
+
+                //prune(model);
+                //res.commit(false);
                 //System.out.println(res.toJSON());
                 //model.getSolver().printStatistics();
 
@@ -98,9 +122,9 @@ public class Bug {
 
     public static void main(String[] args) {
         //benchmark("/home/truite/MiniCSP/MisteryShopper-mini-8-12-1-6-0_c24.xml.lzma");
-        //benchmark("/home/truite/MiniCSP/MisteryShopper-mini-8-12-3-6-0_c24.xml.lzma");
+        benchmark("/home/truite/MiniCSP/MisteryShopper-mini-8-12-3-6-0_c24.xml.lzma");
         //benchmark("/home/truite/MiniCSP/AverageAvoiding-mini-45_c24.xml.lzma");
-        benchmark("/home/truite/MiniCSP/AverageAvoiding-mini-20_c24.xml.lzma");
+        //benchmark("/home/truite/MiniCSP/AverageAvoiding-mini-20_c24.xml.lzma");
     }
 
     public static void test(Model model) {

@@ -20,7 +20,6 @@ import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.search.strategy.selectors.values.IntDomainMin;
 import org.chocosolver.solver.search.strategy.selectors.variables.DomOverWDeg;
 import org.chocosolver.solver.variables.IntVar;
-import org.chocosolver.util.criteria.Criterion;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -29,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.*;
 
 public class CustomXCSP {
     public static void main(String[] args) throws Exception {
@@ -75,6 +75,22 @@ public class CustomXCSP {
                     strategy = new NoStrategy().setDoPropagate(true);
                     System.out.println("Using AC");
                     break;
+                case onepSAC1:
+                    strategy = new SAC1Strategy().setWillConsumePasses(true);
+                    System.out.println("Using AC");
+                    break;
+                case RsNS1pQ:
+                    strategy = new RsNSQStrategy().setWillConsumePasses(true);
+                    System.out.println("Using AC");
+                    break;
+                case RNS1pQ:
+                    strategy = new RNSQStrategy().setWillConsumePasses(true);
+                    System.out.println("Using AC");
+                    break;
+                case N1pSAC:
+                    strategy = new NSAC1Strategy().setWillConsumePasses(true);
+                    System.out.println("Using AC");
+                    break;
                 default:
                     strategy = new NoStrategy().setDoPropagate(true);
                     System.out.println("Using AC");
@@ -100,20 +116,34 @@ public class CustomXCSP {
                 engine.setPropagationStrategy(strategy);
             }
             s.setEngine(engine);
-            if(xscp.timeout != 0){
-                long time = System.currentTimeMillis();
-                s.addStopCriterion(new Criterion() {
-                    @Override
-                    public boolean isMet() {
-                        return System.currentTimeMillis() - time > xscp.timeout;
-                    }
-                });
+
+            ExecutorService ex = Executors.newSingleThreadExecutor();
+            Future<?> f = ex.submit(xscp::solve);
+            boolean timedOut = false;
+            try{
+                f.get(2, TimeUnit.HOURS);
+            }
+            catch(TimeoutException e){
+                timedOut = true;
+                f.cancel(true);
+            }
+            catch (InterruptedException e){
+                Thread.currentThread().interrupt();
+            }
+            catch (ExecutionException e){
+                throw new RuntimeException(e.getCause());
+            }
+            finally {
+                ex.shutdownNow();
+                ex.awaitTermination(5, TimeUnit.SECONDS);
+                if(timedOut){
+                    xscp.getModel().getSolver().addStopCriterion(()->true);
+                }
+
             }
 
-            xscp.solve();
-
             if(xscp.monitor){
-                res.commit();
+                res.commit(timedOut);
                 handleResults(res, xscp.url);
             }
         }

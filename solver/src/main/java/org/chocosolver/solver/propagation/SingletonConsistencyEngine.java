@@ -611,4 +611,8 @@ public class SingletonConsistencyEngine extends PropagationEngine implements ICa
     public Model getModel(){
         return model;
     }
+
+    public boolean shouldStop(){
+        return model.getSolver().isStopCriterionMet();
+    }
 }

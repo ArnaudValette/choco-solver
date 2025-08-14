@@ -34,6 +34,7 @@ public class BenchmarkResults {
     double averagePropPerSeconds;
     List<Long> propData;
     boolean solved;
+    boolean timedOut;
 
 
     public BenchmarkResults(SingletonConsistencyEngine consistencyEngine, EfficiencyObserver obs) {
@@ -41,7 +42,7 @@ public class BenchmarkResults {
         O=obs;
     }
 
-    public void commit(){
+    public void commit(boolean t){
         timeToSolve = System.nanoTime() - O.firstPropTimer;
         nodes = E.getModel().getSolver().getNodeCount();
         variables = E.getModel().getNbVars();
@@ -57,6 +58,7 @@ public class BenchmarkResults {
         consistency = O.strategy.getClass().toString();
         solved = E.getModel().getSolver().getSolutionCount() > 0;
         committed=true;
+        timedOut=t;
         removes = O.removes;
     }
 
@@ -75,6 +77,7 @@ public class BenchmarkResults {
                 toJSON("instance", instance) + ", " +
                 toJSON("consistency", consistency) + ", " +
                 toJSON("date", date) + ", " +
+                toJSON("timedOut", timedOut) + ", " +
                 toJSON("solved", solved) + ", " +
                 toJSON("constraints", constraints) + ", " +
                 toJSON("variables", variables) + ", " +

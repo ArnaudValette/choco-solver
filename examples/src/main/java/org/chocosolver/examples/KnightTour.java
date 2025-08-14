@@ -14,6 +14,7 @@ import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.constraints.extension.Tuples;
 import org.chocosolver.solver.constraints.nary.alldifferent.AllDifferent;
 import org.chocosolver.solver.propagation.SingletonConsistencyEngine;
+import org.chocosolver.solver.propagation.consistencyStrategy.RNSQStrategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.SAC1Strategy;
 import org.chocosolver.solver.propagation.consistencyStrategy.SAC3Strategy;
 import org.chocosolver.solver.search.strategy.Search;
@@ -81,6 +82,7 @@ public class KnightTour extends AbstractProblem{
     public void configureSearch() {
         //model.getSolver().setEngine(new SingletonConsistencyEngine(model).enforceSAC3());
         //model.getSolver().setEngine(new SingletonConsistencyEngine(model).setPropagationStrategy(new SACNaiveDriverStrategy()));
+        model.getSolver().setEngine(new SingletonConsistencyEngine(model).setPropagationStrategy(new RNSQStrategy()));
 
         DomOverWDeg<IntVar> cacd = new DomOverWDeg<>(vars, 0);
         model.getSolver().setSearch(
