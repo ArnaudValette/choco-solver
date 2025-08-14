@@ -105,10 +105,8 @@ public class CustomXCSP {
             BenchmarkResults res = new BenchmarkResults(engine, obs);
 
             if(xscp.monitor){
-                if(xscp.sc == RegParser.SC.AC || xscp.sc == RegParser.SC.NONE){
-                    // avoiding mem overflow
-                    obs.doMonitorPropagations=false;
-                }
+                // propagation monitoring is memory-heavy
+                obs.doMonitorPropagations=false;
                 strategy.setRef(obs);
                 engine.setPropagationStrategy(obs);
             }
