@@ -7,7 +7,7 @@ int generate_commands(size_t paths_len, size_t types_len,  char*** *cmds, char *
     for(int j = 0; j<types_len; j++){
       (*cmds)[index] = malloc(sizeof(char *) * 18);
       (*cmds)[index][0] = "/usr/bin/java";
-      (*cmds)[index][1] = "-Xmx20g";
+      (*cmds)[index][1] = "-Xmx10g";
       (*cmds)[index][2] = "-XX:+UseSerialGC";
       //(*cmds)[index][3] = "-Xint";
       (*cmds)[index][3] = "-jar";
