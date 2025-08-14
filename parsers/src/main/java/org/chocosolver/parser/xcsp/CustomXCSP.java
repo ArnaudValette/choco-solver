@@ -41,7 +41,8 @@ public class CustomXCSP {
             IntVar[] vars = model.retrieveIntVars(true);
             DomOverWDeg cacd = new DomOverWDeg(vars, 0);
             s.setSearch(
-                    Search.intVarSearch(cacd, new IntDomainMin(), vars)
+                    //Search.intVarSearch(cacd, new IntDomainMin(), vars)
+                    Search.inputOrderLBSearch(vars)
             );
             s.clearRestarter();
             SingletonConsistencyEngine engine = new SingletonConsistencyEngine(model);
