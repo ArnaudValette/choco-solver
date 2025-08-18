@@ -40,10 +40,7 @@ public class CustomXCSP {
             Solver s = model.getSolver();
             IntVar[] vars = model.retrieveIntVars(true);
             DomOverWDeg cacd = new DomOverWDeg(vars, 0);
-            s.setSearch(
-                    //Search.intVarSearch(cacd, new IntDomainMin(), vars)
-                    Search.inputOrderLBSearch(vars)
-            );
+            s.setSearch( Search.intVarSearch(cacd, new IntDomainMin(), vars) );
             s.clearRestarter();
             SingletonConsistencyEngine engine = new SingletonConsistencyEngine(model);
             AbstractSingletonStrategy strategy;
