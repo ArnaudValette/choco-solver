@@ -117,7 +117,11 @@ public class CustomXCSP {
             Future<?> f = ex.submit(xscp::solve);
             boolean timedOut = false;
             try{
-                f.get(2, TimeUnit.HOURS);
+                if(xscp.timeout != 0) {
+                    f.get(xscp.timeout, TimeUnit.HOURS);
+                } else{
+                    f.get(1, TimeUnit.HOURS);
+                }
             }
             catch(TimeoutException e){
                 timedOut = true;

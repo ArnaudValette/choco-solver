@@ -191,7 +191,7 @@ public abstract class RegParser implements IParser {
     public int passes = 0;
 
     @Option(name = "-to", aliases = {"--timeout"}, usage = "-to <long>")
-    public long timeout = 0;
+    public int timeout = 0;
 
     @Option(name = "-monitor", aliases = {"--monitor"}, usage = "Monitor mode")
     public boolean monitor;
