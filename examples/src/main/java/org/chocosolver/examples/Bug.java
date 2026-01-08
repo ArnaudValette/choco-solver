@@ -60,9 +60,9 @@ public class Bug {
             s.showStatisticsDuringResolution(1000L);
             try {
                 model.getSolver().reset();
-                //ISingletonConsistencyStrategy real = new NoStrategy().setDoPropagate(false);
+                ISingletonConsistencyStrategy real = new NoStrategy().setDoPropagate(true);
                 //ISingletonConsistencyStrategy real = new RsNSQStrategy().setWillConsumePasses(true);
-                ISingletonConsistencyStrategy real = new NSAC1Strategy().setWillConsumePasses(false);
+                //ISingletonConsistencyStrategy real = new NSAC1Strategy().setWillConsumePasses(false);
                 ;
                 long time = System.currentTimeMillis();
 
